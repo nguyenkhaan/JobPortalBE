@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  adminer:  #Dung de quan ly database
+    image: adminer:latest
+    container_name: adminer  #Ten container
+    restart: always
+    ports:
+      - "5050:8080"
+    depends_on:
+      - postgres
+    networks:
+      - spring-network
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - spring-network
+
+  app:
+    build: .
+    container_name: springboot_app
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mydb
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      #Support more environment variables here.
+    networks:
+      - spring-network
+
+volumes:
+  postgres_data:
+
+networks:
+  spring-network:
