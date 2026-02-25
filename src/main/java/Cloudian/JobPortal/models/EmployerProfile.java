@@ -4,22 +4,25 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.Setter;
-
+import java.util.List;
 @Entity
 @Setter
 @Getter
+@Table(
+        indexes = @Index(columnList = "companyName" , name = "idx_company_name")
+)
 public class EmployerProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne
-    @JoinColumn(nullable = false , referencedColumnName = "id")
-    private Long ownerID;
-    @Column(nullable = false)
+    @ManyToOne  //Luon map den id cua bang kia
+    @JoinColumn(nullable = false , name = "owner_id") //ManyToOne , JoinColumn(name, nullable)
+    private Users owner;
+    @Column(nullable = false , name = "company_name")
     private String companyName;
-    @Column(nullable = false)
+    @Column(nullable = false , name = "company_website")
     private String companyWebsite;
-    @Column(nullable = false)
+    @Column(nullable = false  , name = "address")
     private String address;
     //Optional
     @Email
@@ -27,5 +30,9 @@ public class EmployerProfile {
     @Lob
     private String description = "";
     private String phone;
-    private Integer capacity = 0; 
+    private Integer capacity = 0;
+    //Foreign key
+    @OneToMany(mappedBy = "employer")
+    private List<JobPost> jobPostList;
+
 }

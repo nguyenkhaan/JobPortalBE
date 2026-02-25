@@ -13,7 +13,12 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-public class User {
+@Table(
+        indexes = {
+                @Index(name = "idx_active" , columnList = "active")
+        }
+)
+public class Users {
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long id;
@@ -29,17 +34,17 @@ public class User {
     @Column(nullable = false)
     private Boolean active = false;
     @CreationTimestamp
-    @Column(nullable = false)
+    @Column(nullable = false , name = "created_at")
     private LocalDateTime createdAt;
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(nullable = false , name = "updated_at")
     private LocalDateTime updatedAt;
 
     //Foreign keys
-    @OneToMany(mappedBy = "userID")
+    @OneToMany(mappedBy = "users")  //map den field nao trong model class cua jobSeekerProfile
     private List<JobSeekerProfile> jobSeekerProfileList;  //Kiem tra xem ten bang co trung ten class khong, ten cot co trung ten thuoc tinh khong
-    @OneToMany(mappedBy = "ownerID")
+    @OneToMany(mappedBy = "owner")  //Noi toi cot nao
     private List<EmployerProfile> employerProfileList;
-    @OneToMany(mappedBy = "userID")
-    private List<UserRole> userRoleList;
+    @OneToMany(mappedBy = "users")
+    private List<UsersRole> usersRoleList;
 }

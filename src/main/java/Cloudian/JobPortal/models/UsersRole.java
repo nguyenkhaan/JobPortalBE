@@ -7,7 +7,7 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-public class UserRole {
+public class UsersRole {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -15,6 +15,6 @@ public class UserRole {
     @Column(nullable = false)
     Role role = Role.SEEKER;
     @ManyToOne
-    @JoinColumn(referencedColumnName = "id" , nullable = false)
-    private Long userID;
+    @JoinColumn(name = "users_id" , nullable = false)
+    private Users users;
 }
