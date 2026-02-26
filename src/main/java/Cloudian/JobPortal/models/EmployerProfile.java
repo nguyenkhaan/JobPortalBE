@@ -27,7 +27,7 @@ public class EmployerProfile {
     //Optional
     @Email
     private String email;
-    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description = "";
     private String phone;
     private Integer capacity = 0;
