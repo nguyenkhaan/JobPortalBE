@@ -1,4 +1,4 @@
 package Cloudian.JobPortal.modules.auth;
 
-public class AuthRepository {
+public interface AuthRepository {
 }

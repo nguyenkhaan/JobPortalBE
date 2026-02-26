@@ -1,4 +1,4 @@
 package Cloudian.JobPortal.modules.user;
 
-public class UserRepository {
+public interface UserRepository {
 }
