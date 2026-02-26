@@ -29,8 +29,7 @@ public class JobPost {
     private EmployerProfile employer;
     @Column(nullable = false)
     private String title;
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false , columnDefinition = "TEXT")
     private String description;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false , name = "employment_type")
