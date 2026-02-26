@@ -1,8 +1,10 @@
 package Cloudian.JobPortal.exceptions.custom;
 
+import org.springframework.http.HttpStatus;
+
 public class ConflictException extends BaseException {
     public ConflictException(String message) {
         super(message);
-        this.setCode("409");
+        this.setCode(HttpStatus.CONFLICT);
     }
 }

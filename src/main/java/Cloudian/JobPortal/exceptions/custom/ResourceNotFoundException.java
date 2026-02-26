@@ -1,8 +1,10 @@
 package Cloudian.JobPortal.exceptions.custom;
 
+import org.springframework.http.HttpStatus;
+
 public class ResourceNotFoundException extends BaseException {
     public ResourceNotFoundException(String message) {
         super(message);
-        this.setCode("409");
+        this.setCode(HttpStatus.CONFLICT);
     }
 }

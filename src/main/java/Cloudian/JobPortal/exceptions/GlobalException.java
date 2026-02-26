@@ -13,7 +13,7 @@ public class GlobalException {
     @ExceptionHandler(value = BadRequestException.class)
     public ResponseEntity<?> handleBadRequestException(BadRequestException e)
     {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+        return ResponseEntity.status(e.getCode()).body(
                 new ExceptionDto(e.getMessage() , e.getCode())
         );
     }
