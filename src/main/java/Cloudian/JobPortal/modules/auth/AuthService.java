@@ -6,9 +6,11 @@ import Cloudian.JobPortal.modules.auth.dto.AuthRegisterRequest;
 import Cloudian.JobPortal.modules.auth.dto.AuthRegisterResponse;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
+
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,21 +19,18 @@ public class AuthService
     //User Repository
     @Autowired
     private UserRepository userRepository;
-    //Verify Email secret key
-    @Value("${app.secret.verify.email}")
-    String verifySecreyKey;
 
     @Transactional   //Dam bao khong bi loi database khi them du lieu vao
     public AuthRegisterResponse register(AuthRegisterRequest data)
     {
-        Users user = userRepository.findByEmail(data.getEmail());
+        Users user = userRepository.findByEmail(data.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User Not Found"));
         if (user != null && user.getActive())
             throw new BadRequestException("User has been exists");
-        System.out.println(verifySecreyKey);
-        if (user != null && user.getActive() == true)
+        if (user != null && !user.getActive())
         {
             //Tao token va gui lai email verify
-
+            //Tao jwt token ????
             return new AuthRegisterResponse(null , "123");
         }
 
