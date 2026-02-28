@@ -1,3 +1,6 @@
+//Document for jwt security config (Very Easy but I don't understand the code a lot...
+//Source from Medium
+//https://freedium-mirror.cfd/https://medium.com/%40sibinraziya/spring-boot-3-spring-security-6-jwt-authentication-and-authorization-e586bc186805?utm_source=chatgpt.com
 package Cloudian.JobPortal.configs;
 
 import Cloudian.JobPortal.filters.AuthenticationJwtFilter;
@@ -10,8 +13,10 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -30,16 +35,6 @@ public class SecurityConfig {
     @Bean
     public AuthenticationJwtFilter authenticationJwtTokenFilter() {
         return new AuthenticationJwtFilter();
-    }
-
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-
-        return authProvider;
     }
 
     @Bean
@@ -67,8 +62,6 @@ public class SecurityConfig {
 
         // Fix H2 console
         http.headers(headers -> headers.frameOptions(frameOption -> frameOption.sameOrigin()));
-
-        http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
