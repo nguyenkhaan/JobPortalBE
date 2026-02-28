@@ -1,8 +1,8 @@
-package Cloudian.JobPortal.filters;
+//Document: https://freedium-mirror.cfd/https://medium.com/%40sibinraziya/spring-boot-3-spring-security-6-jwt-authentication-and-authorization-e586bc186805?utm_source=chatgpt.com
+
+package Cloudian.JobPortal.security;
 
 import Cloudian.JobPortal.models.TokenType;
-import Cloudian.JobPortal.modules.jwt.JwtService;
-import Cloudian.JobPortal.modules.user.UserDetailImp;
 import Cloudian.JobPortal.modules.user.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -28,9 +26,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter
     @Autowired
     private final UserService userService;
     @Autowired
-    private final UserDetailImp userDetailImpService;
+    private final UserDetailsServiceImpl userDetailImpService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserService userService, UserDetailImp userDetailImpService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserService userService, UserDetailsServiceImpl userDetailImpService) {
         this.jwtService = jwtService;
         this.userService = userService;
         this.userDetailImpService = userDetailImpService;

@@ -1,4 +1,4 @@
-package Cloudian.JobPortal.modules.jwt.dto;
+package Cloudian.JobPortal.security;
 
 import Cloudian.JobPortal.models.Role;
 import Cloudian.JobPortal.models.TokenType;

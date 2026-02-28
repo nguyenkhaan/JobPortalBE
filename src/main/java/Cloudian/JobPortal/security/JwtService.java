@@ -1,8 +1,7 @@
-package Cloudian.JobPortal.modules.jwt;
+package Cloudian.JobPortal.security;
 
 import Cloudian.JobPortal.commons.constants.TokenConstants;
 import Cloudian.JobPortal.models.TokenType;
-import Cloudian.JobPortal.modules.jwt.dto.TokenBody;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -11,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
