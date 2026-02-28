@@ -1,8 +1,7 @@
 package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.format.annotation.NumberFormat;
 import java.util.List;
@@ -13,6 +12,9 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(
         indexes = {
                 @Index(name = "idx_status" , columnList = "status"),

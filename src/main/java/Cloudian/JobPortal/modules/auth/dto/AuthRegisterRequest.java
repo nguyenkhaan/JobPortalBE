@@ -17,4 +17,6 @@ public class AuthRegisterRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 5, max = 12, message = "Password must be between 5 and 12 length")
     private String password;
+    //More information for seeker profile
+    
 }

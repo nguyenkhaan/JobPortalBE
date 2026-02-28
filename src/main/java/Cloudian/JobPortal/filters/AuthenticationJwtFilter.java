@@ -41,6 +41,7 @@ public class AuthenticationJwtFilter extends OncePerRequestFilter {
                 authObject.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authObject);
             }
+            filterChain.doFilter(request , response);  //Cho Filter di tiep tuc
         }
         catch (Exception e)
         {

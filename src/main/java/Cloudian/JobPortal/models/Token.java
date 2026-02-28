@@ -1,8 +1,7 @@
 package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -12,6 +11,9 @@ import java.time.LocalDateTime;
 @Table(
         indexes = @Index(name = "idx_token_type_users_id" , columnList = "type,users_id")
 )
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Token {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +31,6 @@ public class Token {
     @CreationTimestamp
     @Column(nullable = false , name = "used_at")
     private LocalDateTime usedAt = null;
-    @CreationTimestamp
     @Column(nullable = false , name = "expires_at")
     private LocalDateTime expiresAt;
 }

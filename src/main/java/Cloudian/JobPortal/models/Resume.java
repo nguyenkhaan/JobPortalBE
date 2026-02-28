@@ -2,8 +2,7 @@ package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
 import jdk.jfr.BooleanFlag;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -11,6 +10,9 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(
 
 )

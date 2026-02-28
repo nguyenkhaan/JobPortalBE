@@ -1,6 +1,6 @@
 //Document for jwt security config (Very Easy but I don't understand the code a lot...
 //Source from Medium
-//https://freedium-mirror.cfd/https://medium.com/%40sibinraziya/spring-boot-3-spring-security-6-jwt-authentication-and-authorization-e586bc186805?utm_source=chatgpt.com
+//https://freedium-mirror.cfd/https://medium.com/%40sibinraziya/spring-boot-3-spring-security-6-jwt-authentication-and-authorization-e586bc186805
 package Cloudian.JobPortal.configs;
 
 import Cloudian.JobPortal.filters.AuthenticationJwtFilter;
@@ -57,6 +57,14 @@ public class SecurityConfig {
                         auth.requestMatchers("/api/auth/**").hasRole("ADMIN")  //Hoac co the dung annotation ben trong Jwt
                                 .requestMatchers("/api/test/**").permitAll()
                                 .requestMatchers("/h2-console/**").permitAll()
+                                .requestMatchers("/auth/register").permitAll()
+                                .requestMatchers("/api/auth/register").permitAll()
+                                .requestMatchers("/api/auth/verify").permitAll()
+                                .requestMatchers("/api/auth/login").permitAll()
+                                .requestMatchers("/api/auth/reset-password").permitAll()
+                                .requestMatchers("/api/auth/reset-email").permitAll()
+                                .requestMatchers("/api/test").permitAll()
+                                .requestMatchers("/test").permitAll()
                                 .anyRequest().authenticated()  //Ap dung cho route nao thi khai bao vao day
                 );
 
