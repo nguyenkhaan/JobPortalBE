@@ -2,12 +2,15 @@ package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
 import java.util.List;
 @Entity
 @Setter
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(
         indexes = @Index(columnList = "companyName" , name = "idx_company_name")
 )

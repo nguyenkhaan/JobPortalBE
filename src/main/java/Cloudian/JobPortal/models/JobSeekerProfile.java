@@ -1,13 +1,16 @@
 package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
 import java.util.List;
 
 @Entity
 @Setter
 @Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class JobSeekerProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
