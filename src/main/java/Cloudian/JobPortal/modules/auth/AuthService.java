@@ -80,4 +80,50 @@ public class AuthService
         //Neu user la null -> Tien hanh tap user moi
         //Tao token va gui ve cho nguoi dung
     }
+    @Transactional
+    public Boolean AuthRegisterVerify(String token)
+    {
+        try
+        {
+            Boolean validateResult = jwtService.validateToken(token , TokenType.REGISTER);
+            if (validateResult)
+            {
+                String email = jwtService.extractEmail(token , TokenType.REGISTER);
+                TokenType purpose = jwtService.extractTokenType(token , TokenType.REGISTER);
+                //Verify the token purpose
+                if (purpose != TokenType.REGISTER)
+                    return false;
+                //Find owner token
+                Users user = userRepository.findByEmail(email).orElse(null);
+                if (user == null)
+                    throw new BadRequestException("User Has Not Registered");
+                Token storedToken = tokenRepository.getByUsersIDAndType(user.getId() , TokenType.REGISTER)
+                        .orElseThrow(() -> new BadRequestException("Token Not Found"));
+                //Valiate the hash token
+                if (!SHA256Hashing.verifyDataIntegrity(storedToken.getToken() , token))
+                    return false;
+                //Kiem tra thoi han cua Token a Purpose cua token
+                if (LocalDateTime.now().isAfter(storedToken.getExpiresAt())) {
+                    throw new BadRequestException("Token expired");
+                }
+                //danh dau la token da duoc su dung
+                storedToken.setUsedAt(LocalDateTime.now());
+                tokenRepository.save(storedToken);
+                user.setActive(true);
+                userRepository.save(user);
+                return true;
+            }
+            else throw new BadRequestException("Token Is Invalid");
+
+        }
+        catch (BadRequestException e)
+        {
+            throw e;
+        }
+    }
+    @Transactional
+    public void login()
+    {
+
+    }
 }

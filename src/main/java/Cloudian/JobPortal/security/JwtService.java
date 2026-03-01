@@ -1,6 +1,7 @@
 package Cloudian.JobPortal.security;
 
 import Cloudian.JobPortal.commons.constants.TokenConstants;
+import Cloudian.JobPortal.models.Token;
 import Cloudian.JobPortal.models.TokenType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -116,6 +117,10 @@ public class JwtService
     public String extractEmail(String token , TokenType type)
     {
         return extractClaims(token , type, claims -> claims.get("email" , String.class));
+    }
+    public TokenType extractTokenType(String token , TokenType type)
+    {
+        return extractClaims(token , type, claims -> claims.get("purpose" , TokenType.class));
     }
     public Long extractId(String token , TokenType type)  //Lay ra id
     {
