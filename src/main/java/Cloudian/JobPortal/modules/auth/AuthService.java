@@ -72,6 +72,7 @@ public class AuthService
                 .usedAt(null)
                 .usersID(user.getId())
                 .build();
+        newToken.setToken(hashedToken);
         tokenRepository.save(newToken);
         return new AuthRegisterResponse(
                 new UserResponse(user.getId() , user.getEmail() , user.getCreatedAt() , user.getActive())
@@ -81,7 +82,7 @@ public class AuthService
         //Tao token va gui ve cho nguoi dung
     }
     @Transactional
-    public Boolean AuthRegisterVerify(String token)
+    public Boolean authRegisterVerify(String token)
     {
         try
         {
@@ -89,18 +90,21 @@ public class AuthService
             if (validateResult)
             {
                 String email = jwtService.extractEmail(token , TokenType.REGISTER);
-                TokenType purpose = jwtService.extractTokenType(token , TokenType.REGISTER);
+                String purpose = jwtService.extractPurpose(token , TokenType.REGISTER);
                 //Verify the token purpose
-                if (purpose != TokenType.REGISTER)
+                if (!purpose.equals(TokenType.REGISTER.name()))
                     return false;
                 //Find owner token
                 Users user = userRepository.findByEmail(email).orElse(null);
+
                 if (user == null)
                     throw new BadRequestException("User Has Not Registered");
+
                 Token storedToken = tokenRepository.getByUsersIDAndType(user.getId() , TokenType.REGISTER)
                         .orElseThrow(() -> new BadRequestException("Token Not Found"));
                 //Valiate the hash token
-                if (!SHA256Hashing.verifyDataIntegrity(storedToken.getToken() , token))
+                System.out.println(SHA256Hashing.generateSHA256Hash(token));
+                if (!(SHA256Hashing.verifyDataIntegrity(storedToken.getToken() , token)))
                     return false;
                 //Kiem tra thoi han cua Token a Purpose cua token
                 if (LocalDateTime.now().isAfter(storedToken.getExpiresAt())) {
@@ -119,6 +123,9 @@ public class AuthService
         catch (BadRequestException e)
         {
             throw e;
+        }
+        catch (RuntimeException e) {
+            throw  e;
         }
     }
     @Transactional

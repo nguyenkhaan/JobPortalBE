@@ -31,8 +31,10 @@ public class EmployerProfile {
     @Email
     private String email;
     @Column(columnDefinition = "TEXT")
+    @Builder.Default
     private String description = "";
     private String phone;
+    @Builder.Default
     private Integer capacity = 0;
     //Foreign key
     @OneToMany(mappedBy = "employer")

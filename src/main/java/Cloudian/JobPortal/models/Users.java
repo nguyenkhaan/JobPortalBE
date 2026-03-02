@@ -34,6 +34,7 @@ public class Users {
     @Column(nullable = false)
     private String password;
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = false;
     @CreationTimestamp
     @Column(nullable = false , name = "created_at")

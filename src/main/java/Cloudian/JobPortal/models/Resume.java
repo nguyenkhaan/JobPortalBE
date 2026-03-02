@@ -26,6 +26,7 @@ public class Resume {
     @Column(nullable = false , name = "uploaded_at")
     private LocalDateTime uploadedAt;
     @Column(nullable = false , name = "default_resume")
+    @Builder.Default
     private Boolean defaultResume = false;
     //Foreign keys
     @OneToMany(mappedBy = "resume")

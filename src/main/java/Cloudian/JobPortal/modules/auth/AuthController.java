@@ -5,13 +5,12 @@ import Cloudian.JobPortal.modules.auth.dto.AuthRegisterResponse;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -23,5 +22,13 @@ public class AuthController {
     {
         AuthRegisterResponse responseData = authService.register(data);
         return ResponseEntity.status(HttpStatus.OK).body(responseData);
+    }
+    @GetMapping("/verify")
+    public ResponseEntity<?> verify(@Param("token") String token)
+    {
+        Boolean responseData = authService.authRegisterVerify(token);
+        return ResponseEntity.status((responseData? HttpStatus.CREATED : HttpStatus.BAD_REQUEST)).body(
+                responseData
+        );
     }
 }

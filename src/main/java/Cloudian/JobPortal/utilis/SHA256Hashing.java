@@ -27,7 +27,7 @@ public class SHA256Hashing {
         }
     }
     public static boolean verifyDataIntegrity(String originalData, String receivedData) {
-        String originalHash = SHA256Hashing.generateSHA256Hash(originalData);
+        String originalHash = originalData;
         String receivedHash = SHA256Hashing.generateSHA256Hash(receivedData);
         return originalHash.equals(receivedHash);
     }

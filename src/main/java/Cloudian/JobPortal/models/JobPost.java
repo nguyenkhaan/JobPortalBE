@@ -38,6 +38,7 @@ public class JobPost {
     private EmploymentType employmentType;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private JobPostStatus status = JobPostStatus.OPEN;
     @Column(precision = 15 , scale = 2 , name = "salary_max")
     private BigDecimal salaryMax;

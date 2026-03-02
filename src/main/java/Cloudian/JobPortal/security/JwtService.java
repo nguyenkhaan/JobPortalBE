@@ -66,7 +66,7 @@ public class JwtService
         if (payload.getId() != null)
             claims.put("id" , payload.getId());
         if (payload.getPurpose() != null)
-            claims.put("purpose" , payload.getPurpose());
+            claims.put("purpose" , payload.getPurpose().name().toString());
 
         String token = Jwts
                 .builder()
@@ -118,9 +118,9 @@ public class JwtService
     {
         return extractClaims(token , type, claims -> claims.get("email" , String.class));
     }
-    public TokenType extractTokenType(String token , TokenType type)
+    public String extractPurpose(String token , TokenType type)
     {
-        return extractClaims(token , type, claims -> claims.get("purpose" , TokenType.class));
+        return extractClaims(token , type, claims -> claims.get("purpose" , String.class));
     }
     public Long extractId(String token , TokenType type)  //Lay ra id
     {

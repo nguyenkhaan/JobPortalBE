@@ -58,12 +58,10 @@ public class SecurityConfig {
                                 .requestMatchers("/api/test/**").permitAll()
                                 .requestMatchers("/h2-console/**").permitAll()
                                 .requestMatchers("/auth/register").permitAll()
-                                .requestMatchers("/api/auth/register").permitAll()
-                                .requestMatchers("/api/auth/verify").permitAll()
-                                .requestMatchers("/api/auth/login").permitAll()
-                                .requestMatchers("/api/auth/reset-password").permitAll()
-                                .requestMatchers("/api/auth/reset-email").permitAll()
-                                .requestMatchers("/api/test").permitAll()
+                                .requestMatchers("/auth/verify").permitAll()
+                                .requestMatchers("/auth/login").permitAll()
+                                .requestMatchers("/auth/reset-password").permitAll()
+                                .requestMatchers("/auth/reset-email").permitAll()
                                 .requestMatchers("/test").permitAll()
                                 .anyRequest().authenticated()  //Ap dung cho route nao thi khai bao vao day
                 );

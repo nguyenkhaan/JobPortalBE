@@ -28,6 +28,7 @@ public class JobApplication {
     @Column(nullable = true , name = "cover_letter")
     private String coverLetter;
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private JobApplicationStatus status = JobApplicationStatus.PENDING;
     @CreationTimestamp
     @Column(nullable = false , name = "applied_at")
