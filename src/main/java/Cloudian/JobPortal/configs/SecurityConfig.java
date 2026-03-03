@@ -4,6 +4,7 @@
 package Cloudian.JobPortal.configs;
 
 import Cloudian.JobPortal.filters.AuthenticationJwtFilter;
+import Cloudian.JobPortal.security.JwtAuthenticationFilter;
 import Cloudian.JobPortal.security.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -32,10 +33,9 @@ public class SecurityConfig {
     @Autowired
     private AuthenticationEntryPoint unauthorizedHandler;
 
-    @Bean
-    public AuthenticationJwtFilter authenticationJwtTokenFilter() {
-        return new AuthenticationJwtFilter();
-    }
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -70,7 +70,7 @@ public class SecurityConfig {
 
         // Fix H2 console
         http.headers(headers -> headers.frameOptions(frameOption -> frameOption.sameOrigin()));
-        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

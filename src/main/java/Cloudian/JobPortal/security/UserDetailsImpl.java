@@ -34,7 +34,7 @@ public class UserDetailsImpl implements UserDetails {
         List<GrantedAuthority> authorities = user.getUsersRoleList().stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole().name()))
                 .collect(Collectors.toList());  //Spring Database requires ROLE_ADMIN. Example: ADMIN has map to ROLE_ADMIN
-
+        //Luc boc tach du loieu tu jwt, luu vao secrutiy context thi them ROLE_ vao dau cua cac role trong JWT Token
         return new UserDetailsImpl(
                 user.getId(),
                 user.getEmail(),

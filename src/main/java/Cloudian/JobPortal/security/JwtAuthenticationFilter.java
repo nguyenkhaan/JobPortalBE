@@ -48,15 +48,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter
         }
         //Extract Token
         String token = authHeader.substring(7);
+        System.out.println(token);
         Boolean authResult = jwtService.validateToken(token , TokenType.ACCESS);
+        System.out.println(authResult);
         if (!authResult) {
             filterChain.doFilter(request , response);
-            return;
         }
+        System.out.println("Current auth before set: " +
+                SecurityContextHolder.getContext().getAuthentication());
         String email = jwtService.extractEmail(token , TokenType.ACCESS);
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null)
         {
             //Get User Detail information
+            System.out.println("Du lieu duoc choc vao authentication security context");
             UserDetails userDetails = userDetailImpService.loadUserByUsername(email);
             //Generate Authentication Object
             UsernamePasswordAuthenticationToken authObject = new UsernamePasswordAuthenticationToken(
@@ -64,6 +68,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter
             );
             //Give it to Security Context
             SecurityContextHolder.getContext().setAuthentication(authObject);
+            System.out.println("Role duoc set vao: " + userDetails.getAuthorities()); //Role da duoc set thanh cong roi
         }
+
+        filterChain.doFilter(request , response);
     }
 }

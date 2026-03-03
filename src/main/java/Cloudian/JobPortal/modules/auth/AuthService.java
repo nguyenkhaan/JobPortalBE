@@ -205,4 +205,9 @@ public class AuthService
             throw e;
         }
     }
+    //Response: token (to reset), email,
+    public String resetPassword()
+    {
+        return "Reset Password Successfully";
+    }
 }

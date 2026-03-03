@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +39,20 @@ public class AuthController {
     public ResponseEntity<?> login(@Valid @RequestBody AuthLoginRequest data)
     {
         AuthLoginResponse responseData = authService.login(data);
+        return ResponseEntity.status(HttpStatus.OK).body(responseData);
+    }
+    @PreAuthorize("hasRole('SEEKER')")   //Them has Role vao phia truoc la kiem tra duoc role
+    @GetMapping("testing-role")
+    public String testingRole(Authentication authentication)
+    {
+        System.out.println(authentication.getName());
+        System.out.println(authentication.getCredentials());
+        return "Role Testing Successfully";
+    }
+    @PostMapping("reset-password")
+    public ResponseEntity<?> resetPasswod(@RequestBody String email)
+    {
+        String responseData = authService.resetPassword();
         return ResponseEntity.status(HttpStatus.OK).body(responseData);
     }
 }

@@ -68,6 +68,12 @@ public class JwtService
         if (payload.getPurpose() != null)
             claims.put("purpose" , payload.getPurpose().name().toString());
 
+        Date now = new Date();
+        Date exp = new Date(System.currentTimeMillis() + mapping.get(type).liveTime());
+
+        System.out.println("NOW: " + now);
+        System.out.println("EXP: " + exp);
+
         String token = Jwts
                 .builder()
                 .subject(payload.getEmail())
