@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 @Entity
 @Getter
@@ -26,10 +27,12 @@ public class Resume {
     @Column(nullable = false , name = "uploaded_at")
     private LocalDateTime uploadedAt;
     @Column(nullable = false , name = "default_resume")
+    @Builder.Default
     private Boolean defaultResume = false;
     //Foreign keys
     @OneToMany(mappedBy = "resume")
-    private List<JobApplication> jobApplicationList;
+    @Builder.Default
+    private List<JobApplication> jobApplicationList = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "job_seeker_id" , nullable = false )

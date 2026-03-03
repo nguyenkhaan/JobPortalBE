@@ -30,6 +30,7 @@ public class Token {
     private LocalDateTime createdAt;
     @CreationTimestamp
     @Column(nullable = false , name = "used_at")
+    @Builder.Default
     private LocalDateTime usedAt = null;
     @Column(nullable = false , name = "expires_at")
     private LocalDateTime expiresAt;

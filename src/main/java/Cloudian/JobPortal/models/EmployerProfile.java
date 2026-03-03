@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 @Entity
 @Setter
@@ -31,11 +32,14 @@ public class EmployerProfile {
     @Email
     private String email;
     @Column(columnDefinition = "TEXT")
+    @Builder.Default
     private String description = "";
     private String phone;
+    @Builder.Default
     private Integer capacity = 0;
     //Foreign key
     @OneToMany(mappedBy = "employer")
-    private List<JobPost> jobPostList;
+    @Builder.Default
+    private List<JobPost> jobPostList = new ArrayList<>();
 
 }

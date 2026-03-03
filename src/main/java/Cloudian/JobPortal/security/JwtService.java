@@ -1,6 +1,7 @@
 package Cloudian.JobPortal.security;
 
 import Cloudian.JobPortal.commons.constants.TokenConstants;
+import Cloudian.JobPortal.models.Token;
 import Cloudian.JobPortal.models.TokenType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -61,11 +62,17 @@ public class JwtService
         if (payload.getEmail() != null)
             claims.put("email" , payload.getEmail());
         if (payload.getRoles() != null)
-            claims.put("roles" , payload.getRoles());
+            claims.put("roles" , payload.getRoles().stream().map(Enum::name).toList()); //Du lieu trong model la enum, jwt khong the chuyen doi cai nay
         if (payload.getId() != null)
             claims.put("id" , payload.getId());
         if (payload.getPurpose() != null)
-            claims.put("purpose" , payload.getPurpose());
+            claims.put("purpose" , payload.getPurpose().name().toString());
+
+        Date now = new Date();
+        Date exp = new Date(System.currentTimeMillis() + mapping.get(type).liveTime());
+
+        System.out.println("NOW: " + now);
+        System.out.println("EXP: " + exp);
 
         String token = Jwts
                 .builder()
@@ -116,6 +123,10 @@ public class JwtService
     public String extractEmail(String token , TokenType type)
     {
         return extractClaims(token , type, claims -> claims.get("email" , String.class));
+    }
+    public String extractPurpose(String token , TokenType type)
+    {
+        return extractClaims(token , type, claims -> claims.get("purpose" , String.class));
     }
     public Long extractId(String token , TokenType type)  //Lay ra id
     {

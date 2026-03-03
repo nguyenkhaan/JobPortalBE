@@ -12,7 +12,7 @@ public class TestController {
     @GetMapping
     public String testing()
     {
-//          throw new UnauthorizedException("Help");
-        return "Testing successfully. 12Hi Hello world dot heere coms heheheheheheheh,. Do you know";
+//      throw new UnauthorizedException("Help");
+        return "Testing Successfully. This is the server, do you know it";
     }
 }

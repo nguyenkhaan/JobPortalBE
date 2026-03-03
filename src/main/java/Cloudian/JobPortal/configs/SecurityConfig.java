@@ -4,6 +4,7 @@
 package Cloudian.JobPortal.configs;
 
 import Cloudian.JobPortal.filters.AuthenticationJwtFilter;
+import Cloudian.JobPortal.security.JwtAuthenticationFilter;
 import Cloudian.JobPortal.security.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -32,10 +33,9 @@ public class SecurityConfig {
     @Autowired
     private AuthenticationEntryPoint unauthorizedHandler;
 
-    @Bean
-    public AuthenticationJwtFilter authenticationJwtTokenFilter() {
-        return new AuthenticationJwtFilter();
-    }
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
@@ -56,21 +56,21 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/api/auth/**").hasRole("ADMIN")  //Hoac co the dung annotation ben trong Jwt
                                 .requestMatchers("/api/test/**").permitAll()
+                                //hasRole("ADMIN") tu dong them tien to ROLE_ vao. => O Spring Security thi map thanh ROLE_, jwt luu ADMIN thoi cung duoc
                                 .requestMatchers("/h2-console/**").permitAll()
                                 .requestMatchers("/auth/register").permitAll()
-                                .requestMatchers("/api/auth/register").permitAll()
-                                .requestMatchers("/api/auth/verify").permitAll()
-                                .requestMatchers("/api/auth/login").permitAll()
-                                .requestMatchers("/api/auth/reset-password").permitAll()
-                                .requestMatchers("/api/auth/reset-email").permitAll()
-                                .requestMatchers("/api/test").permitAll()
+                                .requestMatchers("/auth/verify").permitAll()
+                                .requestMatchers("/auth/login").permitAll()
+                                .requestMatchers("/auth/reset-password").permitAll()
+                                .requestMatchers("/auth/reset-email").permitAll()
                                 .requestMatchers("/test").permitAll()
+                                .requestMatchers("/auth/login").permitAll()
                                 .anyRequest().authenticated()  //Ap dung cho route nao thi khai bao vao day
                 );
 
         // Fix H2 console
         http.headers(headers -> headers.frameOptions(frameOption -> frameOption.sameOrigin()));
-        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
