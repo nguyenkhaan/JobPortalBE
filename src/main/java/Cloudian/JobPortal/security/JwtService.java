@@ -62,7 +62,7 @@ public class JwtService
         if (payload.getEmail() != null)
             claims.put("email" , payload.getEmail());
         if (payload.getRoles() != null)
-            claims.put("roles" , payload.getRoles());
+            claims.put("roles" , payload.getRoles().stream().map(Enum::name).toList()); //Du lieu trong model la enum, jwt khong the chuyen doi cai nay
         if (payload.getId() != null)
             claims.put("id" , payload.getId());
         if (payload.getPurpose() != null)

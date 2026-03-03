@@ -1,5 +1,7 @@
 package Cloudian.JobPortal.modules.auth;
 
+import Cloudian.JobPortal.modules.auth.dto.AuthLoginRequest;
+import Cloudian.JobPortal.modules.auth.dto.AuthLoginResponse;
 import Cloudian.JobPortal.modules.auth.dto.AuthRegisterRequest;
 import Cloudian.JobPortal.modules.auth.dto.AuthRegisterResponse;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
@@ -30,5 +32,11 @@ public class AuthController {
         return ResponseEntity.status((responseData? HttpStatus.CREATED : HttpStatus.BAD_REQUEST)).body(
                 responseData
         );
+    }
+    @PostMapping("login")
+    public ResponseEntity<?> login(@Valid @RequestBody AuthLoginRequest data)
+    {
+        AuthLoginResponse responseData = authService.login(data);
+        return ResponseEntity.status(HttpStatus.OK).body(responseData);
     }
 }

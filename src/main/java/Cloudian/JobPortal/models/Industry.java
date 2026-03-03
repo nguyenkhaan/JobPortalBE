@@ -3,6 +3,7 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -23,6 +24,7 @@ public class Industry {
 
     //Many Foreign Key
     @OneToMany(mappedBy = "industry")
-    private List<JobIndustry> jobIndustryList;
+    @Builder.Default
+    private List<JobIndustry> jobIndustryList = new ArrayList<>();
 
 }

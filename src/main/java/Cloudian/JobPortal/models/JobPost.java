@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.format.annotation.NumberFormat;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -49,8 +51,10 @@ public class JobPost {
     private LocalDateTime createdAt;
     //Foreign Key Map
     @OneToMany(mappedBy = "jobPost")
-    private List<JobApplication> jobApplicationList;
+    @Builder.Default
+    private List<JobApplication> jobApplicationList = new ArrayList<>();
     @OneToMany(mappedBy = "jobPost")
-    private List<JobIndustry> jobIndustryList;
+    @Builder.Default
+    private List<JobIndustry> jobIndustryList = new ArrayList<>();
 
 }

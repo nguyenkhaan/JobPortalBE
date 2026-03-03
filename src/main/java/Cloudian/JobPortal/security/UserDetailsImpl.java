@@ -32,8 +32,8 @@ public class UserDetailsImpl implements UserDetails {
 
     public static UserDetailsImpl build(Users user) {
         List<GrantedAuthority> authorities = user.getUsersRoleList().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getRole().name()))
-                .collect(Collectors.toList());
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole().name()))
+                .collect(Collectors.toList());  //Spring Database requires ROLE_ADMIN. Example: ADMIN has map to ROLE_ADMIN
 
         return new UserDetailsImpl(
                 user.getId(),

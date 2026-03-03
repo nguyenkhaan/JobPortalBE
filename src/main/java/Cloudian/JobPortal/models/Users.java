@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDateTime;
 
@@ -45,9 +47,12 @@ public class Users {
 
     //Foreign keys
     @OneToMany(mappedBy = "users")  //map den field nao trong model class cua jobSeekerProfile
-    private List<JobSeekerProfile> jobSeekerProfileList;  //Kiem tra xem ten bang co trung ten class khong, ten cot co trung ten thuoc tinh khong
+    @Builder.Default
+    private List<JobSeekerProfile> jobSeekerProfileList = new ArrayList<>();  //Kiem tra xem ten bang co trung ten class khong, ten cot co trung ten thuoc tinh khong
     @OneToMany(mappedBy = "owner")  //Noi toi cot nao
-    private List<EmployerProfile> employerProfileList;
+    @Builder.Default
+    private List<EmployerProfile> employerProfileList = new ArrayList<>();
     @OneToMany(mappedBy = "users")
-    private List<UsersRole> usersRoleList;
+    @Builder.Default
+    private List<UsersRole> usersRoleList = new ArrayList<>();
 }

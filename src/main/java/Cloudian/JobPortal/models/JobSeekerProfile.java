@@ -3,6 +3,7 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -27,6 +28,7 @@ public class JobSeekerProfile {
     private Users users;  //ben nao co khoa ngoai, ben do khai bao JoinColumn
     //Mot ban thi chi co 1 ManyToOne, khong duoc noi khoa ngoai nay voi khoa ngoai kia - Khong duoc noi 2 khoa ngoai
     @OneToMany(mappedBy = "jobSeeker")
-    private List<JobApplication> jobApplicationList;
+    @Builder.Default
+    private List<JobApplication> jobApplicationList = new ArrayList<>();
 
 }

@@ -56,6 +56,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/api/auth/**").hasRole("ADMIN")  //Hoac co the dung annotation ben trong Jwt
                                 .requestMatchers("/api/test/**").permitAll()
+                                //hasRole("ADMIN") tu dong them tien to ROLE_ vao. => O Spring Security thi map thanh ROLE_, jwt luu ADMIN thoi cung duoc
                                 .requestMatchers("/h2-console/**").permitAll()
                                 .requestMatchers("/auth/register").permitAll()
                                 .requestMatchers("/auth/verify").permitAll()
@@ -63,6 +64,7 @@ public class SecurityConfig {
                                 .requestMatchers("/auth/reset-password").permitAll()
                                 .requestMatchers("/auth/reset-email").permitAll()
                                 .requestMatchers("/test").permitAll()
+                                .requestMatchers("/auth/login").permitAll()
                                 .anyRequest().authenticated()  //Ap dung cho route nao thi khai bao vao day
                 );
 

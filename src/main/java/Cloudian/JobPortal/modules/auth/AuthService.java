@@ -2,11 +2,13 @@ package Cloudian.JobPortal.modules.auth;
 
 import Cloudian.JobPortal.commons.constants.TokenConstants;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
-import Cloudian.JobPortal.models.Token;
-import Cloudian.JobPortal.models.TokenType;
-import Cloudian.JobPortal.models.Users;
+import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
+import Cloudian.JobPortal.models.*;
+import Cloudian.JobPortal.modules.auth.dto.AuthLoginRequest;
+import Cloudian.JobPortal.modules.auth.dto.AuthLoginResponse;
 import Cloudian.JobPortal.modules.auth.dto.AuthRegisterRequest;
 import Cloudian.JobPortal.modules.auth.dto.AuthRegisterResponse;
+import Cloudian.JobPortal.modules.role.UsersRoleRepository;
 import Cloudian.JobPortal.modules.token.TokenRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
@@ -16,14 +18,14 @@ import Cloudian.JobPortal.security.TokenBody;
 import Cloudian.JobPortal.utilis.SHA256Hashing;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService
@@ -35,6 +37,8 @@ public class AuthService
     private TokenRepository tokenRepository;
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private UsersRoleRepository usersRoleRepository;
     @org.springframework.beans.factory.annotation.Autowired(required=true)
     private PasswordEncoder passwordEncoder;
     @Transactional   //Dam bao khong bi loi database khi them du lieu vao
@@ -50,12 +54,25 @@ public class AuthService
         {
             //Tien hanh tao user moi -> Gan lai bien user de su dung
             String hashPassword = passwordEncoder.encode(data.getPassword());
+
             user = Users.builder()
                     .email(data.getEmail())
                     .password(hashPassword)
                     .active(false)
                     .build();
+            UsersRole userRole = new UsersRole();
+            //n - 1
+            userRole.setRole(Role.SEEKER);
+            userRole.setUsers(user);
+            //1 - n
+            //add user roles
+            user.getUsersRoleList().add(userRole);
+
+
             userRepository.save(user);
+            usersRoleRepository.save(userRole);
+
+
         }
         Long id = user.getId();
         Token verifiedToken = tokenRepository.getByUsersIDAndType(id , TokenType.REGISTER).orElse(null);
@@ -129,8 +146,63 @@ public class AuthService
         }
     }
     @Transactional
-    public void login()
+    public AuthLoginResponse login(AuthLoginRequest data)
     {
-
+        try
+        {
+            String email = data.getEmail();
+            Users user = userRepository.findByEmail(email)
+                    .orElse(null);
+            if (user == null || !user.getActive())
+                throw new UnauthorizedException("Unauthorized User");
+            //Assign Roles
+            ArrayList<Role> assignedRoles =
+                    user.getUsersRoleList()
+                            .stream()
+                            .map(UsersRole::getRole)
+                            .collect(Collectors.toCollection(ArrayList::new));
+            //Kiem tra them password co dung hay khong
+            String accessToken = jwtService.generateToken(
+                    new TokenBody(user.getEmail() ,
+                            user.getId() ,
+                            assignedRoles,
+                            TokenType.ACCESS),
+                    TokenType.ACCESS
+            );
+            String refreshToken = jwtService.generateToken(
+                    new TokenBody(user.getEmail() , user.getId() , assignedRoles , TokenType.REFRESH),
+                    TokenType.ACCESS
+            );
+            //Xoa va luu lai token sau
+            String password = data.getPassword();
+            if (!passwordEncoder.matches(password , user.getPassword()))
+                throw new BadRequestException("Wrong Password");
+            //Xoa va luu lai token sau
+            //Delete Access Token
+            Token storedAccessToken = tokenRepository.getByUsersIDAndType(user.getId() , TokenType.ACCESS).orElse(null);
+            if (storedAccessToken != null)
+                tokenRepository.delete(storedAccessToken);
+            //Delete Refresh Token
+            Token storeRefreshToken = tokenRepository.getByUsersIDAndType(user.getId() , TokenType.REFRESH).orElse(null);
+            if (storeRefreshToken != null)
+                tokenRepository.delete(storeRefreshToken);
+            AuthLoginResponse response = AuthLoginResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .email(email)
+                    .id(user.getId())
+                    .build();
+            return response;
+        }
+        catch (UnauthorizedException e)
+        {
+            throw e;
+        }
+        catch (BadRequestException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw e;
+        }
     }
 }
