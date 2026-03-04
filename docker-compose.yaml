@@ -40,6 +40,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: admin
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       #Support more environment variables here.
+      ACCESS_SECRET: 121c654d-3dc7-496e-b4af-9d31b27b3002
+      REFRESH_SECRET: 7f9ca4c4-6fae-4982-ae67-8b58eaf3af81
+      RESET_PASSWORD_SECRET: 1b3e891d-289b-4d6c-acca-413927956efa
+      VERIFY_EMAIL_SECRET: 981d5f23-dbf9-4d0e-99c7-b927eb1a7719
     networks:
       - spring-network
 
