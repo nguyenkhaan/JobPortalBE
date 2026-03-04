@@ -210,3 +210,6 @@ erDiagram
 ## 📝 License
 
 This project is part of the Cloudian Job Portal initiative 
+
+## Deploying 
+Checking for dploy 
