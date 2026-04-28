@@ -50,9 +50,10 @@ public class User {
     @OneToMany(mappedBy = "user")  //map den field nao trong model class cua jobSeekerProfile
     @Builder.Default
     private List<JobSeekerProfile> jobSeekerProfileList = new ArrayList<>();  //Kiem tra xem ten bang co trung ten class khong, ten cot co trung ten thuoc tinh khong
-    @OneToMany(mappedBy = "owner")  //Noi toi cot nao
-    @Builder.Default
-    private List<EmployerProfile> employerProfileList = new ArrayList<>();
+//    @OneToMany(mappedBy = "owner")  //Noi toi cot nao
+//    @Builder.Default
+    @OneToOne(mappedBy = "owner" , cascade = CascadeType.ALL)
+    EmployerProfile employerProfile;
     @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<UserRole> userRoleList = new ArrayList<>();
@@ -61,4 +62,8 @@ public class User {
     @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<Social> socials = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<Payment> payments = new ArrayList<>();
 }

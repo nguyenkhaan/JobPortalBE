@@ -19,8 +19,9 @@ public class EmployerProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne  //Luon map den id cua bang kia
-    @JoinColumn(nullable = false , name = "owner_id") //ManyToOne , JoinColumn(name, nullable)
+    @OneToOne //Luon map den id cua bang kia
+//    @JoinColumn(nullable = false , name = "owner_id") //ManyToOne , JoinColumn(name, nullable)
+    @JoinColumn(name = "owner_id" , unique = true)
     private User owner;
     @Column(name = "logo")
     private String logo;
@@ -39,6 +40,8 @@ public class EmployerProfile {
     private String phone;
     @Builder.Default
     private Integer capacity = 0;
+    @Builder.Default
+    private Boolean active = false;
     //Foreign key
     @OneToMany(mappedBy = "employer")  //mappedBy phai trung voi ten ben bang ben kia
     @Builder.Default

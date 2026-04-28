@@ -1,19 +1,23 @@
 # 💼 Job Portal Server
 
-A comprehensive job portal backend application built with Spring Boot, enabling job seekers and employers to connect seamlessly.
+> A comprehensive job portal backend application built with Spring Boot, enabling job seekers and employers to connect seamlessly.
 
 ---
 
 ## 🛠️ Tech Stack
 
-![Java](https://img.shields.io/badge/Java-17-ED8B00?style=flat-square&logo=java)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-6DB33F?style=flat-square&logo=spring-boot)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql)
-![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-5.0.3-6DB33F?style=flat-square&logo=spring)
-![Spring Security](https://img.shields.io/badge/Spring%20Security-5.0.3-6DB33F?style=flat-square&logo=spring)
-![Lombok](https://img.shields.io/badge/Lombok-1.18-FF6B6B?style=flat-square&logo=java)
-![Docker](https://img.shields.io/badge/Docker-Latest-2496ED?style=flat-square&logo=docker)
-![Gradle](https://img.shields.io/badge/Gradle-Build%20System-02303A?style=flat-square&logo=gradle)
+<div align="center">
+
+![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=java&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-5.0.3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring%20Security-5.0.3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Lombok](https://img.shields.io/badge/Lombok-1.18-FF6B6B?style=for-the-badge&logo=java&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Latest-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Gradle](https://img.shields.io/badge/Gradle-Build%20System-02303A?style=for-the-badge&logo=gradle&logoColor=white)
+
+</div>
 
 ---
 
@@ -21,10 +25,11 @@ A comprehensive job portal backend application built with Spring Boot, enabling 
 
 ```mermaid
 erDiagram
-    USERS ||--o{ JOB_SEEKER_PROFILE : owns
+    USERS ||--o{ JOB_SEEKER_PROFILE : has
     USERS ||--o{ EMPLOYER_PROFILE : owns
-    USERS ||--o{ USERS_ROLE : has
+    USERS ||--o{ USER_ROLE : "has roles"
     USERS ||--o{ TOKEN : generates
+    USERS ||--o{ SOCIAL : "has accounts"
     EMPLOYER_PROFILE ||--o{ JOB_POST : creates
     JOB_POST ||--o{ JOB_APPLICATION : receives
     JOB_POST ||--o{ JOB_INDUSTRY : categorized_by
@@ -47,43 +52,54 @@ erDiagram
         string fullName
         string address
         string phone
-        long user_id FK
+        long userId FK
     }
 
     EMPLOYER_PROFILE {
         long id PK
+        string logo
         string companyName
         string companyWebsite
         string address
         string email
-        string description
+        text description
         string phone
         integer capacity
         long owner_id FK
     }
 
-    USERS_ROLE {
+    USER_ROLE {
         long id PK
-        string role "SEEKER, EMPLOYER, ADMIN"
-        long users_id FK
+        enum role "SEEKER, EMPLOYER, ADMIN"
+        long user_id FK
     }
 
     TOKEN {
         long id PK
         string token
-        string type
-        long users_id FK
+        enum type
+        long user_id FK
         timestamp created_at
         timestamp used_at
         timestamp expires_at
     }
 
+    SOCIAL {
+        long id PK
+        string title
+        string social_link
+        long user_id FK
+    }
+
     JOB_POST {
         long id PK
         string title
-        string description
-        string employment_type
-        string status "OPEN, CLOSED"
+        text description
+        enum employment_type "FULLTIME, PARTTIME, CONTRACT"
+        enum status "OPEN, CLOSED"
+        enum education_level "BACHELOR, MASTER, PHD"
+        enum job_level "INTERN, JUNIOR, SENIOR, MANAGER"
+        integer experience
         decimal salary_min
         decimal salary_max
         timestamp created_at
@@ -93,7 +109,7 @@ erDiagram
     JOB_APPLICATION {
         long id PK
         string cover_letter
-        string status "PENDING, ACCEPTED, REJECTED"
+        enum status "PENDING, ACCEPTED, REJECTED"
         timestamp applied_at
         long job_seeker_id FK
         long job_post_id FK
@@ -125,65 +141,71 @@ erDiagram
 ## 🚀 How to Run
 
 ### Prerequisites
+
 - Docker and Docker Compose installed on your machine
 - Java 17+ (if running without Docker)
 - PostgreSQL 16+ (if running without Docker)
+- IntelliJ IDEA (or VS Code with Java extensions)
 
-### Option 1: Using Docker Compose (Recommended)
+### 1. Clone the repository
 
-1. **Clone the repository**
-   ```bash
-   cd JobPortal
-   ```
+```bash
+cd JobPortal
+```
 
-2. **Build and start services**
-   ```bash
-   docker-compose up --build
-   ```
+### 2. Build and start services
 
-   This will start:
-   - PostgreSQL database on `localhost:5432`
-   - Adminer (database UI) on `localhost:5050`
-   - Spring Boot application on `localhost:8080`
+Check the services in `docker-compose.yaml`
 
-3. **Verify services are running**
-   - Spring Boot API: http://localhost:8080
-   - Adminer: http://localhost:5050
-   - Database credentials:
-     - Username: `admin`
-     - Password: `admin`
-     - Database: `mydb`
+```bash
+docker-compose up -d postgres adminer 
+```
 
-4. **Stop services**
-   ```bash
-   docker-compose down
-   ```
+**⚠️ Notice**: Don't run the app service in `docker-compose.yaml`
 
-### Option 2: Running Locally
+This will start:
+- PostgreSQL database on `localhost:5432`
+- Adminer (database UI) on `localhost:5050`
+- Spring Boot application on `localhost:8080`
 
-1. **Start PostgreSQL Database**
-   ```bash
-   # Ensure PostgreSQL is running on localhost:5432
-   # Create database 'mydb' with user 'admin' and password 'admin'
-   ```
+### 3. Verify services are running
 
-2. **Build the project**
-   ```bash
-   ./gradlew clean build
-   ```
+- **Spring Boot API**: http://localhost:8080
+- **Adminer**: http://localhost:5050
+- **Database Credentials**: (http://localhost:5432)
+  - Username: `admin`
+  - Password: `admin`
+  - Database: `mydb`
 
-3. **Run the Spring Boot application**
-   ```bash
-   ./gradlew bootRun
-   ```
+- **Account for login Adminer** (http://localhost:5050) 
+  - Database: PostgresSQL 
+  - Server: postgres 
+  - username: admin 
+  - password: admin 
+  - database: mydb 
+### 4. Stop services (if needed)
 
-   The application will start on `http://localhost:8080`
+```bash
+docker-compose down
+```
+
+**⚠️ Notice!**: Don't run the app in docker-compose automatically.
+
+### 5. Run the Spring Boot application
+
+- Add environment variables from `.env.example` to Application Configuration
+- Update `application.properties` file: change `spring.jpa.hibernate.ddl-auto=` to `create` (if you're creating the database for the first time)
+- Click the **Run** button on IntelliJ IDEA to start the application
+- The application will start on `http://localhost:8080`
 
 ### Database Configuration
-- **URL**: `jdbc:postgresql://localhost:5432/mydb`
-- **Username**: `admin`
-- **Password**: `admin`
-- **DDL Strategy**: `update` (automatically creates/updates tables)
+
+| Property | Value |
+|----------|-------|
+| **URL** | `jdbc:postgresql://localhost:5432/mydb` |
+| **Username** | `admin` |
+| **Password** | `admin` |
+| **DDL Strategy** | `update` |
 
 ---
 
@@ -209,8 +231,11 @@ erDiagram
 
 ## 📝 License
 
-This project is part of the Cloudian Job Portal initiative 
+This project is part of the Cloudian Job Portal initiative
 
-## Deploying 
-Checking for dploy 
-Checking for deploy number 2 - Add /github-hooks to link and ... 
+<div align="center">
+
+**Made with Cloudian 💙 with love**
+
+</div>
+
