@@ -39,12 +39,12 @@ public class JobPost {
     private String title;
 
     //Mo ta
-    @Column(nullable = false , columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
     //Fulltime, Parttime?
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false , name = "employment_type")
+    @Column(nullable = false, name = "employment_type")
     private EmploymentType employmentType;
 
     //Status: Tinh trang job nay

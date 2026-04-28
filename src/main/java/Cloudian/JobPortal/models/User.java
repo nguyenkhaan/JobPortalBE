@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_active" , columnList = "active")
         }
 )
-public class Users {
+public class User {
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long id;
@@ -54,5 +54,10 @@ public class Users {
     private List<EmployerProfile> employerProfileList = new ArrayList<>();
     @OneToMany(mappedBy = "users")
     @Builder.Default
-    private List<UsersRole> usersRoleList = new ArrayList<>();
+    private List<UserRole> usersRoleList = new ArrayList<>();
+
+    //Foreign key
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<Social> socials = new ArrayList<>();
 }

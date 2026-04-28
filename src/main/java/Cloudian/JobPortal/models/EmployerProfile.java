@@ -21,7 +21,7 @@ public class EmployerProfile {
     private Long id;
     @ManyToOne  //Luon map den id cua bang kia
     @JoinColumn(nullable = false , name = "owner_id") //ManyToOne , JoinColumn(name, nullable)
-    private Users owner;
+    private User owner;
     @Column(nullable = false , name = "company_name")
     private String companyName;
     @Column(nullable = false , name = "company_website")
@@ -38,7 +38,7 @@ public class EmployerProfile {
     @Builder.Default
     private Integer capacity = 0;
     //Foreign key
-    @OneToMany(mappedBy = "employer")
+    @OneToMany(mappedBy = "employer")  //mappedBy phai trung voi ten ben bang ben kia
     @Builder.Default
     private List<JobPost> jobPostList = new ArrayList<>();
 

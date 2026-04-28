@@ -1,9 +1,6 @@
 package Cloudian.JobPortal.modules.auth;
 
-import Cloudian.JobPortal.modules.auth.dto.AuthLoginRequest;
-import Cloudian.JobPortal.modules.auth.dto.AuthLoginResponse;
-import Cloudian.JobPortal.modules.auth.dto.AuthRegisterRequest;
-import Cloudian.JobPortal.modules.auth.dto.AuthRegisterResponse;
+import Cloudian.JobPortal.modules.auth.dto.*;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +12,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -49,10 +49,31 @@ public class AuthController {
         System.out.println(authentication.getCredentials());
         return "Role Testing Successfully";
     }
-    @PostMapping("reset-password")
-    public ResponseEntity<?> resetPasswod(@RequestBody String email)
+//    @PostMapping("reset-password")
+//    public ResponseEntity<?> resetPasswod(@RequestBody String email)
+//    {
+//        String responseData = authService.resetPassword();
+//        return ResponseEntity.status(HttpStatus.OK).body(responseData);
+//    }
+    @GetMapping("reset-password")
+    public ResponseEntity<?> resetPassword(@RequestParam("email") String email)
     {
-        String responseData = authService.resetPassword();
-        return ResponseEntity.status(HttpStatus.OK).body(responseData);
+        ResetPasswordResponse response = authService.resetPassword(email);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+    @PostMapping("verify-reset-password")
+    public ResponseEntity<?> verifyResetPassword(@Valid @RequestBody VerifyResetPasswordRequest data)
+    {
+        boolean response = authService.verifyResetPasswordToken(data.getToken() , data.getPassword());
+        //Kieu String, Object se linh hoat hon
+        //ArrayList + HashMap -===== Array + dictionary = Array + Object trong JS va Python
+        HashMap<String , Object> body = new HashMap<>();
+        body.put("status" , response);
+        if (response)
+            body.put("message" , "Password has been reset successfully");
+        else body.put("message" , "Password cannot be reset");
+        return ResponseEntity.status(HttpStatus.OK).body(body);
+    }
+
+
 }
