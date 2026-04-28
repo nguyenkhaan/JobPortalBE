@@ -5,7 +5,7 @@ import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.auth.dto.*;
-import Cloudian.JobPortal.modules.role.UsersRoleRepository;
+import Cloudian.JobPortal.modules.role.UserRoleRepository;
 import Cloudian.JobPortal.modules.token.TokenRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
@@ -35,7 +35,7 @@ public class AuthService
     @Autowired
     private JwtService jwtService;
     @Autowired
-    private UsersRoleRepository usersRoleRepository;
+    private UserRoleRepository userRoleRepository;
     @org.springframework.beans.factory.annotation.Autowired(required=true)
     private PasswordEncoder passwordEncoder;
     @Transactional   //Dam bao khong bi loi database khi them du lieu vao
@@ -63,16 +63,16 @@ public class AuthService
             userRole.setUser(user);  //Co getter - setter nen co the hoan thien
             //1 - n
             //add user roles
-            user.getUsersRoleList().add(userRole);
+            user.getUserRoleList().add(userRole);
 
 
             userRepository.save(user);
-            usersRoleRepository.save(userRole);
+            userRoleRepository.save(userRole);
 
 
         }
         Long id = user.getId();
-        Token verifiedToken = tokenRepository.findByUserIDAndType(id , TokenType.REGISTER).orElse(null);
+        Token verifiedToken = tokenRepository.findByUserIdAndType(id , TokenType.REGISTER).orElse(null);
         if (verifiedToken != null)
             tokenRepository.deleteById(verifiedToken.getId());
             //Tien hanh tao token moi
@@ -84,7 +84,7 @@ public class AuthService
                 .type(TokenType.REGISTER)
                 .expiresAt(LocalDateTime.now().plus(Duration.ofMillis(TokenConstants.VERIFY_EMAIL_LIVE_TIME)))
                 .usedAt(null)
-                .usersID(user.getId())
+                .userId(user.getId())
                 .build();
         newToken.setToken(hashedToken);
         tokenRepository.save(newToken);
@@ -112,7 +112,7 @@ public class AuthService
             if (user == null)
                 throw new BadRequestException("User Has Not Registered");
 
-            Token storedToken = tokenRepository.findByUserIDAndType(user.getId() , TokenType.REGISTER)
+            Token storedToken = tokenRepository.findByUserIdAndType(user.getId() , TokenType.REGISTER)
                     .orElseThrow(() -> new BadRequestException("Token Not Found"));
             //Valiate the hash token
             System.out.println(SHA256Hashing.generateSHA256Hash(token));
@@ -142,7 +142,7 @@ public class AuthService
             throw new UnauthorizedException("Unauthorized User");
         //Assign Roles
         ArrayList<Role> assignedRoles =
-                user.getUsersRoleList()
+                user.getUserRoleList()
                         .stream()
                         .map(UserRole::getRole)
                         .collect(Collectors.toCollection(ArrayList::new));
@@ -164,9 +164,9 @@ public class AuthService
             throw new BadRequestException("Wrong Password");
         //Xoa va luu lai token sau
         //Delete Access Token
-        tokenRepository.findByUserIDAndType(user.getId(), TokenType.ACCESS).ifPresent(storedAccessToken -> tokenRepository.delete(storedAccessToken));
+        tokenRepository.findByUserIdAndType(user.getId(), TokenType.ACCESS).ifPresent(storedAccessToken -> tokenRepository.delete(storedAccessToken));
         //Delete Refresh Token
-        tokenRepository.findByUserIDAndType(user.getId(), TokenType.REFRESH).ifPresent(storeRefreshToken -> tokenRepository.delete(storeRefreshToken));
+        tokenRepository.findByUserIdAndType(user.getId(), TokenType.REFRESH).ifPresent(storeRefreshToken -> tokenRepository.delete(storeRefreshToken));
         AuthLoginResponse response = AuthLoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -189,12 +189,12 @@ public class AuthService
         Token tk = Token.builder()
                 .expiresAt(LocalDateTime.now().plusSeconds(TokenConstants.RESET_PASSWORD_LIVE_TIME / 1000))
                 .token(hashedToken)
-                .usersID(user.getId())
+                .userId(user.getId())
                 .usedAt(null)
                 .type(TokenType.RESET_PASSWORD)
                 .build();
         //Remove the old token
-        tokenRepository.findByUserIDAndType(user.getId(), TokenType.RESET_PASSWORD).ifPresent(storedToken -> tokenRepository.delete(storedToken));
+        tokenRepository.findByUserIdAndType(user.getId(), TokenType.RESET_PASSWORD).ifPresent(storedToken -> tokenRepository.delete(storedToken));
 
         //Save the token to the database
         tokenRepository.save(tk);

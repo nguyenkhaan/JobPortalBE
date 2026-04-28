@@ -19,8 +19,9 @@ import java.time.LocalDateTime;
 @Builder
 @Table(
         indexes = {
-                @Index(name = "idx_active" , columnList = "active")
-        }
+                @Index(name = "idx_active", columnList = "active")
+        },
+        name = "users"
 )
 public class User {
     @Id
@@ -46,15 +47,15 @@ public class User {
     private LocalDateTime updatedAt;
 
     //Foreign keys
-    @OneToMany(mappedBy = "users")  //map den field nao trong model class cua jobSeekerProfile
+    @OneToMany(mappedBy = "user")  //map den field nao trong model class cua jobSeekerProfile
     @Builder.Default
     private List<JobSeekerProfile> jobSeekerProfileList = new ArrayList<>();  //Kiem tra xem ten bang co trung ten class khong, ten cot co trung ten thuoc tinh khong
     @OneToMany(mappedBy = "owner")  //Noi toi cot nao
     @Builder.Default
     private List<EmployerProfile> employerProfileList = new ArrayList<>();
-    @OneToMany(mappedBy = "users")
+    @OneToMany(mappedBy = "user")
     @Builder.Default
-    private List<UserRole> usersRoleList = new ArrayList<>();
+    private List<UserRole> userRoleList = new ArrayList<>();
 
     //Foreign key
     @OneToMany(mappedBy = "user")

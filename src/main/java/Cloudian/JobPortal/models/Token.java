@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Table(
-        indexes = @Index(name = "idx_token_type_users_id" , columnList = "type,users_id")
+        indexes = @Index(name = "idx_token_type_user_id" , columnList = "type,user_id")
 )
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,8 +20,8 @@ public class Token {
     private Long id;
     @Column(nullable = false)
     private String token;
-    @Column(nullable = false , name = "users_id")
-    private Long usersID;
+    @Column(nullable = false , name = "user_id")
+    private Long userId;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TokenType type;

@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UsersRoleRepository extends JpaRepository<UserRole, Long>
+public interface UserRoleRepository extends JpaRepository<UserRole, Long>
 {
-//    public ArrayList<Role> getByUsersID(Long userID);
+//    public ArrayList<Role> getByUserID(Long userID);
 }

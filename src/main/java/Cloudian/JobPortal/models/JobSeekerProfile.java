@@ -24,8 +24,8 @@ public class JobSeekerProfile {
     private String phone;
     //foreign key
     @ManyToOne
-    @JoinColumn(nullable = false , name = "usersID") //id: Cot tham chieu ben bang ben kia
-    private User users;  //ben nao co khoa ngoai, ben do khai bao JoinColumn
+    @JoinColumn(nullable = false , name = "userId") //id: Cot tham chieu ben bang ben kia
+    private User user;  //ben nao co khoa ngoai, ben do khai bao JoinColumn
     //Mot ban thi chi co 1 ManyToOne, khong duoc noi khoa ngoai nay voi khoa ngoai kia - Khong duoc noi 2 khoa ngoai
     @OneToMany(mappedBy = "jobSeeker")
     @Builder.Default
