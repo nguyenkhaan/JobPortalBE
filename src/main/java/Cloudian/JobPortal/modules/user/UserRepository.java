@@ -10,6 +10,4 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     //Get users or nothing => We can only use orElseThrow if we have Optional Data Type
     Optional<User>  findByEmail(String email);  //Sudung Optional long vao de co the dung duoi orElseThrow
-
-    boolean existsByEmail(String email);
 }

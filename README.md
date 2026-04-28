@@ -47,7 +47,7 @@ erDiagram
         string fullName
         string address
         string phone
-        long usersID FK
+        long user_id FK
     }
 
     EMPLOYER_PROFILE {

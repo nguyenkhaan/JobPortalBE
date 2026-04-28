@@ -37,7 +37,6 @@ public class JobPost {
     //Tieu de Job
     @Column(nullable = false)
     private String title;
-
     //Mo ta
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;

@@ -22,6 +22,8 @@ public class EmployerProfile {
     @ManyToOne  //Luon map den id cua bang kia
     @JoinColumn(nullable = false , name = "owner_id") //ManyToOne , JoinColumn(name, nullable)
     private User owner;
+    @Column(name = "logo")
+    private String logo;
     @Column(nullable = false , name = "company_name")
     private String companyName;
     @Column(nullable = false , name = "company_website")
