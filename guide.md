@@ -18,3 +18,17 @@ Muốn tạo một đối tượng thì phải có constructor. Nhung mà cũng 
 thằng FasstAPI, nó hỗ trợ sẵn decorator rồi nên không cần. Nó cũng có 
 repository giống như FastAPI 
 
+Một số lưu ý trong Spring Boot 
+## 1. khi thiết lập dự án 
+### 1.1. Cài đặt Spring Security 
+- JwtService: Chuyển đổi parse token, hàm dùng để extract claim ra từ token payload 
+- UserDetail, UserDetailImpls: Trích xuất thông tin và lưu vào Spring Authentication Context 
+- Security Config 
+- Document: https://freedium-mirror.cfd/https://medium.com/%40sibinraziya/spring-boot-3-spring-security-6-jwt-authentication-and-authorization-e586bc186805
+@PreAuthorized("hasRole("")") 
+### 1.2, Global Exception 
+- Handle exception ở cấp độ global 
+- https://freedium-mirror.cfd/https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://medium.com/%40roshanfarakate/global-exception-handling-in-spring-boot-712593159a26&ved=2ahUKEwihsOX0sZCUAxXamVYBHU0hKmsQFnoECC4QAQ&usg=AOvVaw205i6g8_mVvAyb0s70VAXp
+- Các chú chỉ cần tập trung vào logic ở tầng service thôi, không cần bọc code trong Try Catch nữa. Mọi thứ a lo hết ở Global Exception rồi.
+
+## 1.3. 
