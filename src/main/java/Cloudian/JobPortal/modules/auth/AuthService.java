@@ -211,14 +211,30 @@ public class AuthService
         Token storedToken = tokenRepository.findByToken(hashedToken).orElse(null);
         if (storedToken == null)
             throw new BadRequestException("Token not found");
-        if (storedToken.getUsedAt() != null || storedToken.getExpiresAt().isAfter(LocalDateTime.now()))
+        if (storedToken.getUsedAt() != null || storedToken.getExpiresAt().isBefore(LocalDateTime.now()))
             throw new BadRequestException("Token is invalid");
         String email = jwtService.extractEmail(token , TokenType.RESET_PASSWORD);
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null)
             throw new BadRequestException("Email not found");
-        String hashedPassword = SHA256Hashing.generateSHA256Hash(password);
+        String hashedPassword = passwordEncoder.encode(password);
+        System.out.println(password + "   " + hashedPassword);
         user.setPassword(hashedPassword);
+        storedToken.setUsedAt(LocalDateTime.now());
+        storedToken.setUserId(user.getId());
         return true;
+    }
+    @Transactional //Da test: Neu khong co cai nay thi khi update bang ham set, chugn ta can phai ch userRepo.save(), con neu co cai nay thi an toan hon va khong can userRepo.save() lai
+    public boolean resetEmail(String email, String password , String updateEmail)
+    {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null)
+            throw new BadRequestException("User not found");
+        if (passwordEncoder.matches(password , user.getPassword()))
+        {
+            user.setEmail(updateEmail);
+            return true;
+        }
+        throw new BadRequestException("Wrong password");
     }
 }

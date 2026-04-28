@@ -38,6 +38,7 @@ public class AuthController {
     @PostMapping("login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthLoginRequest data)
     {
+        System.out.println("Dang vao route login");
         AuthLoginResponse responseData = authService.login(data);
         return ResponseEntity.status(HttpStatus.OK).body(responseData);
     }
@@ -74,6 +75,21 @@ public class AuthController {
         else body.put("message" , "Password cannot be reset");
         return ResponseEntity.status(HttpStatus.OK).body(body);
     }
-
+    @PostMapping("reset-email")
+    public ResponseEntity<?> changeEmail(
+            Authentication authentication,
+            @Valid @RequestBody ResetEmailRequest data
+    )
+    {
+//        System.out.println(authentication.getName());
+        String email = authentication.getName();
+        Boolean response = authService.resetEmail(email, data.getPassword() , data.getNewEmail());
+        HashMap<String , Object> bod = new HashMap<>();
+        bod.put("status" , response);
+        if (response)
+            bod.put("message" , "Reset email successfully");
+        else bod.put("message" , "Cannot reset email");
+        return ResponseEntity.status(HttpStatus.OK).body(bod);
+    }
 
 }
