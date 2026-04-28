@@ -1,11 +1,8 @@
 package Cloudian.JobPortal.modules.user;
 
-import Cloudian.JobPortal.exceptions.custom.BadRequestException;
-import Cloudian.JobPortal.models.Users;
+import Cloudian.JobPortal.models.User;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +20,7 @@ public class UserService
         ).toList();   //map tra ve Stream, khong phai List
         return userLists;
     }
-    public Users findUserByEmail(String email)
+    public User findUserByEmail(String email)
     {
         //Make something to this
         return userRepository.findByEmail(email)

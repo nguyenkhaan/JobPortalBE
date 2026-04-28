@@ -1,6 +1,6 @@
 package Cloudian.JobPortal.security;
 
-import Cloudian.JobPortal.models.Users;
+import Cloudian.JobPortal.models.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -30,7 +30,7 @@ public class UserDetailsImpl implements UserDetails {
         this.authorities = authorities;
     }
 
-    public static UserDetailsImpl build(Users user) {
+    public static UserDetailsImpl build(User user) {
         List<GrantedAuthority> authorities = user.getUsersRoleList().stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRole().name()))
                 .collect(Collectors.toList());  //Spring Database requires ROLE_ADMIN. Example: ADMIN has map to ROLE_ADMIN

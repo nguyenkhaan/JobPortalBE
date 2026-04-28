@@ -1,8 +1,13 @@
-FROM eclipse-temurin:21-jdk-alpine
+FROM gradle:9.3.1-jdk17-alpine AS build
 
 WORKDIR /app
+COPY . .
+RUN gradle build -x test
 
-COPY target/*.jar app.jar
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+COPY --from=build /app/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
