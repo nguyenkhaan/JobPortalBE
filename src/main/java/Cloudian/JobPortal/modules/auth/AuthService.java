@@ -224,4 +224,17 @@ public class AuthService
         storedToken.setUserId(user.getId());
         return true;
     }
+    @Transactional //Da test: Neu khong co cai nay thi khi update bang ham set, chugn ta can phai ch userRepo.save(), con neu co cai nay thi an toan hon va khong can userRepo.save() lai
+    public boolean resetEmail(String email, String password , String updateEmail)
+    {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null)
+            throw new BadRequestException("User not found");
+        if (passwordEncoder.matches(password , user.getPassword()))
+        {
+            user.setEmail(updateEmail);
+            return true;
+        }
+        throw new BadRequestException("Wrong password");
+    }
 }
