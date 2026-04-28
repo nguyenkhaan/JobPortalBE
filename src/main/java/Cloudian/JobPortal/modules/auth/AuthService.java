@@ -211,14 +211,17 @@ public class AuthService
         Token storedToken = tokenRepository.findByToken(hashedToken).orElse(null);
         if (storedToken == null)
             throw new BadRequestException("Token not found");
-        if (storedToken.getUsedAt() != null || storedToken.getExpiresAt().isAfter(LocalDateTime.now()))
+        if (storedToken.getUsedAt() != null || storedToken.getExpiresAt().isBefore(LocalDateTime.now()))
             throw new BadRequestException("Token is invalid");
         String email = jwtService.extractEmail(token , TokenType.RESET_PASSWORD);
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null)
             throw new BadRequestException("Email not found");
-        String hashedPassword = SHA256Hashing.generateSHA256Hash(password);
+        String hashedPassword = passwordEncoder.encode(password);
+        System.out.println(password + "   " + hashedPassword);
         user.setPassword(hashedPassword);
+        storedToken.setUsedAt(LocalDateTime.now());
+        storedToken.setUserId(user.getId());
         return true;
     }
 }

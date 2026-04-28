@@ -28,8 +28,7 @@ public class Token {
     @CreationTimestamp
     @Column(nullable = false , name = "created_at")
     private LocalDateTime createdAt;
-    @CreationTimestamp
-    @Column(nullable = false , name = "used_at")
+    @Column(name = "used_at")
     @Builder.Default
     private LocalDateTime usedAt = null;
     @Column(nullable = false , name = "expires_at")
