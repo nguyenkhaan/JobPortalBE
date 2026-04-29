@@ -32,3 +32,16 @@ Một số lưu ý trong Spring Boot
 - Các chú chỉ cần tập trung vào logic ở tầng service thôi, không cần bọc code trong Try Catch nữa. Mọi thứ a lo hết ở Global Exception rồi.
 
 ## 1.3. 
+
+
+## Setup minio chạy bằng Docker thành public 
+- Bucket trong minio phải được set thành public thì mới có thể truy cập hình ảnh được 
+- Vài trong Shell của minio (truy cập shell này băng lệnh docker exec -it) 
+
+Chạy 2 lệnh sau: 
+
+mc alias set local http://localhost:9000 minioadmin minioadmin
+
+mc anonymous set public local/<your_bucket_name>
+
+Hình ảnh sẽ hiển th ở: http://localhost:9000/<your_bucket>/<your_file>
