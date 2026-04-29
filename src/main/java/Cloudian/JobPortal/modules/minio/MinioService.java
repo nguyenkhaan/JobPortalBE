@@ -16,11 +16,10 @@ import java.util.List;
 public class MinioService {
     @Autowired
     MinioClient minioClient;
-    String bucketName = "jobportal";
     @Value("${minio.url}")
     String minioUrl;
     @Value("${minio.bucket.name}")
-    String buckerName;
+    String bucketName;
     public String uploadFile(MultipartFile file) {
         try
         {
