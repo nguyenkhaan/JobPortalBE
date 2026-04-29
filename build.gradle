@@ -47,6 +47,8 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 	implementation 'org.springframework.boot:spring-boot-starter-aop:4.0.0-M1'
+	//Minio
+	implementation 'io.minio:minio:8.5.2'
 }
 
 tasks.named('test') {
