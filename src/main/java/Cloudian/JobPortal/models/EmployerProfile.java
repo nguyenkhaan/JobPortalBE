@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 @Entity
@@ -40,6 +41,8 @@ public class EmployerProfile {
     private String phone;
     @Builder.Default
     private Integer capacity = 0;
+    @Builder.Default
+    LocalDateTime deleteAt = null;
     @Builder.Default
     private Boolean active = false;
     //Foreign key

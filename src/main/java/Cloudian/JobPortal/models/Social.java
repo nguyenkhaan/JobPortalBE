@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Builder
@@ -17,7 +19,8 @@ public class Social {
     private String link;
     @Column(nullable = false , name = "title")
     private String title;
-
+    @Builder.Default
+    LocalDateTime deleteAt = null;
     @ManyToOne
     @JoinColumn(name="user_id" ,  nullable = false)
     private User user;

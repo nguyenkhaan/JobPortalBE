@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -16,6 +18,8 @@ public class JobIndustry {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Builder.Default
+    LocalDateTime deleteAt = null;
     @ManyToOne
     @JoinColumn(name = "industry_id" , nullable = false)
     private Industry industry;

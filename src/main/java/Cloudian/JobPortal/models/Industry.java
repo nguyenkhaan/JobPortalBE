@@ -3,6 +3,7 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +22,8 @@ public class Industry {
     private Long id;
     @Column(nullable = false)
     private String name;
-
+    @Builder.Default
+    LocalDateTime deleteAt = null;
     //Many Foreign Key
     @OneToMany(mappedBy = "industry")
     @Builder.Default
