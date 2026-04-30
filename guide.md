@@ -45,3 +45,7 @@ mc alias set local http://localhost:9000 minioadmin minioadmin
 mc anonymous set public local/<your_bucket_name>
 
 Hình ảnh sẽ hiển th ở: http://localhost:9000/<your_bucket>/<your_file>
+
+## 2. Quy ước database: 
+- Job Seeker Profile: là profile duy nhất của user
+- Resume (CV) : 1 user có nhiều CV. 

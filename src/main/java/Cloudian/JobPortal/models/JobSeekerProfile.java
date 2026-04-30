@@ -12,6 +12,13 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Table(
+        name= "job_seeker_profile",
+        indexes = {
+                @Index(columnList = "full_name", name = "idx_seeker_fullname"),
+                @Index(columnList = "phone", name = "idx_seeker_phone")
+        }
+)
 public class JobSeekerProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,12 +30,13 @@ public class JobSeekerProfile {
     @Column(nullable = false)
     private String phone;
     //foreign key
-    @ManyToOne
-    @JoinColumn(nullable = false , name = "userId") //id: Cot tham chieu ben bang ben kia
-    private User user;  //ben nao co khoa ngoai, ben do khai bao JoinColumn
-    //Mot ban thi chi co 1 ManyToOne, khong duoc noi khoa ngoai nay voi khoa ngoai kia - Khong duoc noi 2 khoa ngoai
+    // User only has 1 profile
+    @OneToOne
+    @JoinColumn(nullable = false , name = "userId", unique = true)
+    private User user;
+    // User has many CVs
     @OneToMany(mappedBy = "jobSeeker")
     @Builder.Default
-    private List<JobApplication> jobApplicationList = new ArrayList<>();
+    private List<Resume> resumes = new ArrayList<>();
 
 }

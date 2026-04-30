@@ -33,6 +33,8 @@ public class JobApplication {
     @CreationTimestamp
     @Column(nullable = false , name = "applied_at")
     private LocalDateTime appliedAt;
+    @Builder.Default
+    LocalDateTime deleteAt = null;
     //Foreign Key
     @ManyToOne
     @JoinColumn(nullable = false , name = "job_seeker_id")

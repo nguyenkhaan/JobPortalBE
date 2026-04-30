@@ -41,6 +41,8 @@ public class JobPost {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
+    LocalDateTime deleteAt = null;
     //Fulltime, Parttime?
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "employment_type")
