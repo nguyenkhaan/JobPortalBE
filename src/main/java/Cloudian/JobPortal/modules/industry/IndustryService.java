@@ -2,8 +2,12 @@ package Cloudian.JobPortal.modules.industry;
 
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.models.Industry;
+import Cloudian.JobPortal.models.JobIndustry;
+import Cloudian.JobPortal.models.JobPost;
 import Cloudian.JobPortal.modules.industry.dto.IndustryResponse;
 import Cloudian.JobPortal.modules.industry.dto.UpdateIndustry;
+import Cloudian.JobPortal.modules.jobindustry.JobIndustryRepository;
+import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,6 +21,10 @@ import java.util.List;
 public class IndustryService {
     @Autowired
     IndustryRepository industryRepository;
+    @Autowired
+    JobPostRepository jobPostRepository;
+    @Autowired
+    JobIndustryRepository jobIndustryRepository;
     public List<IndustryResponse> getAllIndustry(String name , int offset , int limit)
     {
         int page = offset / limit;
@@ -55,7 +63,12 @@ public class IndustryService {
     public Boolean deleteIndustry(Long id)
     {
         Industry industry = industryRepository.findById(id).orElseThrow(() -> new BadRequestException("industry not found"));
+        if (industry.getDeleteAt() != null)
+            throw new BadRequestException("Industry not found");
         industry.setDeleteAt(LocalDateTime.now());
-
+        List<JobIndustry> jobIndustryList = jobIndustryRepository.findByIndustryId(industry.getId());
+        for (int i = 0; i < jobIndustryList.size(); ++i)
+            jobIndustryList.get(i).setDeleteAt(LocalDateTime.now());
+        return true;
     }
 }

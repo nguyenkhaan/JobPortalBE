@@ -52,6 +52,14 @@ public class GlobalException {
         );
     }
 
+    @ExceptionHandler(value = ForbiddenException.class)
+    public ResponseEntity<?> handleForbiddenException(ForbiddenException e)
+    {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                new ExceptionDto(e.getMessage() , e.getCode())
+        );
+    }
+
     //Validator exceptions
     //Document:
     @ExceptionHandler(MethodArgumentNotValidException.class)
