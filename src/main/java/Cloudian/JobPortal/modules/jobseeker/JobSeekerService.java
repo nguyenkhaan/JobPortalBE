@@ -1,9 +1,6 @@
 package Cloudian.JobPortal.modules.jobseeker;
 
-import Cloudian.JobPortal.exceptions.custom.ConflictException;
-import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
-import Cloudian.JobPortal.exceptions.custom.ResourceNotFoundException;
-import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
+import Cloudian.JobPortal.exceptions.custom.*;
 import Cloudian.JobPortal.models.JobSeekerProfile;
 import Cloudian.JobPortal.models.User;
 import Cloudian.JobPortal.modules.jobseeker.dto.CreateJobSeekerRequest;
@@ -59,7 +56,12 @@ public class JobSeekerService {
     public JobSeekerResponse updateProfile(UpdateJobSeekerRequest request, Long userId){
         JobSeekerProfile profile = jobSeekerRepository.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("profile's user does not exist!"));
 
-        if(request.getFullName() != null) profile.setFullName(request.getFullName());
+        if(request.getFullName() != null) {
+            if(profile.getFullName().trim().isEmpty()) {
+                throw new BadRequestException("full name cannot be empty");
+            }
+            profile.setFullName(request.getFullName());
+        }
         if(request.getAddress() != null) profile.setAddress(request.getAddress());
         if(request.getPhone() != null) profile.setPhone(request.getPhone());
 
