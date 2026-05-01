@@ -36,6 +36,7 @@ public class JobSeekerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @PreAuthorize("hasRole('SEEKER')")
     @GetMapping
     public ResponseEntity<JobSeekerResponse> getProfile( Authentication authentication) {
         Long userId = getUserIdFromAuth(authentication);
@@ -43,6 +44,7 @@ public class JobSeekerController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('SEEKER')")
     @PatchMapping
     public ResponseEntity<JobSeekerResponse> updateProfile(@Valid @RequestBody UpdateJobSeekerRequest request, Authentication authentication) {
         Long userId = getUserIdFromAuth(authentication);
