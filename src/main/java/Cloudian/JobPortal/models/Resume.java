@@ -1,7 +1,6 @@
 package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
-import jdk.jfr.BooleanFlag;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -14,29 +13,37 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(
-
-)
+@Table(name = "resumes")
 public class Resume {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // thêm file name như yêu cầu:
+    @Column(nullable = false, name = "file_name")
+    private String fileName;
+
     @Column(nullable = false , name = "file_url")
     private String fileUrl;
+
     @CreationTimestamp
-    @Column(nullable = false , name = "uploaded_at")
+    @Column(nullable = false , name = "uploaded_at", updatable = false)
     private LocalDateTime uploadedAt;
-    @Column(nullable = false , name = "default_resume")
+
+    @Column(nullable = false , name = "is_default") // nên đổi thành is_default.
     @Builder.Default
-    private Boolean defaultResume = false;
+    private Boolean isDefault = false;
+
+    @Column(name = "deleted_at")
     @Builder.Default
-    LocalDateTime deleteAt = null;
+    LocalDateTime deletedAt = null; // đổi tên deleteAt -> deletedAt.
     //Foreign keys
+
     @OneToMany(mappedBy = "resume")
     @Builder.Default
     private List<JobApplication> jobApplicationList = new ArrayList<>();
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_seeker_id" , nullable = false )
     private JobSeekerProfile jobSeeker;
 
