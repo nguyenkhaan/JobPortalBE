@@ -2,6 +2,8 @@ package Cloudian.JobPortal.modules.auth;
 
 import Cloudian.JobPortal.commons.constants.TokenConstants;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
+import Cloudian.JobPortal.exceptions.custom.NotFoundException;
+import Cloudian.JobPortal.exceptions.custom.ResourceNotFoundException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.auth.dto.*;
@@ -14,6 +16,7 @@ import Cloudian.JobPortal.security.JwtService;
 import Cloudian.JobPortal.security.TokenBody;
 import Cloudian.JobPortal.utilis.SHA256Hashing;
 import jakarta.transaction.Transactional;
+import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,8 @@ public class AuthService
     private JwtService jwtService;
     @Autowired
     private UserRoleRepository userRoleRepository;
+    @Autowired
+    private OAuthRepository oAuthRepository;
     @org.springframework.beans.factory.annotation.Autowired(required=true)
     private PasswordEncoder passwordEncoder;
     @Transactional   //Dam bao khong bi loi database khi them du lieu vao
@@ -155,24 +160,38 @@ public class AuthService
                 TokenType.ACCESS
         );
         String refreshToken = jwtService.generateToken(
-                new TokenBody(user.getEmail() , user.getId() , assignedRoles , TokenType.REFRESH , Provider.LOCAL.name()),
+                new TokenBody(user.getEmail() , user.getId() , assignedRoles , TokenType.REFRESH , Provider.LOCAL),
                 TokenType.REFRESH 
         );
         //Xoa va luu lai token sau
         String password = data.getPassword();
         if (!passwordEncoder.matches(password , user.getPassword()))
             throw new BadRequestException("Wrong Password");
-        //Xoa va luu lai token sau
-        //Delete Access Token
-        tokenRepository.findByUserIdAndType(user.getId(), TokenType.ACCESS).ifPresent(storedAccessToken -> tokenRepository.delete(storedAccessToken));
-        //Delete Refresh Token
-        tokenRepository.findByUserIdAndType(user.getId(), TokenType.REFRESH).ifPresent(storeRefreshToken -> tokenRepository.delete(storeRefreshToken));
         AuthLoginResponse response = AuthLoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .email(email)
                 .id(user.getId())
                 .build();
+        String storedRefreshToken = SHA256Hashing.generateSHA256Hash(refreshToken);
+        OAuth userOauth = oAuthRepository.findByUserIdAndProvider(user.getId() , Provider.LOCAL).orElse(null);
+        if (userOauth == null)
+        {
+            OAuth oauth = OAuth.builder()
+                    .provider(Provider.LOCAL)
+                    .providerId(user.getEmail())
+                    .refreshToken(storedRefreshToken)
+                    .user(user)
+                    .build();
+            oAuthRepository.save(oauth);
+        }
+        else if (userOauth.getRefreshToken() == null)
+            userOauth.setRefreshToken(storedRefreshToken);
+        else {
+            //Update lai refresh token luu vao ben trong userOAuth
+            userOauth.setRefreshToken(storedRefreshToken);
+
+        }
         return response;
     }
     //Response: token (to reset), email,
@@ -236,5 +255,33 @@ public class AuthService
             return true;
         }
         throw new BadRequestException("Wrong password");
+    }
+    @Transactional
+    public RefreshResponse refreshAccessToken(String token)
+    {
+        Provider provider = Provider.valueOf(jwtService.extractProvider(token , TokenType.REFRESH));
+        String email = jwtService.extractEmail(token , TokenType.REFRESH);
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        OAuth oauth = oAuthRepository.findByUserIdAndProvider(user.getId(), provider).orElse(null);
+        if (oauth == null || oauth.getRefreshToken() == null)
+            throw new NotFoundException("Not found login session. Login again");
+        boolean result = SHA256Hashing.verifyDataIntegrity(oauth.getRefreshToken(), token);
+        if (!result)
+            throw new BadRequestException("Invalid login session");
+        ArrayList<Role> assignedRoles =
+                user.getUserRoleList()
+                        .stream()
+                        .map(UserRole::getRole)
+                        .collect(Collectors.toCollection(ArrayList::new));
+        String accessToken = jwtService.generateToken(
+                new TokenBody(user.getEmail() ,
+                        user.getId() ,
+                        assignedRoles,
+                        TokenType.ACCESS , null),
+                TokenType.ACCESS
+
+        );
+        return RefreshResponse.builder().accessToken(accessToken).build();
+
     }
 }

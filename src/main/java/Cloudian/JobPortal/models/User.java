@@ -78,4 +78,8 @@ public class User {
     @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<OAuth> oauths = new ArrayList<>();
+
+    //soft delete
+    @Builder.Default
+    LocalDateTime deleteAt = null;
 }
