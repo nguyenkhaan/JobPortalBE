@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jdk.jfr.BooleanFlag;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,6 +19,12 @@ import java.util.List;
 @Table(
 
 )
+@SQLDelete(
+        sql = """
+                UPDATE resume SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class Resume {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

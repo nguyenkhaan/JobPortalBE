@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +16,12 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(
+        sql = """
+                UPDATE payment SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,8 +39,10 @@ public class Payment {
     PaymentStatus status = PaymentStatus.PENDING;
     @Column(name = "created_at" , nullable = false)
     @CreationTimestamp
-    LocalDateTime createdAt;
-
+    LocalDateTime cretedAt;
+    @Column(name = "delete_at")
+    @Builder.Default
+    LocalDateTime deleteAt = null;
     @ManyToOne
     @JoinColumn(name = "user_id" , nullable = false)
     private User user;

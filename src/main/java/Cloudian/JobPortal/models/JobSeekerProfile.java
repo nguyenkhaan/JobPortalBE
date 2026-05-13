@@ -2,7 +2,10 @@ package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +22,12 @@ import java.util.List;
                 @Index(columnList = "phone", name = "idx_seeker_phone")
         }
 )
+@SQLDelete(
+        sql = """
+                UPDATE job_seeker_profile SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class JobSeekerProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,5 +47,10 @@ public class JobSeekerProfile {
     @OneToMany(mappedBy = "jobSeeker")
     @Builder.Default
     private List<Resume> resumes = new ArrayList<>();
+
+    //soft delete
+    @Column(name = "delete_at")
+    @Builder.Default
+    LocalDateTime deleteAt = null;
 
 }

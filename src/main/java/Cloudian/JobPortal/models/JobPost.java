@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,12 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_job_level" , columnList = "job_level")
         }
 )
+@SQLDelete(
+        sql = """
+                UPDATE job_post SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class JobPost {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

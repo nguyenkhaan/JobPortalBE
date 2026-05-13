@@ -8,7 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.ArrayList;
-
+// local, google, ...
 @Data
 @AllArgsConstructor
 public class TokenBody
@@ -21,4 +21,5 @@ public class TokenBody
     @NotBlank
     @NotNull
     private TokenType purpose;
+    private String provider;
 }
