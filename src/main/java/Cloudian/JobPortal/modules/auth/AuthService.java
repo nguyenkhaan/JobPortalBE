@@ -156,7 +156,7 @@ public class AuthService
         );
         String refreshToken = jwtService.generateToken(
                 new TokenBody(user.getEmail() , user.getId() , assignedRoles , TokenType.REFRESH),
-                TokenType.ACCESS
+                TokenType.REFRESH 
         );
         //Xoa va luu lai token sau
         String password = data.getPassword();
