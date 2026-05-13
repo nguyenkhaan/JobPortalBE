@@ -29,6 +29,13 @@ public class JobSeekerService {
 
     @Transactional
     public JobSeekerResponse createProfile(CreateJobSeekerRequest request, Long userId){
+        // Add logic to check for duplicate phone numbers
+        if (request.getPhone() != null && !request.getPhone().trim().isEmpty()) {
+            if (jobSeekerRepository.existsByPhone(request.getPhone().trim())) {
+                throw new BadRequestException("Phone number already exists!");
+            }
+        }
+
         // 401
         User user = userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("user does not exist!"));
 
@@ -55,15 +62,28 @@ public class JobSeekerService {
     @Transactional
     public JobSeekerResponse updateProfile(UpdateJobSeekerRequest request, Long userId){
         JobSeekerProfile profile = jobSeekerRepository.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("profile's user does not exist!"));
-
+        // fix check the request payload instead of profile (current name).
         if(request.getFullName() != null) {
-            if(profile.getFullName().trim().isEmpty()) {
+            String fullName = request.getFullName().trim();
+
+            if(fullName.isEmpty()) {
                 throw new BadRequestException("full name cannot be empty");
             }
-            profile.setFullName(request.getFullName());
+
+            profile.setFullName(fullName);
         }
         if(request.getAddress() != null) profile.setAddress(request.getAddress());
-        if(request.getPhone() != null) profile.setPhone(request.getPhone());
+
+        if(request.getPhone() != null) {
+            String  newPhone = request.getPhone().trim();
+            if(!newPhone.equals(profile.getPhone())) {
+                if (jobSeekerRepository.existsByPhone(newPhone)) {
+                    throw new BadRequestException("Phone number already exists!");
+                }
+            }
+            profile.setPhone(newPhone);
+        }
+
 
         return mapToResponse(jobSeekerRepository.save(profile));
     }

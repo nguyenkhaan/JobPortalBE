@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.UUID;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,16 +24,22 @@ public class MinioService {
     public String uploadFile(MultipartFile file) {
         try
         {
-            String fileName = file.getOriginalFilename();
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null) {
+                originalFilename = "unknown_file";
+            }
+            String cleanFileName = originalFilename.replaceAll("\\s+", "_");
+            String uniqueFileName = UUID.randomUUID().toString() + "_" + cleanFileName;
+
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
-                            .object(fileName)
+                            .object(uniqueFileName)
                             .stream(file.getInputStream(), file.getSize(), -1)
                             .contentType(file.getContentType())
                             .build()
             );
-            return fileName;
+            return uniqueFileName;
         }
         catch (Exception e)
         {
