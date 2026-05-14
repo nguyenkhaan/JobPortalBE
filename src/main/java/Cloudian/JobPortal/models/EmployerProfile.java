@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,6 +17,12 @@ import java.util.List;
 @Builder
 @Table(
         indexes = @Index(columnList = "companyName" , name = "idx_company_name")
+)
+@SQLRestriction("delete_at is NULL")
+@SQLDelete(
+        sql = """
+                UPDATE employer_profile SET delete_at = NOW() WHERE id = ? 
+                """
 )
 public class EmployerProfile {
     @Id
@@ -41,6 +49,8 @@ public class EmployerProfile {
     private String phone;
     @Builder.Default
     private Integer capacity = 0;
+    //Soft delete
+    @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null;
     @Builder.Default

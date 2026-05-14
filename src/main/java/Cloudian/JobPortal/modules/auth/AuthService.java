@@ -76,7 +76,7 @@ public class AuthService
         if (verifiedToken != null)
             tokenRepository.deleteById(verifiedToken.getId());
             //Tien hanh tao token moi
-        String token = jwtService.generateToken(new TokenBody(user.getEmail() , user.getId() , null , TokenType.REGISTER) , TokenType.REGISTER);
+        String token = jwtService.generateToken(new TokenBody(user.getEmail() , user.getId() , null , TokenType.REGISTER , null) , TokenType.REGISTER);
             //Luu Token vao database
         String hashedToken = SHA256Hashing.generateSHA256Hash(token);
         Token newToken = Token.builder()
@@ -151,12 +151,12 @@ public class AuthService
                 new TokenBody(user.getEmail() ,
                         user.getId() ,
                         assignedRoles,
-                        TokenType.ACCESS),
+                        TokenType.ACCESS , null),
                 TokenType.ACCESS
         );
         String refreshToken = jwtService.generateToken(
-                new TokenBody(user.getEmail() , user.getId() , assignedRoles , TokenType.REFRESH),
-                TokenType.ACCESS
+                new TokenBody(user.getEmail() , user.getId() , assignedRoles , TokenType.REFRESH , Provider.LOCAL.name()),
+                TokenType.REFRESH 
         );
         //Xoa va luu lai token sau
         String password = data.getPassword();
@@ -183,7 +183,7 @@ public class AuthService
                 () -> new BadRequestException("User not found")
         );
         String verifyToken = jwtService.generateToken(
-                new TokenBody(user.getEmail() , user.getId() , null , null), TokenType.RESET_PASSWORD
+                new TokenBody(user.getEmail() , user.getId() , null , null , null), TokenType.RESET_PASSWORD
         );
         String hashedToken = SHA256Hashing.generateSHA256Hash(verifyToken);
         Token tk = Token.builder()

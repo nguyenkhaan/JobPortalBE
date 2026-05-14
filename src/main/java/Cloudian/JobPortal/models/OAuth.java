@@ -8,30 +8,33 @@ import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
 @Entity
+@Data
+@Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@Table(
-        indexes = @Index(name = "idx_industry_job_post_id" , columnList = "industry_id,job_post_id")
-)
 @SQLDelete(
         sql = """
-                UPDATE job_industry SET delete_at = NOW() WHERE id = ? 
+                UPDATE oauth SET delete_at = NOW() WHERE id = ? 
                 """
 )
 @SQLRestriction("delete_at is NULL")
-public class JobIndustry {
+public class OAuth {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Enumerated(EnumType.STRING)
+    Provider provider;
+    @Column(name = "provider_id" , nullable = false , unique = true)
+    String providerId;
+    @Column(name = "refresh_token" , nullable = false , unique = true)
+    String refreshToken;
+    @ManyToOne
+    @JoinColumn(name = "user_id" , nullable = false)
+    User user;
+    @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null;
-    @ManyToOne
-    @JoinColumn(name = "industry_id" , nullable = false)
-    private Industry industry;
-    @ManyToOne
-    @JoinColumn(name = "job_post_id" , nullable = false)
-    private JobPost jobPost;
 }

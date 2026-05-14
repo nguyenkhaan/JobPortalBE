@@ -27,6 +27,8 @@ public class IndustryService {
     JobIndustryRepository jobIndustryRepository;
     public List<IndustryResponse> getAllIndustry(String name , int offset , int limit)
     {
+        if (limit < 1 || limit > 100) throw new BadRequestException("Invalid limit"); 
+        if (offset < 0) throw new BadRequestException("Invalid offset"); 
         int page = offset / limit;
         Pageable pageable = PageRequest.of(page , limit);
         Page<Industry> result;   //Mot collections kieu page de lay ra cac page trong database

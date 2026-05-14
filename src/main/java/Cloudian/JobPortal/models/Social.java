@@ -2,6 +2,8 @@ package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +13,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@SQLDelete(
+        sql = """
+                UPDATE social SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class Social {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

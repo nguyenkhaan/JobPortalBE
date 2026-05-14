@@ -68,7 +68,6 @@ public class SecurityConfig {
                                 .requestMatchers("/auth/verify").permitAll()
                                 .requestMatchers("/auth/login").permitAll()
                                 .requestMatchers("/auth/reset-password").permitAll()
-                                .requestMatchers("/auth/reset-email").permitAll()
                                 .requestMatchers("/test").permitAll()
                                 .requestMatchers("/auth/login").permitAll()
                                 .anyRequest().authenticated()  //Ap dung cho route nao thi khai bao vao day

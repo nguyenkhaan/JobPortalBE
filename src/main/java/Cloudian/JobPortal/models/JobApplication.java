@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -21,6 +23,12 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(columnNames = {"job_seeker_id" , "job_post_id"})
         }
 )
+@SQLDelete(
+        sql = """
+                UPDATE job_application SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class JobApplication {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,7 +42,8 @@ public class JobApplication {
     @Column(nullable = false , name = "applied_at")
     private LocalDateTime appliedAt;
     @Builder.Default
-    LocalDateTime deleteAt = null;
+    @Column(name = "deleted_at")
+    LocalDateTime deletedAt = null;
     //Foreign Key
     @ManyToOne
     @JoinColumn(nullable = false , name = "job_seeker_id")

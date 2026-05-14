@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,6 +15,15 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(
+
+)
+@SQLDelete(
+        sql = """
+                UPDATE resume SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 @Table(name = "resumes")
 public class Resume {
     @Id

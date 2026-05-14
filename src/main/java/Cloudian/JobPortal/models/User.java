@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.ArrayList;
@@ -23,6 +25,12 @@ import java.time.LocalDateTime;
         },
         name = "users"
 )
+@SQLDelete(
+        sql = """
+                UPDATE users SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class User {
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
@@ -66,4 +74,8 @@ public class User {
     @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<Payment> payments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<OAuth> oauths = new ArrayList<>();
 }

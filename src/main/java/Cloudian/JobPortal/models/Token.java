@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 @Entity
@@ -14,6 +16,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLDelete(
+        sql = """
+                UPDATE token SET delete_at = NOW() WHERE id = ? 
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class Token {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,4 +41,8 @@ public class Token {
     private LocalDateTime usedAt = null;
     @Column(nullable = false , name = "expires_at")
     private LocalDateTime expiresAt;
+
+    //soft delete
+    @Builder.Default
+    LocalDateTime deleteAt = null;
 }
