@@ -53,6 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter
         System.out.println(authResult);
         if (!authResult) {
             filterChain.doFilter(request , response);
+            return;
         }
         System.out.println("Current auth before set: " +
                 SecurityContextHolder.getContext().getAuthentication());
@@ -69,6 +70,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter
             //Give it to Security Context
             SecurityContextHolder.getContext().setAuthentication(authObject);
             System.out.println("Role duoc set vao: " + userDetails.getAuthorities()); //Role da duoc set thanh cong roi
+
+            var user = userService.findUserByEmail(email);
+            if (user != null) {
+                request.setAttribute("userId", user.getId());
+            }
         }
 
         filterChain.doFilter(request , response);
