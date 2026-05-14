@@ -44,6 +44,13 @@ public class GlobalException {
                 new ExceptionDto(e.getMessage() , e.getCode())
         );
     }
+    @ExceptionHandler(value = NotFoundException.class)
+    public ResponseEntity<?> handleNotFoundException(NotFoundException e)
+    {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                new ExceptionDto(e.getMessage() , e.getCode())
+        );
+    }
     @ExceptionHandler(value = UnauthorizedException.class)
     public ResponseEntity<?> handleUnauthorizedException(UnauthorizedException e)
     {

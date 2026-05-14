@@ -38,7 +38,6 @@ public class AuthController {
     @PostMapping("login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthLoginRequest data)
     {
-        System.out.println("Dang vao route login");
         AuthLoginResponse responseData = authService.login(data);
         return ResponseEntity.status(HttpStatus.OK).body(responseData);
     }
@@ -90,6 +89,14 @@ public class AuthController {
             bod.put("message" , "Reset email successfully");
         else bod.put("message" , "Cannot reset email");
         return ResponseEntity.status(HttpStatus.OK).body(bod);
+    }
+    @GetMapping("refresh")
+    public ResponseEntity<?> getAccessToken(
+            @Param("token") String token
+    )
+    {
+        RefreshResponse response = authService.refreshAccessToken(token);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 }

@@ -42,8 +42,8 @@ public class JobApplication {
     @Column(nullable = false , name = "applied_at")
     private LocalDateTime appliedAt;
     @Builder.Default
-    @Column(name = "deleted_at")
-    LocalDateTime deletedAt = null;
+    @Column(name = "delete_at")
+    LocalDateTime deleteAt = null;
     //Foreign Key
     @ManyToOne
     @JoinColumn(nullable = false , name = "job_seeker_id")

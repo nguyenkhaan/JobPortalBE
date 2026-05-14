@@ -15,9 +15,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(
-
-)
 @SQLDelete(
         sql = """
                 UPDATE resume SET delete_at = NOW() WHERE id = ? 

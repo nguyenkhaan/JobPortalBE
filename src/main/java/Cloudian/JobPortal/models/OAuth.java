@@ -29,7 +29,7 @@ public class OAuth {
     Provider provider;
     @Column(name = "provider_id" , nullable = false , unique = true)
     String providerId;
-    @Column(name = "refresh_token" , nullable = false , unique = true)
+    @Column(name = "refresh_token" , nullable = true , unique = true)
     String refreshToken;
     @ManyToOne
     @JoinColumn(name = "user_id" , nullable = false)

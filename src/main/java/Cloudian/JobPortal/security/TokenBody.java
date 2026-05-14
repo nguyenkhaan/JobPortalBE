@@ -1,5 +1,6 @@
 package Cloudian.JobPortal.security;
 
+import Cloudian.JobPortal.models.Provider;
 import Cloudian.JobPortal.models.Role;
 import Cloudian.JobPortal.models.TokenType;
 import jakarta.validation.constraints.NotBlank;
@@ -8,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.ArrayList;
-// local, google, ...
+// provider : local, google, ... st
 @Data
 @AllArgsConstructor
 public class TokenBody
@@ -21,5 +22,5 @@ public class TokenBody
     @NotBlank
     @NotNull
     private TokenType purpose;
-    private String provider;
+    private Provider provider;
 }

@@ -1,6 +1,7 @@
 package Cloudian.JobPortal.security;
 
 import Cloudian.JobPortal.commons.constants.TokenConstants;
+import Cloudian.JobPortal.models.Provider;
 import Cloudian.JobPortal.models.Token;
 import Cloudian.JobPortal.models.TokenType;
 import io.jsonwebtoken.Claims;
@@ -67,7 +68,8 @@ public class JwtService
             claims.put("id" , payload.getId());
         if (payload.getPurpose() != null)
             claims.put("purpose" , payload.getPurpose().name().toString());
-
+        if (payload.getProvider() != null)
+            claims.put("provider" , payload.getProvider().name());
         Date now = new Date();
         Date exp = new Date(System.currentTimeMillis() + mapping.get(type).liveTime());
 
@@ -123,6 +125,10 @@ public class JwtService
     public String extractEmail(String token , TokenType type)
     {
         return extractClaims(token , type, claims -> claims.get("email" , String.class));
+    }
+    public String extractProvider(String token , TokenType type)
+    {
+        return extractClaims(token , type, claims -> claims.get("provider" , String.class));
     }
     public String extractPurpose(String token , TokenType type)
     {
