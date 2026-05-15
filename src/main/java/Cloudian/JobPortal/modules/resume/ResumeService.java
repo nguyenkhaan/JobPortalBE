@@ -113,4 +113,14 @@ public class ResumeService {
         targetResume.setIsDefault(true);
         resumeRepository.save(targetResume);
     }
+
+    @Transactional
+    public void deleteResume(Long resumeId, Long userId) {
+        Resume targetResume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+        if (!targetResume.getJobSeeker().getUser().getId().equals(userId)) {
+            throw new ForbiddenException("You do not have permission to delete this resume");
+        }
+        resumeRepository.delete(targetResume);
+    }
 }

@@ -48,4 +48,15 @@ public class ResumeController {
         return ResponseEntity.noContent().build();
     }
 
+    // delete
+    @PreAuthorize("hasRole('SEEKER')")
+    @DeleteMapping("/{resumeId}")
+    public ResponseEntity<Void> deleteResume(
+            @PathVariable("resumeId") Long resumeId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        resumeService.deleteResume(resumeId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
