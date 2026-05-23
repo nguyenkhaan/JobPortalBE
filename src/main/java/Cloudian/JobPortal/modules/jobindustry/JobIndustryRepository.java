@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface JobIndustryRepository extends JpaRepository<JobIndustry, Long> {
     List<JobIndustry> findByIndustryId(Long industryId);
+
+    List<JobIndustry> findByJobPostId(Long jobPostId);
 }
