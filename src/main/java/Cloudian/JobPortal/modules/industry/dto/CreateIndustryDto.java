@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateIndustryDto {
-    @NotBlank
+    @NotBlank(
+            message = "industry name cannot be blank"
+    )
     String name;
 }
