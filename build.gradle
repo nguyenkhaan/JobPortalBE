@@ -49,6 +49,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-aop:4.0.0-M1'
 	//Minio
 	implementation 'io.minio:minio:8.5.2'
+	implementation("org.springframework.boot:spring-boot-starter-validation:4.1.0-M3")
 }
 
 tasks.named('test') {

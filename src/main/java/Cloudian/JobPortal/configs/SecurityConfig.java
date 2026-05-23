@@ -9,6 +9,7 @@ import Cloudian.JobPortal.security.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -64,6 +65,7 @@ public class SecurityConfig {
                                 .requestMatchers("/auth/reset-password").permitAll()
                                 .requestMatchers("/auth/verify-reset-password").permitAll()
                                 .requestMatchers("/docs/**", "/docs").permitAll()
+                                .requestMatchers(HttpMethod.GET , "/jobpost", "/jobpost/**").permitAll()
                                 .requestMatchers("/scalar/**").permitAll()
                                 .requestMatchers("/openapi.json", "/v3/api-docs/**").permitAll()
                                 .requestMatchers("/auth/verify").permitAll()

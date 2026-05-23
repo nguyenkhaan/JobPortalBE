@@ -12,9 +12,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ResetEmailRequest {
-    @NotBlank
+    @NotBlank(
+            message = "password cannot be blank"
+    )
     private String password;
-    @Email
-    @NotBlank
+    @Email(
+            message = "email must be in valid format: cloudian@example.com"
+    )
+    @NotBlank(
+            message = "email cannot be blank or empty"
+    )
     private String newEmail;
 }

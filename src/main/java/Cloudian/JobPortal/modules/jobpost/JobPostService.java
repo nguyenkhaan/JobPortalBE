@@ -1,0 +1,249 @@
+package Cloudian.JobPortal.modules.jobpost;
+
+import Cloudian.JobPortal.exceptions.custom.BadRequestException;
+import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
+import Cloudian.JobPortal.exceptions.custom.NotFoundException;
+import Cloudian.JobPortal.models.EmployerProfile;
+import Cloudian.JobPortal.models.Industry;
+import Cloudian.JobPortal.models.JobIndustry;
+import Cloudian.JobPortal.models.JobPost;
+import Cloudian.JobPortal.modules.employer.EmployerRepository;
+import Cloudian.JobPortal.modules.industry.IndustryRepository;
+import Cloudian.JobPortal.modules.industry.dto.IndustryResponse;
+import Cloudian.JobPortal.modules.jobindustry.JobIndustryRepository;
+import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
+import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class JobPostService {
+
+    private final JobPostRepository jobPostRepository;
+    private final EmployerRepository employerRepository;
+    private final IndustryRepository industryRepository;
+    private final JobIndustryRepository jobIndustryRepository;
+
+    @Transactional
+    public List<JobPostResponse> getAllJobPost(JobPostFilterRequest filter, int limit, int offset) {
+        if (limit <= 0 || limit > 100) {
+            throw new BadRequestException("Limit must be between 1 and 100");
+        }
+        if (offset < 0) {
+            throw new BadRequestException("Offset cannot be less than 0");
+        }
+        int page = offset / limit;
+        Pageable pageable = PageRequest.of(page, limit);
+
+        Specification<JobPost> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (filter.getKeyword() != null && !filter.getKeyword().trim().isEmpty()) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("title")),
+                        "%" + filter.getKeyword().trim().toLowerCase() + "%"
+                ));
+            }
+
+            if (filter.getSalaryMin() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("salaryMin"), filter.getSalaryMin()));
+            }
+
+            if (filter.getSalaryMax() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("salaryMax"), filter.getSalaryMax()));
+            }
+
+            if (filter.getEducationLevel() != null) {
+                predicates.add(cb.equal(root.get("educationLevel"), filter.getEducationLevel()));
+            }
+
+            if (filter.getJobLevel() != null) {
+                predicates.add(cb.equal(root.get("jobLevel"), filter.getJobLevel()));
+            }
+
+            if (filter.getIndustryIds() != null && !filter.getIndustryIds().isEmpty()) {
+                query.distinct(true);
+                Join<Object, Object> jobIndustryList = root.join("jobIndustryList");
+                predicates.add(jobIndustryList.get("industry").get("id").in(filter.getIndustryIds()));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return jobPostRepository.findAll(spec, pageable).getContent().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    public JobPostResponse getJobPostById(Long id) {
+        JobPost jobPost = requireJobPost(id);
+        return toResponse(jobPost);
+    }
+
+    @Transactional
+    public JobPostResponse createJobPost(Long userId, CreateJobPostDto data) {
+        EmployerProfile employer = requireEmployerProfile(userId);
+        validateSalaries(data.getSalaryMin(), data.getSalaryMax());
+
+        JobPost jobPost = JobPost.builder()
+                .employer(employer)
+                .title(data.getTitle())
+                .description(data.getDescription())
+                .jobLevel(data.getJobLevel())
+                .experience(data.getExperience())
+                .educationLevel(data.getEducationLevel())
+                .status(data.getStatus())
+                .employmentType(data.getEmploymentType())
+                .salaryMin(data.getSalaryMin())
+                .salaryMax(data.getSalaryMax())
+                .build();
+
+        jobPost = jobPostRepository.save(jobPost);
+        saveJobIndustries(jobPost, data.getIndustryIds());
+        return toResponse(jobPost);
+    }
+
+    @Transactional
+    public JobPostResponse updateJobPost(Long id, Long userId, boolean isAdmin, UpdateJobPostDto data) {
+        JobPost jobPost = requireJobPost(id);
+        assertOwnerOrAdmin(jobPost, userId, isAdmin);
+
+        if (data.getTitle() != null && !data.getTitle().isBlank()) {
+            jobPost.setTitle(data.getTitle());
+        }
+        if (data.getDescription() != null && !data.getDescription().isBlank()) {
+            jobPost.setDescription(data.getDescription());
+        }
+        if (data.getJobLevel() != null) {
+            jobPost.setJobLevel(data.getJobLevel());
+        }
+        if (data.getExperience() != null) {
+            jobPost.setExperience(data.getExperience());
+        }
+        if (data.getEducationLevel() != null) {
+            jobPost.setEducationLevel(data.getEducationLevel());
+        }
+        if (data.getStatus() != null) {
+            jobPost.setStatus(data.getStatus());
+        }
+        if (data.getEmploymentType() != null) {
+            jobPost.setEmploymentType(data.getEmploymentType());
+        }
+        if (data.getSalaryMin() != null || data.getSalaryMax() != null) {
+            BigDecimal salaryMin = data.getSalaryMin() != null ? data.getSalaryMin() : jobPost.getSalaryMin();
+            BigDecimal salaryMax = data.getSalaryMax() != null ? data.getSalaryMax() : jobPost.getSalaryMax();
+            validateSalaries(salaryMin, salaryMax);
+            jobPost.setSalaryMin(salaryMin);
+            jobPost.setSalaryMax(salaryMax);
+        }
+        if (data.getIndustryIds() != null) {
+            if (data.getIndustryIds().isEmpty()) {
+                throw new BadRequestException("At least one industry is required");
+            }
+            replaceJobIndustries(jobPost, data.getIndustryIds());
+        }
+
+        jobPost = jobPostRepository.save(jobPost);
+        return toResponse(jobPost);
+    }
+
+    @Transactional
+    public void deleteJobPost(Long id, Long userId, boolean isAdmin) {
+        JobPost jobPost = requireJobPost(id);
+        assertOwnerOrAdmin(jobPost, userId, isAdmin);
+
+        List<JobIndustry> links = jobIndustryRepository.findByJobPostId(id);
+        jobIndustryRepository.deleteAll(links);
+        jobPostRepository.delete(jobPost);
+    }
+
+    private EmployerProfile requireEmployerProfile(Long userId) {
+        return employerRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new NotFoundException("User does not have an employer profile"));
+    }
+
+    private JobPost requireJobPost(Long id) {
+        return jobPostRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Job post not found"));
+    }
+
+    private void assertOwnerOrAdmin(JobPost jobPost, Long userId, boolean isAdmin) {
+        if (isAdmin) {
+            return;
+        }
+        if (!jobPost.getEmployer().getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("You do not have permission to modify this job post");
+        }
+    }
+
+    private void validateSalaries(BigDecimal salaryMin, BigDecimal salaryMax) {
+        if (salaryMin == null || salaryMax == null) {
+            throw new BadRequestException("Salary min and max are required");
+        }
+        if (salaryMin.compareTo(salaryMax) > 0) {
+            throw new BadRequestException("Salary min cannot be greater than salary max");
+        }
+    }
+
+    private void saveJobIndustries(JobPost jobPost, List<Long> industryIds) {
+        List<JobIndustry> jobIndustries = new ArrayList<>();
+        for (Long industryId : industryIds) {
+            Industry industry = industryRepository.findById(industryId)
+                    .orElseThrow(() -> new NotFoundException("Industry not found: " + industryId));
+            jobIndustries.add(JobIndustry.builder()
+                    .industry(industry)
+                    .jobPost(jobPost)
+                    .build());
+        }
+        jobIndustryRepository.saveAll(jobIndustries);
+    }
+
+    private void replaceJobIndustries(JobPost jobPost, List<Long> industryIds) {
+        List<JobIndustry> existing = jobIndustryRepository.findByJobPostId(jobPost.getId());
+        jobIndustryRepository.deleteAll(existing);
+        saveJobIndustries(jobPost, industryIds);
+    }
+
+    private JobPostResponse toResponse(JobPost jobPost) {
+        EmployerProfile employer = jobPost.getEmployer();
+        List<IndustryResponse> industries = jobIndustryRepository.findByJobPostId(jobPost.getId()).stream()
+                .map(ji -> IndustryResponse.builder()
+                        .id(ji.getIndustry().getId())
+                        .name(ji.getIndustry().getName())
+                        .build())
+                .toList();
+
+        return JobPostResponse.builder()
+                .id(jobPost.getId())
+                .title(jobPost.getTitle())
+                .description(jobPost.getDescription())
+                .employmentType(jobPost.getEmploymentType())
+                .status(jobPost.getStatus())
+                .educationLevel(jobPost.getEducationLevel())
+                .experience(jobPost.getExperience())
+                .jobLevel(jobPost.getJobLevel())
+                .salaryMin(jobPost.getSalaryMin())
+                .salaryMax(jobPost.getSalaryMax())
+                .createdAt(jobPost.getCreatedAt())
+                .employer(JobPostResponse.EmployerSummary.builder()
+                        .id(employer.getId())
+                        .companyName(employer.getCompanyName())
+                        .companyWebsite(employer.getCompanyWebsite())
+                        .logo(employer.getLogo())
+                        .build())
+                .industries(industries)
+                .build();
+    }
+}
