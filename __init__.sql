@@ -24,3 +24,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_refresh_token
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
     ON "users"("email")
     WHERE "delete_at" is NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_job_seeker_profile_user_id
+    ON "job_seeker_profile"("user_id")
+    WHERE "delete_at" is NULL;
