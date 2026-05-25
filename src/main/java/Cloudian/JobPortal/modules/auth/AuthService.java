@@ -83,7 +83,7 @@ public class AuthService
             Map<String , Object> mp = new HashMap<>();
             mp.put("email" , user.getEmail());
             CreateAuditDto createAuditDto = CreateAuditDto.builder().
-                    actionType(ActionType.PAYMENT)
+                    actionType(ActionType.CREATE)
                     .recordId(user.getId())
                     .userId(user.getId())
                     .entityName(EntityName.User)
@@ -147,6 +147,15 @@ public class AuthService
             tokenRepository.save(storedToken);
             user.setActive(true);
             userRepository.save(user);
+            Map<String, Object> verifyData = new HashMap<>();
+            verifyData.put("email", user.getEmail());
+            auditService.createAuditLog(CreateAuditDto.builder()
+                    .actionType(ActionType.VERIFY)
+                    .userId(user.getId())
+                    .recordId(user.getId())
+                    .entityName(EntityName.User)
+                    .data(verifyData)
+                    .build());
             return true;
         }
         else throw new BadRequestException("Token Is Invalid");
@@ -232,6 +241,15 @@ public class AuthService
 
         //Save the token to the database
         tokenRepository.save(tk);
+        Map<String, Object> resetData = new HashMap<>();
+        resetData.put("email", user.getEmail());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.RESET_PASSWORD)
+                .userId(user.getId())
+                .recordId(user.getId())
+                .entityName(EntityName.User)
+                .data(resetData)
+                .build());
         return new ResetPasswordResponse(
                 user.getEmail() , verifyToken
         );
@@ -256,6 +274,15 @@ public class AuthService
         user.setPassword(hashedPassword);
         storedToken.setUsedAt(LocalDateTime.now());
         storedToken.setUserId(user.getId());
+        Map<String, Object> resetData = new HashMap<>();
+        resetData.put("email", user.getEmail());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.RESET_PASSWORD)
+                .userId(user.getId())
+                .recordId(user.getId())
+                .entityName(EntityName.User)
+                .data(resetData)
+                .build());
         return true;
     }
     @Transactional //Da test: Neu khong co cai nay thi khi update bang ham set, chugn ta can phai ch userRepo.save(), con neu co cai nay thi an toan hon va khong can userRepo.save() lai
@@ -266,7 +293,17 @@ public class AuthService
             throw new BadRequestException("User not found");
         if (passwordEncoder.matches(password , user.getPassword()))
         {
+            Map<String, Object> emailData = new HashMap<>();
+            emailData.put("oldEmail", email);
+            emailData.put("newEmail", updateEmail);
             user.setEmail(updateEmail);
+            auditService.createAuditLog(CreateAuditDto.builder()
+                    .actionType(ActionType.RESET_EMAIL)
+                    .userId(user.getId())
+                    .recordId(user.getId())
+                    .entityName(EntityName.User)
+                    .data(emailData)
+                    .build());
             return true;
         }
         throw new BadRequestException("Wrong password");

@@ -3,10 +3,9 @@ package Cloudian.JobPortal.modules.jobpost;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
-import Cloudian.JobPortal.models.EmployerProfile;
-import Cloudian.JobPortal.models.Industry;
-import Cloudian.JobPortal.models.JobIndustry;
-import Cloudian.JobPortal.models.JobPost;
+import Cloudian.JobPortal.models.*;
+import Cloudian.JobPortal.modules.audit.AuditService;
+import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.employer.EmployerRepository;
 import Cloudian.JobPortal.modules.industry.IndustryRepository;
 import Cloudian.JobPortal.modules.industry.dto.IndustryResponse;
@@ -25,7 +24,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +36,7 @@ public class JobPostService {
     private final EmployerRepository employerRepository;
     private final IndustryRepository industryRepository;
     private final JobIndustryRepository jobIndustryRepository;
+    private final AuditService auditService;
 
     @Transactional
     public List<JobPostResponse> getAllJobPost(JobPostFilterRequest filter, int limit, int offset) {
@@ -112,6 +114,15 @@ public class JobPostService {
 
         jobPost = jobPostRepository.save(jobPost);
         saveJobIndustries(jobPost, data.getIndustryIds());
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("title", jobPost.getTitle());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.CREATE)
+                .userId(userId)
+                .recordId(jobPost.getId())
+                .entityName(EntityName.JobPost)
+                .data(auditData)
+                .build());
         return toResponse(jobPost);
     }
 
@@ -156,6 +167,15 @@ public class JobPostService {
         }
 
         jobPost = jobPostRepository.save(jobPost);
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("title", jobPost.getTitle());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(userId)
+                .recordId(jobPost.getId())
+                .entityName(EntityName.JobPost)
+                .data(auditData)
+                .build());
         return toResponse(jobPost);
     }
 
@@ -164,6 +184,15 @@ public class JobPostService {
         JobPost jobPost = requireJobPost(id);
         assertOwnerOrAdmin(jobPost, userId, isAdmin);
 
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("title", jobPost.getTitle());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.DELETE)
+                .userId(userId)
+                .recordId(jobPost.getId())
+                .entityName(EntityName.JobPost)
+                .data(auditData)
+                .build());
         List<JobIndustry> links = jobIndustryRepository.findByJobPostId(id);
         jobIndustryRepository.deleteAll(links);
         jobPostRepository.delete(jobPost);
