@@ -6,44 +6,55 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
-
+import java.util.Map;
 @Entity
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @SQLDelete(
         sql = """
-                UPDATE payment SET delete_at = NOW() WHERE id = ? 
+                UPDATE audit_log SET delete_at = NOW() WHERE id = ? 
                 """
 )
 @SQLRestriction("delete_at is NULL")
-public class Payment {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false)
-    @Builder.Default
-    private Double cost = 0.0;
+
+    @Column(name = "action_type" , nullable = false)
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    PaymentMethod method = PaymentMethod.MOMO;
-    @Column(name = "note" , columnDefinition = "TEXT")
-    private String note;
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    PaymentStatus status = PaymentStatus.PENDING;
-    @Column(name = "created_at" , nullable = false)
+    ActionType actionType;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private Map<String , Object> data;
+
     @CreationTimestamp
-    LocalDateTime createdAt;
+    @Column(name = "event_time")
+    private LocalDateTime eventTime;
+
+    @Enumerated(EnumType.STRING)
+    EntityName entityName;
+
+    @Column(name = "record_id" , nullable = false)
+    private Long recordId;
+
     @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null;
+
+    //foregin key
     @ManyToOne
     @JoinColumn(name = "user_id" , nullable = false)
-    private User user;
+    User user;
+
+
 }

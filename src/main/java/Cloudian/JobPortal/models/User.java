@@ -73,6 +73,10 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     @Builder.Default
+    private  List<AuditLog> auditLogs = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
     private List<Payment> payments = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")
