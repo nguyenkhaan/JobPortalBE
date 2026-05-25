@@ -6,6 +6,8 @@ import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.exceptions.custom.ResourceNotFoundException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.models.*;
+import Cloudian.JobPortal.modules.audit.AuditService;
+import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.auth.dto.*;
 import Cloudian.JobPortal.modules.role.UserRoleRepository;
 import Cloudian.JobPortal.modules.token.TokenRepository;
@@ -25,6 +27,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,6 +45,8 @@ public class AuthService
     private UserRoleRepository userRoleRepository;
     @Autowired
     private OAuthRepository oAuthRepository;
+    @Autowired
+    private AuditService auditService;
     @org.springframework.beans.factory.annotation.Autowired(required=true)
     private PasswordEncoder passwordEncoder;
     @Transactional   //Dam bao khong bi loi database khi them du lieu vao
@@ -73,8 +79,17 @@ public class AuthService
 
             userRepository.save(user);
             userRoleRepository.save(userRole);
-
-
+            //Creating Audit log
+            Map<String , Object> mp = new HashMap<>();
+            mp.put("email" , user.getEmail());
+            CreateAuditDto createAuditDto = CreateAuditDto.builder().
+                    actionType(ActionType.CREATE)
+                    .recordId(user.getId())
+                    .userId(user.getId())
+                    .entityName(EntityName.User)
+                    .data(mp)
+                    .build();
+            auditService.createAuditLog(createAuditDto);
         }
         Long id = user.getId();
         Token verifiedToken = tokenRepository.findByUserIdAndType(id , TokenType.REGISTER).orElse(null);
