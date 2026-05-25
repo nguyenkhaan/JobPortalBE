@@ -83,7 +83,7 @@ public class AuthService
             Map<String , Object> mp = new HashMap<>();
             mp.put("email" , user.getEmail());
             CreateAuditDto createAuditDto = CreateAuditDto.builder().
-                    actionType(ActionType.CREATE)
+                    actionType(ActionType.PAYMENT)
                     .recordId(user.getId())
                     .userId(user.getId())
                     .entityName(EntityName.User)
