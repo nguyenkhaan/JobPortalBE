@@ -49,6 +49,10 @@ public class JobSeekerProfile {
     private List<Resume> resumes = new ArrayList<>();
 
     //soft delete
+    //Phai co JobSeeker, mac dinh se co truong verify la false -> Chi co admin moi co the thay doi truong nay
+    @Column(name = "approve")
+    @Builder.Default
+    private Boolean approve = false;
     @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null;

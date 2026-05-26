@@ -31,7 +31,6 @@ public class ResumeService {
     private ResumeResponse mapToResponse(Resume resume) {
         return ResumeResponse.builder()
                 .id(resume.getId())
-                .fileName(resume.getFileName())
                 .fileUrl(resume.getFileUrl())
                 .defaultResume(resume.getIsDefault())
                 .uploadedAt(resume.getUploadedAt())
@@ -74,7 +73,6 @@ public class ResumeService {
         String fileUrl = minioService.getFileUrl(minioObjectName);
 
         Resume resume = Resume.builder()
-                .fileName(file.getOriginalFilename())
                 .fileUrl(fileUrl)
                 .isDefault(setAsDefault)
                 .jobSeeker(profile)
@@ -82,7 +80,6 @@ public class ResumeService {
 
         Resume saved = resumeRepository.save(resume);
         Map<String, Object> auditData = new HashMap<>();
-        auditData.put("fileName", saved.getFileName());
         auditService.createAuditLog(CreateAuditDto.builder()
                 .actionType(ActionType.CREATE)
                 .userId(userId)

@@ -110,6 +110,8 @@ public class JobPostService {
                 .employmentType(data.getEmploymentType())
                 .salaryMin(data.getSalaryMin())
                 .salaryMax(data.getSalaryMax())
+                .tags(data.getTags()) //Default will set to ""
+                .expiresAt(data.getExpiresAt())   //Default will set to null
                 .build();
 
         jobPost = jobPostRepository.save(jobPost);
@@ -165,7 +167,14 @@ public class JobPostService {
             }
             replaceJobIndustries(jobPost, data.getIndustryIds());
         }
-
+        if (data.getIsUpdateExpires() != null)
+        {
+            jobPost.setExpiresAt(data.getExpiresAt());
+        }
+        if (data.getTags() != null)
+        {
+            jobPost.setTags(data.getTags());
+        }
         jobPost = jobPostRepository.save(jobPost);
         Map<String, Object> auditData = new HashMap<>();
         auditData.put("title", jobPost.getTitle());

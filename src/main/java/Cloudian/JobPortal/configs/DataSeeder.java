@@ -1,4 +1,5 @@
-//Running seeder: .\gradlew bootRun --args="--seeder"
+// Running seeder (stop any app already on 8080 first, or use another port):
+//   .\gradlew bootRun --args="--seeder --server.port=8081"
 package Cloudian.JobPortal.configs;
 
 import Cloudian.JobPortal.models.*;
@@ -15,15 +16,18 @@ import Cloudian.JobPortal.modules.social.SocialRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import Cloudian.JobPortal.modules.auth.OAuthRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class DataSeeder implements ApplicationRunner {
@@ -47,39 +51,73 @@ public class DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (args.getOptionValues("seeder") == null) {
+        if (!args.containsOption("seeder")) {
             return;
         }
-        if (userRepository.count() > 0) {
+        log.info("DataSeeder: --seeder flag detected, starting seed...");
+
+        if (jobPostRepository.count() > 0
+                && resumeRepository.count() > 0
+                && jobApplicationRepository.count() > 0) {
+            log.info("DataSeeder: job posts, resumes, and applications already exist — skipping.");
             return;
         }
 
         String hashedPassword = passwordEncoder.encode(DEFAULT_PASSWORD);
 
-        List<User> users = seedUsers(hashedPassword);
-        users = userRepository.saveAll(users);
+        List<User> users;
+        if (userRepository.count() == 0) {
+            users = userRepository.saveAll(seedUsers(hashedPassword));
+            userRoleRepository.saveAll(seedUserRoles(users));
+        } else {
+            users = userRepository.findAll();
+        }
 
-        userRoleRepository.saveAll(seedUserRoles(users));
+        List<Industry> industries = industryRepository.count() == 0
+                ? industryRepository.saveAll(seedIndustries())
+                : industryRepository.findAll();
 
-        List<Industry> industries = industryRepository.saveAll(seedIndustries());
+        List<EmployerProfile> employers = employerRepository.count() == 0
+                ? employerRepository.saveAll(seedEmployers(users))
+                : employerRepository.findAll();
 
-        List<EmployerProfile> employers = employerRepository.saveAll(seedEmployers(users));
+        List<JobSeekerProfile> seekers = jobSeekerRepository.count() == 0
+                ? jobSeekerRepository.saveAll(seedJobSeekers(users))
+                : jobSeekerRepository.findAll();
 
-        List<JobSeekerProfile> seekers = jobSeekerRepository.saveAll(seedJobSeekers(users));
+        List<Resume> resumes = resumeRepository.count() == 0
+                ? resumeRepository.saveAll(seedResumes(seekers))
+                : resumeRepository.findAll();
 
-        List<Resume> resumes = resumeRepository.saveAll(seedResumes(seekers));
+        List<JobPost> jobPosts = jobPostRepository.count() == 0
+                ? jobPostRepository.saveAll(seedJobPosts(employers))
+                : jobPostRepository.findAll();
 
-        List<JobPost> jobPosts = jobPostRepository.saveAll(seedJobPosts(employers));
+        if (jobIndustryRepository.count() == 0 && !jobPosts.isEmpty() && !industries.isEmpty()) {
+            jobIndustryRepository.saveAll(seedJobIndustries(industries, jobPosts));
+        }
 
-        jobIndustryRepository.saveAll(seedJobIndustries(industries, jobPosts));
+        if (jobApplicationRepository.count() == 0 && !seekers.isEmpty() && !jobPosts.isEmpty() && !resumes.isEmpty()) {
+            jobApplicationRepository.saveAll(seedJobApplications(seekers, jobPosts, resumes));
+        }
 
-        jobApplicationRepository.saveAll(seedJobApplications(seekers, jobPosts, resumes));
+        if (paymentRepository.count() == 0) {
+            paymentRepository.saveAll(seedPayments(users));
+        }
 
-        paymentRepository.saveAll(seedPayments(users));
+        if (socialRepository.count() == 0) {
+            socialRepository.saveAll(seedSocials(users));
+        }
 
-        socialRepository.saveAll(seedSocials(users));
+        if (oAuthRepository.count() == 0) {
+            oAuthRepository.saveAll(seedOAuths(users));
+        }
 
-        oAuthRepository.saveAll(seedOAuths(users));
+        log.info("DataSeeder: finished — users={}, jobPosts={}, resumes={}, applications={}",
+                userRepository.count(),
+                jobPostRepository.count(),
+                resumeRepository.count(),
+                jobApplicationRepository.count());
     }
 
     private List<User> seedUsers(String hashedPassword) {
@@ -179,11 +217,14 @@ public class DataSeeder implements ApplicationRunner {
                 "Nha Trang, Khanh Hoa",
                 "Can Tho City"
         };
-
+        Boolean[] approved = {
+                true, false, false, true, false, true
+        };
         List<JobSeekerProfile> seekers = new ArrayList<>();
         for (int i = 0; i < SEED_COUNT; i++) {
             seekers.add(JobSeekerProfile.builder()
                     .user(users.get(i))
+                    .approve(approved[i])
                     .fullName(names[i])
                     .phone(phones[i])
                     .address(addresses[i])
@@ -197,7 +238,6 @@ public class DataSeeder implements ApplicationRunner {
         for (int i = 0; i < SEED_COUNT; i++) {
             resumes.add(Resume.builder()
                     .jobSeeker(seekers.get(i))
-                    .fileName("resume-" + (i + 1) + ".pdf")
                     .fileUrl("https://storage.jobportal.test/resumes/resume-" + (i + 1) + ".pdf")
                     .isDefault(true)
                     .build());
@@ -234,7 +274,18 @@ public class DataSeeder implements ApplicationRunner {
                 "Own product roadmap for B2B hiring features.",
                 "Support employers and job seekers via chat and email."
         };
-
+        String[] tags = {
+                "fullstack;backend", "fulltime;intern", "health;salary",
+                "multi;union", "frontend;design", "support;customer"
+        };
+        LocalDateTime[] expiresAt = {
+                LocalDateTime.of(2026, 6, 1, 0, 0),
+                LocalDateTime.of(2026, 8, 1, 0, 0),
+                LocalDateTime.of(2026, 6, 15, 12, 0),
+                LocalDateTime.of(2026, 9, 1, 0, 0),
+                LocalDateTime.of(2026, 7, 1, 18, 30),
+                LocalDateTime.of(2026, 10, 1, 0, 0)
+        };
         List<JobPost> posts = new ArrayList<>();
         for (int i = 0; i < SEED_COUNT; i++) {
             posts.add(JobPost.builder()
@@ -246,6 +297,8 @@ public class DataSeeder implements ApplicationRunner {
                     .educationLevel(educationLevels[i])
                     .experience(i)
                     .jobLevel(jobLevels[i])
+                    .expiresAt(expiresAt[i])
+                    .tags(tags[i])
                     .salaryMin(BigDecimal.valueOf(8_000_000L + i * 1_000_000L))
                     .salaryMax(BigDecimal.valueOf(15_000_000L + i * 2_000_000L))
                     .build());
@@ -285,7 +338,6 @@ public class DataSeeder implements ApplicationRunner {
                 "I led two product launches in my previous company.",
                 "I enjoy helping users and resolving issues quickly."
         };
-
         List<JobApplication> applications = new ArrayList<>();
         for (int i = 0; i < SEED_COUNT; i++) {
             applications.add(JobApplication.builder()

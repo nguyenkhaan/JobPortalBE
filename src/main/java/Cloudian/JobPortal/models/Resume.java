@@ -17,19 +17,15 @@ import java.util.List;
 @Builder
 @SQLDelete(
         sql = """
-                UPDATE resume SET delete_at = NOW() WHERE id = ? 
+                UPDATE resumes SET delete_at = NOW() WHERE id = ? 
                 """
 )
-@SQLRestriction("delete_at is NULL")
+@SQLRestriction("deleted_at is NULL")
 @Table(name = "resumes")
 public class Resume {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    // thêm file name như yêu cầu:
-    @Column(nullable = false, name = "file_name")
-    private String fileName;
 
     @Column(nullable = false , name = "file_url")
     private String fileUrl;
@@ -44,7 +40,7 @@ public class Resume {
 
     @Column(name = "deleted_at")
     @Builder.Default
-    LocalDateTime deletedAt = null; // đổi tên deleteAt -> deletedAt.
+    LocalDateTime deleteAt = null; // đổi tên deleteAt -> deletedAt.
     //Foreign keys
 
     @OneToMany(mappedBy = "resume")
@@ -60,11 +56,11 @@ public class Resume {
 /**
  * Cu phap JPA:
  * Bang A chua khoa ngoai
- * @ManyToOne
- * @JoinColumn(name = "b1" , nullable = false)
+ * ManyToOne
+ * JoinColumn(name = "b1" , nullable = false)
  * B b;
  *
  * Table B;
- * @OneToMany(mappedBy = "b")
+ * OneToMany(mappedBy = "b")
  * - Khai bao index thi su dung ten cot thuc su, khong dung ten field
  */
