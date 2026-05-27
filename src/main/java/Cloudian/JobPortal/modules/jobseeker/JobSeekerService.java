@@ -121,5 +121,11 @@ public class JobSeekerService {
         return mapToResponse(saved);
     }
 
+    @Transactional
+    public void deleteProfile(Long userId) {
+        JobSeekerProfile profile = jobSeekerRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile does not exist!"));
+        jobSeekerRepository.delete(profile);
+    }
 
 }
