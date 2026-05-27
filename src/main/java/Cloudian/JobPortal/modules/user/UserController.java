@@ -1,5 +1,6 @@
 package Cloudian.JobPortal.modules.user;
 
+import Cloudian.JobPortal.modules.base.dto.ApiResponse;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,9 @@ public class UserController {
     @Autowired
     public UserService userService;
     @GetMapping()
-    public ResponseEntity<?> getAllUser()
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUser()
     {
         List<UserResponse> responseData = userService.getAllUsers();
-        return ResponseEntity.ok().body(responseData);
+        return ResponseEntity.ok(ApiResponse.ok(responseData));
     }
 }

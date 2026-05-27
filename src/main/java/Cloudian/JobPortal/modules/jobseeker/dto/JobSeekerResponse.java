@@ -1,5 +1,6 @@
 package Cloudian.JobPortal.modules.jobseeker.dto;
 
+import Cloudian.JobPortal.modules.user.dto.JobSeekerProfileResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
