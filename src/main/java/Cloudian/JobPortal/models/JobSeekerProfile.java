@@ -40,8 +40,8 @@ public class JobSeekerProfile {
     private String phone;
     //foreign key
     // User only has 1 profile
-    @ManyToOne
-    @JoinColumn(nullable = false , name = "userId")
+    @OneToOne
+    @JoinColumn(nullable = false, name = "user_id", unique = true)
     private User user;
     // User has many CVs
     @OneToMany(mappedBy = "jobSeeker")

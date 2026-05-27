@@ -55,9 +55,8 @@ public class User {
     private LocalDateTime updatedAt;
 
     //Foreign keys
-    @OneToMany(mappedBy = "user")  //map den field nao trong model class cua jobSeekerProfile
-    @Builder.Default
-    private List<JobSeekerProfile> jobSeekerProfileList = new ArrayList<>();  //Kiem tra xem ten bang co trung ten class khong, ten cot co trung ten thuoc tinh khong
+    @OneToOne(mappedBy = "user")
+    private JobSeekerProfile jobSeekerProfile;
 //    @OneToMany(mappedBy = "owner")  //Noi toi cot nao
 //    @Builder.Default
     @OneToOne(mappedBy = "owner" , cascade = CascadeType.ALL)

@@ -39,7 +39,8 @@ public class ResumeService {
 
     // upload / post
     @Transactional
-    public ResumeResponse uploadResume(MultipartFile file, Boolean isDefaultReq, Long userId) {
+    public ResumeResponse uploadResume(MultipartFile file, Boolean isDefaultReq, Long userId)
+    {
         if (file.isEmpty()) {
             throw new BadRequestException("File cannot be empty");
         }
@@ -53,7 +54,7 @@ public class ResumeService {
         }
 
         JobSeekerProfile profile = jobSeekerRepository.findByUserId(userId)
-                .orElseThrow(() -> new ForbiddenException("You must complete your Job Seeker profile before uploading a resume"));
+                .orElseThrow(() -> new ForbiddenException("You must create your Job Seeker profile before uploading a resume"));
 
         List<Resume> existingResumes = resumeRepository.findAllByJobSeeker_User_Id(userId);
         boolean isFirstResume = existingResumes.isEmpty();
@@ -98,7 +99,21 @@ public class ResumeService {
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
-
+    @Transactional(readOnly = true)
+    public List<ResumeResponse> getJobSeekerResumes(
+            Long userId,
+            Long jobSeekerId
+    )
+    {
+        return resumeRepository
+                .findAllByJobSeeker_IdAndJobSeeker_User_Id(
+                        jobSeekerId,
+                        userId
+                )
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
     // set
     @Transactional
     public void setDefaultResume(Long resumeId, Long userId) {

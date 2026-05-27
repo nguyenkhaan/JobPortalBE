@@ -5,6 +5,7 @@ import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.models.AuditLog;
 import Cloudian.JobPortal.models.User;
 import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
+import Cloudian.JobPortal.modules.audit.dto.AuditLogResponse;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +22,10 @@ public class AuditService {
     AuditRepository auditRepository;
     @Autowired
     UserRepository userRepository;
-    public Page<AuditLog> getAllAuditLogs(Integer limit , Integer offset)
+    public Page<AuditLogResponse> getAllAuditLogs(Integer limit , Integer offset)
     {
         Pageable pageable = PageRequest.of(offset , limit);
-        return auditRepository.findAll(pageable);
+        return auditRepository.findAll(pageable).map(this::toAuditLogResponse);
     }
     @Transactional
     public AuditLog createAuditLog(CreateAuditDto data)
@@ -39,5 +40,17 @@ public class AuditService {
                 .build();
         auditRepository.save(audit);
         return audit;
+    }
+
+    private AuditLogResponse toAuditLogResponse(AuditLog auditLog) {
+        return AuditLogResponse.builder()
+                .id(auditLog.getId())
+                .actionType(auditLog.getActionType())
+                .entityName(auditLog.getEntityName())
+                .recordId(auditLog.getRecordId())
+                .eventTime(auditLog.getEventTime())
+                .actorUserId(auditLog.getUser() != null ? auditLog.getUser().getId() : null)
+                .actorEmail(auditLog.getUser() != null ? auditLog.getUser().getEmail() : null)
+                .build();
     }
 }
