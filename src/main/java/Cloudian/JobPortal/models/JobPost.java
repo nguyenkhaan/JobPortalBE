@@ -91,6 +91,14 @@ public class JobPost {
     @Column(nullable = false , name = "created_at")
     private LocalDateTime createdAt;
 
+    //Thoi gian het haN
+    @Builder.Default
+    @Column(nullable = false , name = "expires_at")
+    private LocalDateTime expiresAt = null;
+
+    @Builder.Default
+    @Column(nullable = false , name = "tags")
+    private String tags = "";
     //------------------------------------------------------------------------------------
     //Foreign Key Map
     @OneToMany(mappedBy = "jobPost")

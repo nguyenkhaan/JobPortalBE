@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -54,4 +55,9 @@ public class CreateJobPostDto {
 
     @NotNull(message = "employment type must be in FULLTIME, PARTTIME")
     EmploymentType employmentType;
+
+    private LocalDateTime expiresAt; //Thoi gian het han jobpost
+
+    @NotNull(message =  "Tags must be set by empty (not null)")
+    private String tags;
 }

@@ -2,8 +2,9 @@ package Cloudian.JobPortal.modules.employer;
 
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
-import Cloudian.JobPortal.models.EmployerProfile;
-import Cloudian.JobPortal.models.User;
+import Cloudian.JobPortal.models.*;
+import Cloudian.JobPortal.modules.audit.AuditService;
+import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.employer.dto.CreateEmployerProfileRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileUpdateRequest;
@@ -14,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class EmployerService {
@@ -24,6 +27,8 @@ public class EmployerService {
     EmployerRepository employerRepository;
     @Autowired
     MinioService minioService;
+    @Autowired
+    AuditService auditService;
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
     {
@@ -73,6 +78,15 @@ public class EmployerService {
                 .logo(fileName.isEmpty() ? null : fileName)
                 .build();
         employerRepository.save(newEmployerProfile);
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("companyName", newEmployerProfile.getCompanyName());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.CREATE)
+                .userId(userId)
+                .recordId(newEmployerProfile.getId())
+                .entityName(EntityName.EmploymentProfile)
+                .data(auditData)
+                .build());
         return mappingToEmployerResponse(newEmployerProfile);
     }
     @Transactional
@@ -122,6 +136,15 @@ public class EmployerService {
                 minioService.deleteFile(oldFileName);
         }
         employerRepository.save(profile);
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("companyName", profile.getCompanyName());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(userId)
+                .recordId(profile.getId())
+                .entityName(EntityName.EmploymentProfile)
+                .data(auditData)
+                .build());
         return mappingToEmployerResponse(profile);
     }
 }

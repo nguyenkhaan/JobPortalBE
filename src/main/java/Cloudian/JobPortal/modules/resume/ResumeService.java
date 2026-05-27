@@ -3,8 +3,9 @@ package Cloudian.JobPortal.modules.resume;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.ResourceNotFoundException;
 import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
-import Cloudian.JobPortal.models.JobSeekerProfile;
-import Cloudian.JobPortal.models.Resume;
+import Cloudian.JobPortal.models.*;
+import Cloudian.JobPortal.modules.audit.AuditService;
+import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.resume.dto.ResumeResponse;
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,12 +25,12 @@ public class ResumeService {
     private final ResumeRepository resumeRepository;
     private final MinioService minioService;
     private final JobSeekerRepository jobSeekerRepository;
+    private final AuditService auditService;
 
     //HELPER: Map Entity sang DTO
     private ResumeResponse mapToResponse(Resume resume) {
         return ResumeResponse.builder()
                 .id(resume.getId())
-                .fileName(resume.getFileName())
                 .fileUrl(resume.getFileUrl())
                 .defaultResume(resume.getIsDefault())
                 .uploadedAt(resume.getUploadedAt())
@@ -70,13 +73,21 @@ public class ResumeService {
         String fileUrl = minioService.getFileUrl(minioObjectName);
 
         Resume resume = Resume.builder()
-                .fileName(file.getOriginalFilename())
                 .fileUrl(fileUrl)
                 .isDefault(setAsDefault)
                 .jobSeeker(profile)
                 .build();
 
-        return mapToResponse(resumeRepository.save(resume));
+        Resume saved = resumeRepository.save(resume);
+        Map<String, Object> auditData = new HashMap<>();
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.CREATE)
+                .userId(userId)
+                .recordId(saved.getId())
+                .entityName(EntityName.Resume)
+                .data(auditData)
+                .build());
+        return mapToResponse(saved);
     }
 
     // get
@@ -112,6 +123,15 @@ public class ResumeService {
 
         targetResume.setIsDefault(true);
         resumeRepository.save(targetResume);
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("resumeId", resumeId);
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(userId)
+                .recordId(resumeId)
+                .entityName(EntityName.Resume)
+                .data(auditData)
+                .build());
     }
 
     @Transactional

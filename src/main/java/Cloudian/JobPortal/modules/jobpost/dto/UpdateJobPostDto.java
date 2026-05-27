@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -29,4 +30,7 @@ public class UpdateJobPostDto {
     @Min(value = 0, message = "experience must be greater than or equal to 0")
     private Integer experience;
     private EmploymentType employmentType;
+    private String tags;
+    private LocalDateTime expiresAt;
+    private Boolean isUpdateExpires; //Chiu trach nhiem kiem tra xem nguoi dung co muon update expiresAt khong???
 }

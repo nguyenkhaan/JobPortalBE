@@ -41,7 +41,7 @@ public class JobPostController {
     @GetMapping
     public ResponseEntity<List<JobPostResponse>> getAllJobPost(
             @ModelAttribute JobPostFilterRequest request,
-            @RequestParam(required = false, defaultValue = "0") Integer offset,
+            @RequestParam(required = false, defaultValue = "1") Integer offset,
             @RequestParam(required = false, defaultValue = "20") Integer limit
     ) {
         List<JobPostResponse> response = jobPostService.getAllJobPost(request, limit, offset);

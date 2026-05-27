@@ -1,8 +1,9 @@
 package Cloudian.JobPortal.modules.jobseeker;
 
 import Cloudian.JobPortal.exceptions.custom.*;
-import Cloudian.JobPortal.models.JobSeekerProfile;
-import Cloudian.JobPortal.models.User;
+import Cloudian.JobPortal.models.*;
+import Cloudian.JobPortal.modules.audit.AuditService;
+import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.jobseeker.dto.CreateJobSeekerRequest;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
 import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerRequest;
@@ -11,11 +12,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class JobSeekerService {
     private final JobSeekerRepository jobSeekerRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     private JobSeekerResponse mapToResponse(JobSeekerProfile profile){
         return JobSeekerResponse.builder()
@@ -49,7 +54,17 @@ public class JobSeekerService {
                 .user(user)
                 .build();
 
-        return mapToResponse(jobSeekerRepository.save(profile));
+        JobSeekerProfile saved = jobSeekerRepository.save(profile);
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("fullName", saved.getFullName());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.CREATE)
+                .userId(userId)
+                .recordId(saved.getId())
+                .entityName(EntityName.JobSeekerProfile)
+                .data(auditData)
+                .build());
+        return mapToResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -85,7 +100,25 @@ public class JobSeekerService {
         }
 
 
-        return mapToResponse(jobSeekerRepository.save(profile));
+        JobSeekerProfile saved = jobSeekerRepository.save(profile);
+        Map<String, Object> auditData = new HashMap<>();
+        if (request.getFullName() != null) {
+            auditData.put("fullName", saved.getFullName());
+        }
+        if (request.getPhone() != null) {
+            auditData.put("phone", saved.getPhone());
+        }
+        if (request.getAddress() != null) {
+            auditData.put("address", saved.getAddress());
+        }
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(userId)
+                .recordId(saved.getId())
+                .entityName(EntityName.JobSeekerProfile)
+                .data(auditData)
+                .build());
+        return mapToResponse(saved);
     }
 
     @Transactional
