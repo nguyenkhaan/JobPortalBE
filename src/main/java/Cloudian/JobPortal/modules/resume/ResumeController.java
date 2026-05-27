@@ -52,5 +52,16 @@ public class ResumeController extends BaseController {
         resumeService.setDefaultResume(resumeId, userId);
         return ResponseEntity.noContent().build();
     }
-    //Them ham dung de delete cv khoi he thong
+
+    // delete
+    @PreAuthorize("hasRole('SEEKER')")
+    @DeleteMapping("/{resumeId}")
+    public ResponseEntity<Void> deleteResume(
+            @PathVariable("resumeId") Long resumeId,
+            @RequestAttribute("userId") Long userId
+    ) {
+        resumeService.deleteResume(resumeId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
 }

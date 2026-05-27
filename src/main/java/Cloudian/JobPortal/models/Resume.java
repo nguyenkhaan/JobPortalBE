@@ -9,6 +9,7 @@ import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -34,11 +35,11 @@ public class Resume {
     @Column(nullable = false , name = "uploaded_at", updatable = false)
     private LocalDateTime uploadedAt;
 
-    @Column(nullable = false , name = "is_default") // nên đổi thành is_default.
+    @Column(nullable = false , name = "is_default")
     @Builder.Default
     private Boolean isDefault = false;
 
-    @Column(name = "deleted_at")
+    @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null; // đổi tên deleteAt -> deletedAt.
     //Foreign keys

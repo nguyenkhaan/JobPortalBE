@@ -51,4 +51,12 @@ public class JobSeekerController {
         JobSeekerResponse response = jobSeekerService.updateProfile(request, userId);
         return ResponseEntity.ok(response);
     }
+
+    @PreAuthorize("hasRole('SEEKER')")
+    @DeleteMapping
+    public ResponseEntity<Void> deleteProfile(Authentication authentication) {
+        Long userId = getUserIdFromAuth(authentication);
+        jobSeekerService.deleteProfile(userId);
+        return ResponseEntity.noContent().build();
+    }
 }
