@@ -13,9 +13,10 @@ init.sql
 .springBeans
 .sts4-cache
 bin/
+build
 !**/src/main/**/bin/
 !**/src/test/**/bin/
-
+.env
 ### IntelliJ IDEA ###
 .idea
 *.iws
@@ -34,4 +35,5 @@ out/
 
 ### VS Code ###
 .vscode/
+app.jar
 **/application.properties

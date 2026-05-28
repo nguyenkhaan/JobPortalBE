@@ -10,12 +10,12 @@ public class MinioConfig {
     String accessKey;
     @Value("${minio.access.secret}")
     String secretKey;
+    @Value("${minio.url}")
+    String endpoint;
     @Bean
     public MinioClient minioClient() {
-        System.out.println(secretKey);
-        System.out.println(accessKey);
         return MinioClient.builder()
-                .endpoint("http://localhost:9000")
+                .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
     }
