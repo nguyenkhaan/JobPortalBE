@@ -11,6 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthController {
     @GetMapping
     public ResponseEntity<?> checkingAppHealth() {
-        return ResponseEntity.status(HttpStatus.OK).body("Your app is running. Do you know it");
+        return ResponseEntity.status(HttpStatus.OK).body("Your app is running. Build with Cloudian ❤\uFE0F Cloud");
     }
 }
