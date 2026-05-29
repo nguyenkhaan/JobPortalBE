@@ -31,7 +31,15 @@ services:
         condition: service_healthy
     networks:
       - jobportal-network
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
 
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+
+    restart: unless-stopped
   minio:
     image: minio/minio:latest
     container_name: jobportal-minio
