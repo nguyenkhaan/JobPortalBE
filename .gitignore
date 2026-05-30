@@ -36,4 +36,3 @@ out/
 ### VS Code ###
 .vscode/
 app.jar
-**/application.properties
