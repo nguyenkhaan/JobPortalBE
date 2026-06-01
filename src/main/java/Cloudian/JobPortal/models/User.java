@@ -20,7 +20,8 @@ import java.time.LocalDateTime;
 @Table(
         indexes = {
                 @Index(name = "idx_active" , columnList = "active")
-        }
+        },
+        name = "users"
 )
 public class User {
     @Id
@@ -46,9 +47,8 @@ public class User {
     private LocalDateTime updatedAt;
 
     //Foreign keys
-    @OneToMany(mappedBy = "user")  //map den field nao trong model class cua jobSeekerProfile
-    @Builder.Default
-    private List<JobSeekerProfile> jobSeekerProfileList = new ArrayList<>();  //Kiem tra xem ten bang co trung ten class khong, ten cot co trung ten thuoc tinh khong
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private JobSeekerProfile jobSeekerProfile;
     @OneToMany(mappedBy = "owner")  //Noi toi cot nao
     @Builder.Default
     private List<EmployerProfile> employerProfileList = new ArrayList<>();

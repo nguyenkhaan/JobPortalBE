@@ -76,6 +76,7 @@ public class AuthService
         if (verifiedToken != null)
             tokenRepository.deleteById(verifiedToken.getId());
             //Tien hanh tao token moi
+        System.out.println(user.getId());
         String token = jwtService.generateToken(new TokenBody(user.getEmail() , user.getId() , null , TokenType.REGISTER, Provider.LOCAL) , TokenType.REGISTER);
             //Luu Token vao database
         String hashedToken = SHA256Hashing.generateSHA256Hash(token);

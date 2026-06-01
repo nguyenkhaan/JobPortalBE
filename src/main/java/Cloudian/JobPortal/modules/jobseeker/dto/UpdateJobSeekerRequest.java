@@ -15,8 +15,6 @@ import java.time.LocalDate;
 public class UpdateJobSeekerRequest {
     private String fullName;
     private String address;
-    @Pattern(regexp = "^(0|\\+84)[0-9]{9}$", message = "Invalid phone number")
-    private String phone;
     private String professionalTitle;
     private String biography;
     private LocalDate dateOfBirth;
@@ -26,6 +24,4 @@ public class UpdateJobSeekerRequest {
     private String experienceSummary;
     private String educationSummary;
     private String website;
-    @Pattern(regexp = "^(0|\\+84)[0-9]{9}$", message = "Invalid phone number")
-    private String secondaryPhone;
 }

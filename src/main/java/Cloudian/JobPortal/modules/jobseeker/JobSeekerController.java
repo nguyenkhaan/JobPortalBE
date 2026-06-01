@@ -3,6 +3,7 @@ package Cloudian.JobPortal.modules.jobseeker;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.modules.jobseeker.dto.CreateJobSeekerRequest;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
+import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerPhoneDto;
 import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerRequest;
 import Cloudian.JobPortal.security.UserDetailsImpl;
 import jakarta.validation.Valid;
@@ -43,7 +44,14 @@ public class JobSeekerController {
         JobSeekerResponse response = jobSeekerService.getProfile(userId);
         return ResponseEntity.ok(response);
     }
-
+    @PreAuthorize("hasRole('SEEKER')")
+    @PatchMapping("change-phone")
+    public ResponseEntity<?> resetPhoneNumber(@Valid @RequestBody UpdateJobSeekerPhoneDto request , Authentication authentication)
+    {
+        Long userId = getUserIdFromAuth(authentication);
+        var response = jobSeekerService.updatePhone(userId , request);
+        return ResponseEntity.ok(response);
+    }
     @PreAuthorize("hasRole('SEEKER')")
     @PatchMapping
     public ResponseEntity<JobSeekerResponse> updateProfile(@Valid @RequestBody UpdateJobSeekerRequest request, Authentication authentication) {
