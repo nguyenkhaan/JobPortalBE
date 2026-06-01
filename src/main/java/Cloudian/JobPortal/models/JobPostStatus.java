@@ -1,9 +1,11 @@
 package Cloudian.JobPortal.models;
 
 public enum JobPostStatus {
-    DRAFT("Draft"),
-    ACTIVE("Active"),
-    EXPIRED("Expire");
+    OPEN("Open"),
+    DRAFT("Draft"), 
+    ACTIVE("Active"), 
+    EXPIRED("Expired"), 
+    CLOSED("Closed");
 
     public final String label;
     JobPostStatus(String label) {

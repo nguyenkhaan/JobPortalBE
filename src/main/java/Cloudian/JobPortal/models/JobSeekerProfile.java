@@ -79,9 +79,9 @@ public class JobSeekerProfile {
 
     //soft delete
     //Phai co JobSeeker, mac dinh se co truong verify la false -> Chi co admin moi co the thay doi truong nay
-    @Column(name = "approve")
+    @Column(nullable = false , name = "approve")
     @Builder.Default
-    private Boolean approve = false;
+    private Boolean approve = true;
     @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null;

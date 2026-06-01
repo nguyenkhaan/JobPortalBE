@@ -1,9 +1,6 @@
 package Cloudian.JobPortal.modules.jobpost.dto;
 
-import Cloudian.JobPortal.models.EducationLevel;
-import Cloudian.JobPortal.models.EmploymentType;
-import Cloudian.JobPortal.models.JobLevel;
-import Cloudian.JobPortal.models.JobPostStatus;
+import Cloudian.JobPortal.models.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -22,8 +19,8 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class CreateJobPostDto {
-    @NotBlank
-    @NotNull
+    @NotBlank(message = "Title is required")
+    @NotNull(message = "Title cannot be null")
     String title;
 
     @NotBlank(message = "Description is required")
@@ -32,32 +29,45 @@ public class CreateJobPostDto {
     @NotEmpty(message = "At least one industry is required")
     private List<Long> industryIds;
 
-    @NotNull(message = "Salary max cannot be null")
-    @Min(value = 0 , message = "salary max must be greater than 0")
-    BigDecimal salaryMax;
-
-    @NotNull(message = "salary min cannot be null")
-    @Min(value = 0 , message = "Salary min must be grater then 0")
+    @NotNull(message = "Salary min cannot be null")
+    @Min(value = 0, message = "Salary min must be >= 0")
     BigDecimal salaryMin;
 
-    @NotNull(message = "Education level must be in HIGH_SCHOOL, ASSOCIATE, BACHELOR, MASTER, DOCTORATE")
+    @NotNull(message = "Salary max cannot be null")
+    @Min(value = 0, message = "Salary max must be >= 0")
+    BigDecimal salaryMax;
+
+    @NotNull(message = "Education level is required")
     EducationLevel educationLevel;
 
-    @NotNull(message = "job level must be in INTERN, FRESHER, JUNIOR, MIDDLE, SENIOR")
+    @NotNull(message = "Job level is required")
     JobLevel jobLevel;
 
-    @NotNull( message = "status must be in OPEN, FINAL, DRAFT")
+    @NotNull(message = "Status is required")
     JobPostStatus status;
 
-    @NotNull
-    @Min(value = 1, message = "experience must be greater than 1")
+    @NotNull(message = "Experience is required")
+    @Min(value = 0, message = "Experience must be >= 0")
     private Integer experience;
 
-    @NotNull(message = "employment type must be in FULLTIME, PARTTIME")
+    @NotNull(message = "Employment type is required")
     EmploymentType employmentType;
 
-    private LocalDateTime expiresAt; //Thoi gian het han jobpost
+    private LocalDateTime expiresAt;
 
-    @NotNull(message =  "Tags must be set by empty (not null)")
+    @NotNull(message = "Tags cannot be null")
     private String tags;
+
+    private Boolean isFeatured;
+
+    private Boolean isHighlighted;
+
+    private String jobRole;
+
+    private String responsibilities;
+
+    @Min(value = 1, message = "Vacancies must be >= 1")
+    private Integer vacancies;
+
+    private SalaryType salaryType;
 }

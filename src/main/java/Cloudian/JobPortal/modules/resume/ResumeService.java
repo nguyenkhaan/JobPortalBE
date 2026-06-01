@@ -31,7 +31,7 @@ public class ResumeService {
     private ResumeResponse mapToResponse(Resume resume) {
         return ResumeResponse.builder()
                 .id(resume.getId())
-                .fileUrl(resume.getFileUrl())
+                .fileUrl(minioService.getFileUrl(resume.getFileUrl()))
                 .defaultResume(resume.getIsDefault())
                 .uploadedAt(resume.getUploadedAt())
                 .build();

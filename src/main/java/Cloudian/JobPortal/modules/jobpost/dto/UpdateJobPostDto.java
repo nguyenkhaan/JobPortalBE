@@ -1,9 +1,6 @@
 package Cloudian.JobPortal.modules.jobpost.dto;
 
-import Cloudian.JobPortal.models.EducationLevel;
-import Cloudian.JobPortal.models.EmploymentType;
-import Cloudian.JobPortal.models.JobLevel;
-import Cloudian.JobPortal.models.JobPostStatus;
+import Cloudian.JobPortal.models.*;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,4 +30,10 @@ public class UpdateJobPostDto {
     private String tags;
     private LocalDateTime expiresAt;
     private Boolean isUpdateExpires; //Chiu trach nhiem kiem tra xem nguoi dung co muon update expiresAt khong???
+    private Boolean isFeatured;
+    private Boolean isHighlighted;
+    private String jobRole;
+    private String responsibilities;
+    private Integer vacancies;
+    private SalaryType salaryType;
 }

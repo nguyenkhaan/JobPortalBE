@@ -13,4 +13,8 @@ public class EmployerProfileUpdateRequest {
     private String description;
     private String phone;
     private Integer capacity;
+    private String industry;
+    private String vision;
+    private String founded;
+    private String teamSize;
 }

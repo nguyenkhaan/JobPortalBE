@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -20,6 +22,12 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_device_token", columnList = "token")
         }
 )
+@SQLDelete(
+        sql = """
+                UPDATE device_tokens SET delete_at = NOW() WHERE id = ?
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class DeviceToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,6 +47,10 @@ public class DeviceToken {
     @UpdateTimestamp
     @Column(name = "last_active_at", nullable = false)
     private LocalDateTime lastActiveAt;
+
+    @Column(name = "delete_at")
+    @Builder.Default
+    private LocalDateTime deleteAt = null;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

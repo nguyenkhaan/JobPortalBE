@@ -21,7 +21,7 @@ import java.util.List;
                 UPDATE resumes SET delete_at = NOW() WHERE id = ? 
                 """
 )
-@SQLRestriction("deleted_at is NULL")
+@SQLRestriction("delete_at is NULL")
 @Table(name = "resumes")
 public class Resume {
     @Id

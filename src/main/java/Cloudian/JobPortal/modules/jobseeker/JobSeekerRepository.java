@@ -9,5 +9,8 @@ import java.util.Optional;
 public interface JobSeekerRepository extends JpaRepository<JobSeekerProfile, Long> {
     Optional<JobSeekerProfile> findByUserId(Long userId);
     boolean existsByPhone(String phone);
+    boolean existsBySecondaryPhone(String secondaryPhone);
+    boolean existsByPhoneOrSecondaryPhoneAndIdNot(String phone, String secondaryPhone , Long userId);
+    boolean existsBySecondaryPhoneOrPhoneAndIdNot(String secondaryPhone, String phone, Long userId); 
     Optional<JobSeekerProfile> findByIdAndUserId(Long id, Long userId);
 }

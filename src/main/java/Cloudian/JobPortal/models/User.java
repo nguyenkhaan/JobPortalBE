@@ -5,8 +5,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.ArrayList;
@@ -21,29 +19,14 @@ import java.time.LocalDateTime;
 @Builder
 @Table(
         indexes = {
-                @Index(name = "idx_active", columnList = "active"),
-                @Index(name = "idx_user_fullname", columnList = "full_name")
+                @Index(name = "idx_active" , columnList = "active")
         },
         name = "users"
 )
-@SQLDelete(
-        sql = """
-                UPDATE users SET delete_at = NOW() WHERE id = ? 
-                """
-)
-@SQLRestriction("delete_at is NULL")
 public class User {
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "full_name")
-    private String fullName;
-
-    @Column(name = "avatar")
-    private String avatar;
-
-
     //email
     @Email
     @NotBlank
@@ -62,14 +45,18 @@ public class User {
     @UpdateTimestamp
     @Column(nullable = false , name = "updated_at")
     private LocalDateTime updatedAt;
-
+    @Column(nullable = false , name = "banned")
+    @Builder.Default
+    private Boolean banned = false;
+    //Mặc định khi tạo tài khoản thì sẽ có trường banned là false.
+    //Kiểm tra trường banned ngay tại JWT luôn. Ừ khi người dùng gửi JWT về server, việc đầu tiên
+    //con server làm là nó kiểm tra JWT. Thì bổ sung 1 điều kiện vào, nếu như trường banned là true thì cho out ngay tại JWT luôn
     //Foreign keys
-    @OneToOne(mappedBy = "user")
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private JobSeekerProfile jobSeekerProfile;
-//    @OneToMany(mappedBy = "owner")  //Noi toi cot nao
-//    @Builder.Default
-    @OneToOne(mappedBy = "owner" , cascade = CascadeType.ALL)
-    EmployerProfile employerProfile;
+    @OneToMany(mappedBy = "owner")  //Noi toi cot nao
+    @Builder.Default
+    private List<EmployerProfile> employerProfileList = new ArrayList<>();
     @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<UserRole> userRoleList = new ArrayList<>();
@@ -78,24 +65,4 @@ public class User {
     @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<Social> socials = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user")
-    @Builder.Default
-    private  List<AuditLog> auditLogs = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user")
-    @Builder.Default
-    private List<Payment> payments = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user")
-    @Builder.Default
-    private List<OAuth> oauths = new ArrayList<>();
-
-    //soft delete
-    @Builder.Default
-    LocalDateTime deleteAt = null;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<DeviceToken> deviceTokens = new java.util.ArrayList<>();
 }

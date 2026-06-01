@@ -1,5 +1,6 @@
 package Cloudian.JobPortal.modules.jobapplication.dto;
 
+import Cloudian.JobPortal.models.JobApplicationStatus;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,5 +16,6 @@ public class UpdateJobApplicationDto {
     private String coverLetter;
 
     private Long resumeId;
+    
+    private JobApplicationStatus status;
 }
-

@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,7 +19,12 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(columnNames = {"employer_id", "job_seeker_id"})
         }
 )
-
+@SQLDelete(
+        sql = """
+                UPDATE saved_candidates SET delete_at = NOW() WHERE id = ?
+                """
+)
+@SQLRestriction("delete_at is NULL")
 // dùng cho tính năng employer lưu jobseeker
 public class SavedCandidate {
     @Id
@@ -35,4 +42,8 @@ public class SavedCandidate {
     @CreationTimestamp
     @Column(name = "saved_at", nullable = false, updatable = false)
     private LocalDateTime savedAt;
+
+    @Column(name = "delete_at")
+    @Builder.Default
+    private LocalDateTime deleteAt = null;
 }

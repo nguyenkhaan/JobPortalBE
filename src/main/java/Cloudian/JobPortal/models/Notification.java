@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,6 +20,12 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_notification_created_at", columnList = "created_at")
         }
 )
+@SQLDelete(
+        sql = """
+                UPDATE notifications SET delete_at = NOW() WHERE id = ?
+                """
+)
+@SQLRestriction("delete_at is NULL")
 public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,6 +47,10 @@ public class Notification {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "delete_at")
+    @Builder.Default
+    private LocalDateTime deleteAt = null;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
