@@ -107,6 +107,21 @@ public class JobPost {
     @Column(name = "is_highlighted", nullable = false)
     @Builder.Default
     private Boolean isHighlighted = false;
+
+    @Column(name = "job_role")
+    private String jobRole;
+
+    @Column(name = "responsibilities", columnDefinition = "TEXT")
+    private String responsibilities;
+
+    @Column(name = "vacancies", nullable = false)
+    @Builder.Default
+    private Integer vacancies = 1;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "salary_type")
+    @Builder.Default
+    private SalaryType salaryType = SalaryType.MONTHLY;
     //------------------------------------------------------------------------------------
     //Foreign Key Map
     @OneToMany(mappedBy = "jobPost")
