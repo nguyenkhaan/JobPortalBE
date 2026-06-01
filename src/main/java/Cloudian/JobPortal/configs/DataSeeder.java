@@ -247,12 +247,16 @@ public class DataSeeder implements ApplicationRunner {
 
     private List<JobPost> seedJobPosts(List<EmployerProfile> employers) {
         EmploymentType[] types = {
-                EmploymentType.FULL_TIME, EmploymentType.FULL_TIME, EmploymentType.PART_TIME,
-                EmploymentType.FULL_TIME, EmploymentType.PART_TIME, EmploymentType.FULL_TIME
+                EmploymentType.FULL_TIME, EmploymentType.INTERNSHIP, EmploymentType.FULL_TIME,
+                EmploymentType.FULL_TIME, EmploymentType.PART_TIME, EmploymentType.CONTRACT,
+                EmploymentType.TEMPORARY, EmploymentType.FULL_TIME, EmploymentType.FULL_TIME,
+                EmploymentType.FULL_TIME
         };
         JobPostStatus[] statuses = {
-                JobPostStatus.OPEN, JobPostStatus.OPEN, JobPostStatus.OPEN,
-                JobPostStatus.OPEN, JobPostStatus.CLOSE, JobPostStatus.DFRAFT
+                JobPostStatus.ACTIVE, JobPostStatus.ACTIVE, JobPostStatus.ACTIVE,
+                JobPostStatus.EXPIRED, JobPostStatus.ACTIVE, JobPostStatus.EXPIRED,
+                JobPostStatus.ACTIVE, JobPostStatus.ACTIVE, JobPostStatus.EXPIRED,
+                JobPostStatus.ACTIVE
         };
         EducationLevel[] educationLevels = {
                 EducationLevel.BACHELOR, EducationLevel.BACHELOR, EducationLevel.ASSOCIATE,
@@ -263,44 +267,59 @@ public class DataSeeder implements ApplicationRunner {
                 JobLevel.MIDDLE, JobLevel.SENIOR, JobLevel.FRESHER
         };
         String[] titles = {
-                "Backend Java Developer", "Frontend React Developer", "QA Engineer Intern",
-                "DevOps Engineer", "Product Manager", "Customer Support Specialist"
+                "UI/UX Designer", "Senior UX Designer", "Junior Graphic Designer",
+                "Front End Developer", "Technical Support Specialist", "Interaction Designer",
+                "Software Engineer", "Product Designer", "Project Manager", "Marketing Manager"
         };
         String[] descriptions = {
-                "Build REST APIs with Spring Boot and PostgreSQL.",
-                "Develop responsive UI with React and TypeScript.",
-                "Write test cases and automate regression testing.",
-                "Maintain CI/CD pipelines on AWS and Docker.",
-                "Own product roadmap for B2B hiring features.",
-                "Support employers and job seekers via chat and email."
+                "Design elegant user interfaces and optimize mobile-first user experiences.",
+                "Lead user research and establish design systems for enterprise web applications.",
+                "Create stunning visual assets, marketing graphics, and brand identity layouts.",
+                "Build responsive, high-performance web interfaces using React and Tailwind CSS.",
+                "Provide technical assistance, troubleshoot deployment setups, and guide clients.",
+                "Focus on motion design, interactive micro-animations, and prototype flows.",
+                "Develop scalable backend services with clean architecture and SOLID principles.",
+                "Own the end-to-end lifecycle of consumer-facing digital product designs.",
+                "Manage Agile sprint schedules, clear dependencies, and align cross-functional teams.",
+                "Drive growth strategies, manage digital campaigns, and optimize acquisition funnels."
         };
         String[] tags = {
-                "fullstack;backend", "fulltime;intern", "health;salary",
-                "multi;union", "frontend;design", "support;customer"
+                "uiux;design", "senior;ux", "graphic;design",
+                "frontend;react", "support;tech", "interaction;prototype",
+                "backend;java", "product;design", "agile;manager", "marketing;growth"
         };
+        LocalDateTime now = LocalDateTime.now();
         LocalDateTime[] expiresAt = {
-                LocalDateTime.of(2026, 6, 1, 0, 0),
-                LocalDateTime.of(2026, 8, 1, 0, 0),
-                LocalDateTime.of(2026, 6, 15, 12, 0),
-                LocalDateTime.of(2026, 9, 1, 0, 0),
-                LocalDateTime.of(2026, 7, 1, 18, 30),
-                LocalDateTime.of(2026, 10, 1, 0, 0)
+                now.plusDays(27), now.plusDays(8), now.plusDays(24),
+                now.minusDays(5), now.plusDays(4), now.minusDays(12),
+                now.plusDays(9), now.plusDays(7), now.minusDays(6),
+                now.plusDays(4)
         };
+
+        Boolean[] featuredArray = { true, false, false, false, false, false, false, false, false, false };
+        Boolean[] highlightedArray = { false, false, true, false, false, false, false, false, false, false };
+
         List<JobPost> posts = new ArrayList<>();
-        for (int i = 0; i < SEED_COUNT; i++) {
+        int limit = Math.min(employers.size(), SEED_COUNT);
+
+        for (int i = 0; i < limit; i++) {
+            int idx = i % titles.length;
+
             posts.add(JobPost.builder()
                     .employer(employers.get(i))
-                    .title(titles[i])
-                    .description(descriptions[i])
-                    .employmentType(types[i])
-                    .status(statuses[i])
-                    .educationLevel(educationLevels[i])
-                    .experience(i)
-                    .jobLevel(jobLevels[i])
-                    .expiresAt(expiresAt[i])
-                    .tags(tags[i])
-                    .salaryMin(BigDecimal.valueOf(8_000_000L + i * 1_000_000L))
-                    .salaryMax(BigDecimal.valueOf(15_000_000L + i * 2_000_000L))
+                    .title(titles[idx])
+                    .description(descriptions[idx])
+                    .employmentType(types[idx])
+                    .status(statuses[idx])
+                    .educationLevel(educationLevels[idx])
+                    .experience(idx)
+                    .jobLevel(jobLevels[idx])
+                    .expiresAt(expiresAt[idx])
+                    .tags(tags[idx])
+                    .isFeatured(featuredArray[idx])
+                    .isHighlighted(highlightedArray[idx])
+                    .salaryMin(BigDecimal.valueOf(10_000_000L + (long) idx * 1_500_000L))
+                    .salaryMax(BigDecimal.valueOf(18_000_000L + (long) idx * 2_500_000L))
                     .build());
         }
         return posts;

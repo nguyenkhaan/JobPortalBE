@@ -60,7 +60,7 @@ public class JobPost {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private JobPostStatus status = JobPostStatus.OPEN;
+    private JobPostStatus status = JobPostStatus.ACTIVE;
 
     //education level: Cu Nhan, tien Si, thac si...
     @Column(nullable = false, name = "education_level")
@@ -99,6 +99,14 @@ public class JobPost {
     @Builder.Default
     @Column(nullable = false , name = "tags")
     private String tags = "";
+
+    @Column(name = "is_featured", nullable = false)
+    @Builder.Default
+    private Boolean isFeatured = false;
+
+    @Column(name = "is_highlighted", nullable = false)
+    @Builder.Default
+    private Boolean isHighlighted = false;
     //------------------------------------------------------------------------------------
     //Foreign Key Map
     @OneToMany(mappedBy = "jobPost")
