@@ -32,4 +32,10 @@ public class CreateEmployerProfileRequest {
     private String phone;
     @Min(0)
     private Integer capacity;
+    
+    // Additional employer profile fields
+    private String industry;
+    private String vision;
+    private String founded;
+    private String teamSize;
 }

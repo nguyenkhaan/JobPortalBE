@@ -59,7 +59,7 @@ public class UserDetailsImpl implements UserDetails {
     @Override
     public String getUsername() {
         return email;
-    }   //Dinh nghia viec authentication.getName() se lay ra cai gi
+    }
 
     @Override
     public boolean isAccountNonExpired() {

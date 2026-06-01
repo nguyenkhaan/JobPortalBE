@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,6 +22,18 @@ public class CreateJobSeekerRequest {
     private String address;
 
     @NotBlank(message = "phone number is required")
-    @Pattern(regexp = "^(0|\\+84)[0-9]{9}$", message = "Invalid phone number") // VN phone number ?
+    @Pattern(regexp = "^(0|\\+84)[0-9]{9}$", message = "Invalid phone number")
     private String phone;
+    
+    private String professionalTitle;
+    private String biography;
+    private LocalDate dateOfBirth;
+    private String nationality;
+    private String maritalStatus;
+    private String gender;
+    private String experienceSummary;
+    private String educationSummary;
+    private String website;
+    @Pattern(regexp = "^(0|\\+84)[0-9]{9}$", message = "Invalid phone number")
+    private String secondaryPhone;
 }

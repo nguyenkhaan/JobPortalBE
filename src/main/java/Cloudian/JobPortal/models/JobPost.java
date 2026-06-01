@@ -60,7 +60,7 @@ public class JobPost {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private JobPostStatus status = JobPostStatus.ACTIVE;
+    private JobPostStatus status = JobPostStatus.OPEN;
 
     //education level: Cu Nhan, tien Si, thac si...
     @Column(nullable = false, name = "education_level")
@@ -106,7 +106,7 @@ public class JobPost {
 
     @Column(name = "is_highlighted", nullable = false)
     @Builder.Default
-    private Boolean isHighlighted = false;
+    private Boolean isHighlighted = false;  //Những JobPost nào được đánh dấu highlighted thì sẽ được đẩy, đề xuất lên đầu (sắp xếp theo highlited true trước)
 
     @Column(name = "job_role")
     private String jobRole;

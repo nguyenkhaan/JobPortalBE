@@ -27,8 +27,16 @@ public class JobPostResponse {
     private BigDecimal salaryMin;
     private BigDecimal salaryMax;
     private LocalDateTime createdAt;
+    private LocalDateTime expiresAt;
+    private String tags;
     private EmployerSummary employer;
     private List<IndustryResponse> industries;
+    private Boolean isFeatured;
+    private Boolean isHighlighted;
+    private String jobRole;
+    private String responsibilities;
+    private Integer vacancies;
+    private SalaryType salaryType;
 
     @Data
     @Builder

@@ -13,6 +13,7 @@ import Cloudian.JobPortal.modules.jobapplication.dto.UpdateJobApplicationDto;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
+import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.resume.ResumeRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,8 @@ public class JobApplicationService {
     JobSeekerRepository jobSeekerRepository;
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    MinioService minioService;
     public JobApplicationResponse createJobApplication(Long userId , CreateJobApplicationDto data)
     {
         JobPost jobPost = jobPostRepository.findById(data.getJobPostId()).orElseThrow(() -> new NotFoundException("Job Post cannot be found"));
@@ -85,6 +88,11 @@ public class JobApplicationService {
             hasAnyUpdate = true;
         }
 
+        if (data.getStatus() != null) {
+            application.setStatus(data.getStatus());
+            hasAnyUpdate = true;
+        }
+
         if (!hasAnyUpdate) {
             throw new BadRequestException("No fields to update");
         }
@@ -117,15 +125,28 @@ public class JobApplicationService {
     }
 
     private JobApplicationResponse toJobApplicationResponse(JobApplication application) {
+        JobSeekerProfile profile = application.getJobSeeker();
         return JobApplicationResponse.builder()
                 .id(application.getId())
                 .coverLetter(application.getCoverLetter())
                 .status(application.getStatus())
                 .jobSeekerProfile(
                         JobSeekerResponse.builder()
-                                .fullName(application.getJobSeeker().getFullName())
-                                .address(application.getJobSeeker().getAddress())
-                                .phone(application.getJobSeeker().getPhone())
+                                .id(profile.getId())
+                                .fullName(profile.getFullName())
+                                .address(profile.getAddress())
+                                .phone(profile.getPhone())
+                                .professionalTitle(profile.getProfessionalTitle())
+                                .biography(profile.getBiography())
+                                .dateOfBirth(profile.getDateOfBirth())
+                                .nationality(profile.getNationality())
+                                .maritalStatus(profile.getMaritalStatus())
+                                .gender(profile.getGender())
+                                .experienceSummary(profile.getExperienceSummary())
+                                .educationSummary(profile.getEducationSummary())
+                                .website(profile.getWebsite())
+                                .secondaryPhone(profile.getSecondaryPhone())
+                                .approve(profile.getApprove())
                                 .build()
                 )
                 .jobPost(
@@ -138,6 +159,7 @@ public class JobApplicationService {
     }
 
     private JobApplicationDetailResponse toJobApplicationDetailResponse(JobApplication application) {
+        JobSeekerProfile profile = application.getJobSeeker();
         return JobApplicationDetailResponse.builder()
                 .id(application.getId())
                 .coverLetter(application.getCoverLetter())
@@ -145,9 +167,21 @@ public class JobApplicationService {
                 .appliedAt(application.getAppliedAt())
                 .jobSeekerProfile(
                         JobSeekerResponse.builder()
-                                .fullName(application.getJobSeeker().getFullName())
-                                .address(application.getJobSeeker().getAddress())
-                                .phone(application.getJobSeeker().getPhone())
+                                .id(profile.getId())
+                                .fullName(profile.getFullName())
+                                .address(profile.getAddress())
+                                .phone(profile.getPhone())
+                                .professionalTitle(profile.getProfessionalTitle())
+                                .biography(profile.getBiography())
+                                .dateOfBirth(profile.getDateOfBirth())
+                                .nationality(profile.getNationality())
+                                .maritalStatus(profile.getMaritalStatus())
+                                .gender(profile.getGender())
+                                .experienceSummary(profile.getExperienceSummary())
+                                .educationSummary(profile.getEducationSummary())
+                                .website(profile.getWebsite())
+                                .secondaryPhone(profile.getSecondaryPhone())
+                                .approve(profile.getApprove())
                                 .build()
                 )
                 .jobPost(
@@ -159,7 +193,7 @@ public class JobApplicationService {
                 .resume(
                         JobApplicationResumeSummaryResponse.builder()
                                 .id(application.getResume().getId())
-                                .fileUrl(application.getResume().getFileUrl())
+                                .fileUrl(minioService.getFileUrl(application.getResume().getFileUrl()))
                                 .build()
                 )
                 .build();

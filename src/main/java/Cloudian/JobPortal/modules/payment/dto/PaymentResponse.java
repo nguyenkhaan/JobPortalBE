@@ -1,0 +1,39 @@
+package Cloudian.JobPortal.modules.payment.dto;
+
+import Cloudian.JobPortal.models.Payment;
+import Cloudian.JobPortal.models.PaymentMethod;
+import Cloudian.JobPortal.models.PaymentStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PaymentResponse {
+    private Long id;
+    private String planName;
+    private String transactionRef;
+    private Double cost;
+    private PaymentMethod method;
+    private PaymentStatus status;
+    private String note;
+    private LocalDateTime createdAt;
+
+    public static PaymentResponse from(Payment payment) {
+        return PaymentResponse.builder()
+                .id(payment.getId())
+                .planName(payment.getPlanName())
+                .transactionRef(payment.getTransactionRef())
+                .cost(payment.getCost())
+                .method(payment.getMethod())
+                .status(payment.getStatus())
+                .note(payment.getNote())
+                .createdAt(payment.getCreatedAt())
+                .build();
+    }
+}

@@ -28,7 +28,17 @@ public class JobSeekerService {
                 .fullName(profile.getFullName())
                 .address(profile.getAddress())
                 .phone(profile.getPhone())
-                //.email ?
+                .professionalTitle(profile.getProfessionalTitle())
+                .biography(profile.getBiography())
+                .dateOfBirth(profile.getDateOfBirth())
+                .nationality(profile.getNationality())
+                .maritalStatus(profile.getMaritalStatus())
+                .gender(profile.getGender())
+                .experienceSummary(profile.getExperienceSummary())
+                .educationSummary(profile.getEducationSummary())
+                .website(profile.getWebsite())
+                .secondaryPhone(profile.getSecondaryPhone())
+                .approve(profile.getApprove())
                 .build();
     }
 
@@ -51,6 +61,16 @@ public class JobSeekerService {
                 .fullName(request.getFullName())
                 .address(request.getAddress())
                 .phone(request.getPhone())
+                .professionalTitle(request.getProfessionalTitle())
+                .biography(request.getBiography())
+                .dateOfBirth(request.getDateOfBirth())
+                .nationality(request.getNationality())
+                .maritalStatus(request.getMaritalStatus())
+                .gender(request.getGender())
+                .experienceSummary(request.getExperienceSummary())
+                .educationSummary(request.getEducationSummary())
+                .website(request.getWebsite())
+                .secondaryPhone(request.getSecondaryPhone())
                 .user(user)
                 .build();
 
@@ -99,6 +119,19 @@ public class JobSeekerService {
             profile.setPhone(newPhone);
         }
 
+        if(request.getProfessionalTitle() != null) profile.setProfessionalTitle(request.getProfessionalTitle());
+        if(request.getBiography() != null) profile.setBiography(request.getBiography());
+        if(request.getDateOfBirth() != null) profile.setDateOfBirth(request.getDateOfBirth());
+        if(request.getNationality() != null) profile.setNationality(request.getNationality());
+        if(request.getMaritalStatus() != null) profile.setMaritalStatus(request.getMaritalStatus());
+        if(request.getGender() != null) profile.setGender(request.getGender());
+        if(request.getExperienceSummary() != null) profile.setExperienceSummary(request.getExperienceSummary());
+        if(request.getEducationSummary() != null) profile.setEducationSummary(request.getEducationSummary());
+        if(request.getWebsite() != null) profile.setWebsite(request.getWebsite());
+        if(request.getSecondaryPhone() != null) {
+            String  newSecondaryPhone = request.getSecondaryPhone().trim();
+            profile.setSecondaryPhone(newSecondaryPhone);
+        }
 
         JobSeekerProfile saved = jobSeekerRepository.save(profile);
         Map<String, Object> auditData = new HashMap<>();

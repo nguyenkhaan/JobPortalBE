@@ -2,12 +2,8 @@ package Cloudian.JobPortal.modules.auth;
 
 import Cloudian.JobPortal.commons.constants.TokenConstants;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
-import Cloudian.JobPortal.exceptions.custom.NotFoundException;
-import Cloudian.JobPortal.exceptions.custom.ResourceNotFoundException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.models.*;
-import Cloudian.JobPortal.modules.audit.AuditService;
-import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.auth.dto.*;
 import Cloudian.JobPortal.modules.role.UserRoleRepository;
 import Cloudian.JobPortal.modules.token.TokenRepository;
@@ -18,7 +14,6 @@ import Cloudian.JobPortal.security.JwtService;
 import Cloudian.JobPortal.security.TokenBody;
 import Cloudian.JobPortal.utilis.SHA256Hashing;
 import jakarta.transaction.Transactional;
-import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,8 +22,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,10 +36,6 @@ public class AuthService
     private JwtService jwtService;
     @Autowired
     private UserRoleRepository userRoleRepository;
-    @Autowired
-    private OAuthRepository oAuthRepository;
-    @Autowired
-    private AuditService auditService;
     @org.springframework.beans.factory.annotation.Autowired(required=true)
     private PasswordEncoder passwordEncoder;
     @Transactional   //Dam bao khong bi loi database khi them du lieu vao
@@ -79,24 +68,15 @@ public class AuthService
 
             userRepository.save(user);
             userRoleRepository.save(userRole);
-            //Creating Audit log
-            Map<String , Object> mp = new HashMap<>();
-            mp.put("email" , user.getEmail());
-            CreateAuditDto createAuditDto = CreateAuditDto.builder().
-                    actionType(ActionType.CREATE)
-                    .recordId(user.getId())
-                    .userId(user.getId())
-                    .entityName(EntityName.User)
-                    .data(mp)
-                    .build();
-            auditService.createAuditLog(createAuditDto);
+
+
         }
         Long id = user.getId();
         Token verifiedToken = tokenRepository.findByUserIdAndType(id , TokenType.REGISTER).orElse(null);
         if (verifiedToken != null)
             tokenRepository.deleteById(verifiedToken.getId());
             //Tien hanh tao token moi
-        String token = jwtService.generateToken(new TokenBody(user.getEmail() , user.getId() , null , TokenType.REGISTER , null) , TokenType.REGISTER);
+        String token = jwtService.generateToken(new TokenBody(user.getEmail() , user.getId() , null , TokenType.REGISTER, Provider.LOCAL) , TokenType.REGISTER);
             //Luu Token vao database
         String hashedToken = SHA256Hashing.generateSHA256Hash(token);
         Token newToken = Token.builder()
@@ -147,15 +127,6 @@ public class AuthService
             tokenRepository.save(storedToken);
             user.setActive(true);
             userRepository.save(user);
-            Map<String, Object> verifyData = new HashMap<>();
-            verifyData.put("email", user.getEmail());
-            auditService.createAuditLog(CreateAuditDto.builder()
-                    .actionType(ActionType.VERIFY)
-                    .userId(user.getId())
-                    .recordId(user.getId())
-                    .entityName(EntityName.User)
-                    .data(verifyData)
-                    .build());
             return true;
         }
         else throw new BadRequestException("Token Is Invalid");
@@ -180,42 +151,29 @@ public class AuthService
                 new TokenBody(user.getEmail() ,
                         user.getId() ,
                         assignedRoles,
-                        TokenType.ACCESS , null),
+                        TokenType.ACCESS,
+                        Provider.LOCAL),
                 TokenType.ACCESS
         );
         String refreshToken = jwtService.generateToken(
-                new TokenBody(user.getEmail() , user.getId() , assignedRoles , TokenType.REFRESH , Provider.LOCAL),
-                TokenType.REFRESH 
+                new TokenBody(user.getEmail() , user.getId() , assignedRoles , TokenType.REFRESH, Provider.LOCAL),
+                TokenType.ACCESS
         );
         //Xoa va luu lai token sau
         String password = data.getPassword();
         if (!passwordEncoder.matches(password , user.getPassword()))
             throw new BadRequestException("Wrong Password");
+        //Xoa va luu lai token sau
+        //Delete Access Token
+        tokenRepository.findByUserIdAndType(user.getId(), TokenType.ACCESS).ifPresent(storedAccessToken -> tokenRepository.delete(storedAccessToken));
+        //Delete Refresh Token
+        tokenRepository.findByUserIdAndType(user.getId(), TokenType.REFRESH).ifPresent(storeRefreshToken -> tokenRepository.delete(storeRefreshToken));
         AuthLoginResponse response = AuthLoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .email(email)
                 .id(user.getId())
                 .build();
-        String storedRefreshToken = SHA256Hashing.generateSHA256Hash(refreshToken);
-        OAuth userOauth = oAuthRepository.findByUserIdAndProvider(user.getId() , Provider.LOCAL).orElse(null);
-        if (userOauth == null)
-        {
-            OAuth oauth = OAuth.builder()
-                    .provider(Provider.LOCAL)
-                    .providerId(user.getEmail())
-                    .refreshToken(storedRefreshToken)
-                    .user(user)
-                    .build();
-            oAuthRepository.save(oauth);
-        }
-        else if (userOauth.getRefreshToken() == null)
-            userOauth.setRefreshToken(storedRefreshToken);
-        else {
-            //Update lai refresh token luu vao ben trong userOAuth
-            userOauth.setRefreshToken(storedRefreshToken);
-
-        }
         return response;
     }
     //Response: token (to reset), email,
@@ -226,7 +184,7 @@ public class AuthService
                 () -> new BadRequestException("User not found")
         );
         String verifyToken = jwtService.generateToken(
-                new TokenBody(user.getEmail() , user.getId() , null , null , null), TokenType.RESET_PASSWORD
+                new TokenBody(user.getEmail() , user.getId() , null , TokenType.RESET_PASSWORD, Provider.LOCAL), TokenType.RESET_PASSWORD
         );
         String hashedToken = SHA256Hashing.generateSHA256Hash(verifyToken);
         Token tk = Token.builder()
@@ -241,15 +199,6 @@ public class AuthService
 
         //Save the token to the database
         tokenRepository.save(tk);
-        Map<String, Object> resetData = new HashMap<>();
-        resetData.put("email", user.getEmail());
-        auditService.createAuditLog(CreateAuditDto.builder()
-                .actionType(ActionType.RESET_PASSWORD)
-                .userId(user.getId())
-                .recordId(user.getId())
-                .entityName(EntityName.User)
-                .data(resetData)
-                .build());
         return new ResetPasswordResponse(
                 user.getEmail() , verifyToken
         );
@@ -263,77 +212,46 @@ public class AuthService
         Token storedToken = tokenRepository.findByToken(hashedToken).orElse(null);
         if (storedToken == null)
             throw new BadRequestException("Token not found");
-        if (storedToken.getUsedAt() != null || storedToken.getExpiresAt().isBefore(LocalDateTime.now()))
+        if (storedToken.getUsedAt() != null || LocalDateTime.now().isAfter(storedToken.getExpiresAt()))
             throw new BadRequestException("Token is invalid");
         String email = jwtService.extractEmail(token , TokenType.RESET_PASSWORD);
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null)
             throw new BadRequestException("Email not found");
         String hashedPassword = passwordEncoder.encode(password);
-        System.out.println(password + "   " + hashedPassword);
         user.setPassword(hashedPassword);
         storedToken.setUsedAt(LocalDateTime.now());
-        storedToken.setUserId(user.getId());
-        Map<String, Object> resetData = new HashMap<>();
-        resetData.put("email", user.getEmail());
-        auditService.createAuditLog(CreateAuditDto.builder()
-                .actionType(ActionType.RESET_PASSWORD)
-                .userId(user.getId())
-                .recordId(user.getId())
-                .entityName(EntityName.User)
-                .data(resetData)
-                .build());
+        tokenRepository.save(storedToken);
         return true;
     }
-    @Transactional //Da test: Neu khong co cai nay thi khi update bang ham set, chugn ta can phai ch userRepo.save(), con neu co cai nay thi an toan hon va khong can userRepo.save() lai
-    public boolean resetEmail(String email, String password , String updateEmail)
-    {
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null)
-            throw new BadRequestException("User not found");
-        if (passwordEncoder.matches(password , user.getPassword()))
-        {
-            Map<String, Object> emailData = new HashMap<>();
-            emailData.put("oldEmail", email);
-            emailData.put("newEmail", updateEmail);
-            user.setEmail(updateEmail);
-            auditService.createAuditLog(CreateAuditDto.builder()
-                    .actionType(ActionType.RESET_EMAIL)
-                    .userId(user.getId())
-                    .recordId(user.getId())
-                    .entityName(EntityName.User)
-                    .data(emailData)
-                    .build());
-            return true;
-        }
-        throw new BadRequestException("Wrong password");
-    }
+
     @Transactional
-    public RefreshResponse refreshAccessToken(String token)
-    {
-        Provider provider = Provider.valueOf(jwtService.extractProvider(token , TokenType.REFRESH));
-        String email = jwtService.extractEmail(token , TokenType.REFRESH);
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        OAuth oauth = oAuthRepository.findByUserIdAndProvider(user.getId(), provider).orElse(null);
-        if (oauth == null || oauth.getRefreshToken() == null)
-            throw new NotFoundException("Not found login session. Login again");
-        boolean result = SHA256Hashing.verifyDataIntegrity(oauth.getRefreshToken(), token);
-        if (!result)
-            throw new BadRequestException("Invalid login session");
-        ArrayList<Role> assignedRoles =
-                user.getUserRoleList()
-                        .stream()
-                        .map(UserRole::getRole)
-                        .collect(Collectors.toCollection(ArrayList::new));
+    public boolean resetEmail(String email, String password, String newEmail) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UnauthorizedException("User not found"));
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BadRequestException("Invalid password");
+        }
+        if (userRepository.findByEmail(newEmail).isPresent()) {
+            throw new BadRequestException("Email already exists");
+        }
+        user.setEmail(newEmail);
+        userRepository.save(user);
+        return true;
+    }
+
+    @Transactional
+    public RefreshResponse refreshAccessToken(String refreshToken) {
+        String email = jwtService.extractEmail(refreshToken, TokenType.REFRESH);
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new UnauthorizedException("User not found"));
+        var assignedRoles = userRoleRepository.findByUserId(user.getId())
+                .stream()
+                .map(userRole -> userRole.getRole())
+                .collect(Collectors.toCollection(ArrayList::new));
+        
         String accessToken = jwtService.generateToken(
-                new TokenBody(user.getEmail() ,
-                        user.getId() ,
-                        assignedRoles,
-                        TokenType.ACCESS , null),
+                new TokenBody(user.getEmail(), user.getId(), assignedRoles, TokenType.ACCESS, Provider.LOCAL),
                 TokenType.ACCESS
-
         );
-        return RefreshResponse.builder().accessToken(accessToken).build();
-
+        return new RefreshResponse(accessToken);
     }
 }

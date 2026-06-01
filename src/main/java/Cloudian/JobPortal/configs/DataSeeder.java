@@ -253,10 +253,10 @@ public class DataSeeder implements ApplicationRunner {
                 EmploymentType.FULL_TIME
         };
         JobPostStatus[] statuses = {
-                JobPostStatus.ACTIVE, JobPostStatus.ACTIVE, JobPostStatus.ACTIVE,
-                JobPostStatus.EXPIRED, JobPostStatus.ACTIVE, JobPostStatus.EXPIRED,
-                JobPostStatus.ACTIVE, JobPostStatus.ACTIVE, JobPostStatus.EXPIRED,
-                JobPostStatus.ACTIVE
+                JobPostStatus.OPEN, JobPostStatus.OPEN, JobPostStatus.OPEN,
+                JobPostStatus.CLOSED, JobPostStatus.OPEN, JobPostStatus.CLOSED,
+                JobPostStatus.OPEN, JobPostStatus.OPEN, JobPostStatus.CLOSED,
+                JobPostStatus.OPEN
         };
         EducationLevel[] educationLevels = {
                 EducationLevel.BACHELOR, EducationLevel.BACHELOR, EducationLevel.ASSOCIATE,

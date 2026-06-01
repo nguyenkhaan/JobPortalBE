@@ -13,6 +13,7 @@ import Cloudian.JobPortal.modules.jobindustry.JobIndustryRepository;
 import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
+import Cloudian.JobPortal.modules.minio.MinioService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
@@ -37,6 +38,7 @@ public class JobPostService {
     private final IndustryRepository industryRepository;
     private final JobIndustryRepository jobIndustryRepository;
     private final AuditService auditService;
+    private final MinioService minioService;
 
     @Transactional
     public List<JobPostResponse> getAllJobPost(JobPostFilterRequest filter, int limit, int offset) {
@@ -112,6 +114,12 @@ public class JobPostService {
                 .salaryMax(data.getSalaryMax())
                 .tags(data.getTags()) //Default will set to ""
                 .expiresAt(data.getExpiresAt())   //Default will set to null
+                .isFeatured(data.getIsFeatured() != null ? data.getIsFeatured() : false)
+                .isHighlighted(data.getIsHighlighted() != null ? data.getIsHighlighted() : false)
+                .jobRole(data.getJobRole())
+                .responsibilities(data.getResponsibilities())
+                .vacancies(data.getVacancies() != null ? data.getVacancies() : 1)
+                .salaryType(data.getSalaryType() != null ? data.getSalaryType() : SalaryType.MONTHLY)
                 .build();
 
         jobPost = jobPostRepository.save(jobPost);
@@ -174,6 +182,24 @@ public class JobPostService {
         if (data.getTags() != null)
         {
             jobPost.setTags(data.getTags());
+        }
+        if (data.getIsFeatured() != null) {
+            jobPost.setIsFeatured(data.getIsFeatured());
+        }
+        if (data.getIsHighlighted() != null) {
+            jobPost.setIsHighlighted(data.getIsHighlighted());
+        }
+        if (data.getJobRole() != null) {
+            jobPost.setJobRole(data.getJobRole());
+        }
+        if (data.getResponsibilities() != null) {
+            jobPost.setResponsibilities(data.getResponsibilities());
+        }
+        if (data.getVacancies() != null) {
+            jobPost.setVacancies(data.getVacancies());
+        }
+        if (data.getSalaryType() != null) {
+            jobPost.setSalaryType(data.getSalaryType());
         }
         jobPost = jobPostRepository.save(jobPost);
         Map<String, Object> auditData = new HashMap<>();
@@ -275,11 +301,19 @@ public class JobPostService {
                 .salaryMin(jobPost.getSalaryMin())
                 .salaryMax(jobPost.getSalaryMax())
                 .createdAt(jobPost.getCreatedAt())
+                .expiresAt(jobPost.getExpiresAt())
+                .tags(jobPost.getTags())
+                .isFeatured(jobPost.getIsFeatured())
+                .isHighlighted(jobPost.getIsHighlighted())
+                .jobRole(jobPost.getJobRole())
+                .responsibilities(jobPost.getResponsibilities())
+                .vacancies(jobPost.getVacancies())
+                .salaryType(jobPost.getSalaryType())
                 .employer(JobPostResponse.EmployerSummary.builder()
                         .id(employer.getId())
                         .companyName(employer.getCompanyName())
                         .companyWebsite(employer.getCompanyWebsite())
-                        .logo(employer.getLogo())
+                        .logo(minioService.getFileUrl(employer.getLogo()))
                         .build())
                 .industries(industries)
                 .build();

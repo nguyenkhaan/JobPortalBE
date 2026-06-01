@@ -35,12 +35,29 @@ public class EmployerService {
         EmployerProfileResponse response = EmployerProfileResponse.builder()
                 .id(profile.getId())
                 .logo(minioService.getFileUrl(profile.getLogo()))
+                .banner(minioService.getFileUrl(profile.getBanner()))
+                .businessLicense(minioService.getFileUrl(profile.getBusinessLicense()))
                 .address(profile.getAddress())
                 .capacity(profile.getCapacity())
                 .companyName(profile.getCompanyName())
                 .companyWebsite(profile.getCompanyWebsite())
                 .phone(profile.getPhone())
                 .email(profile.getEmail())
+                .description(profile.getDescription())
+                .industry(profile.getIndustry())
+                .vision(profile.getVision())
+                .founded(profile.getFounded())
+                .teamSize(profile.getTeamSize())
+                .active(profile.getActive())
+                .approvalStatus(profile.getApprovalStatus())
+                .rejectionReason(profile.getRejectionReason())
+                .currentPlan(profile.getCurrentPlan())
+                .planAmount(profile.getPlanAmount())
+                .packageStartedAt(profile.getPackageStartedAt())
+                .packageExpiresAt(profile.getPackageExpiresAt())
+                .isSubscriptionCanceled(profile.getIsSubscriptionCanceled())
+                .createdAt(profile.getCreatedAt())
+                .updatedAt(profile.getUpdatedAt())
                 .build();
         List<EmployerProfileResponse.JobPostSummary> summaries =
                 profile.getJobPostList().stream()
@@ -76,6 +93,10 @@ public class EmployerService {
                 .description(data.getDescription())
                 .phone(data.getPhone())
                 .logo(fileName.isEmpty() ? null : fileName)
+                .industry(data.getIndustry())
+                .vision(data.getVision())
+                .founded(data.getFounded())
+                .teamSize(data.getTeamSize())
                 .build();
         employerRepository.save(newEmployerProfile);
         Map<String, Object> auditData = new HashMap<>();
@@ -127,6 +148,18 @@ public class EmployerService {
         }
         if (req.getCapacity() != null) {
             profile.setCapacity(req.getCapacity());
+        }
+        if (req.getIndustry() != null) {
+            profile.setIndustry(req.getIndustry());
+        }
+        if (req.getVision() != null) {
+            profile.setVision(req.getVision());
+        }
+        if (req.getFounded() != null) {
+            profile.setFounded(req.getFounded());
+        }
+        if (req.getTeamSize() != null) {
+            profile.setTeamSize(req.getTeamSize());
         }
         if (file != null && !file.isEmpty()) {
             String oldFileName = profile.getLogo();
