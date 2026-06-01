@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -25,7 +26,8 @@ public class DeviceTokenService {
 
         // Check if token already exists
         deviceTokenRepository.findByToken(dto.getToken()).ifPresent(token -> {
-            deviceTokenRepository.delete(token);
+            token.setDeleteAt(LocalDateTime.now());
+            deviceTokenRepository.save(token);
         });
 
         DeviceToken deviceToken = DeviceToken.builder()
@@ -47,6 +49,9 @@ public class DeviceTokenService {
 
     @Transactional
     public void unregisterDeviceToken(String token) {
-        deviceTokenRepository.deleteByToken(token);
+        deviceTokenRepository.findByToken(token).ifPresent(deviceToken -> {
+            deviceToken.setDeleteAt(LocalDateTime.now());
+            deviceTokenRepository.save(deviceToken);
+        });
     }
 }

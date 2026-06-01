@@ -24,6 +24,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -229,8 +230,12 @@ public class JobPostService {
                 .data(auditData)
                 .build());
         List<JobIndustry> links = jobIndustryRepository.findByJobPostId(id);
-        jobIndustryRepository.deleteAll(links);
-        jobPostRepository.delete(jobPost);
+        for (JobIndustry link : links) {
+            link.setDeleteAt(LocalDateTime.now());
+            jobIndustryRepository.save(link);
+        }
+        jobPost.setDeleteAt(LocalDateTime.now());
+        jobPostRepository.save(jobPost);
     }
 
     private EmployerProfile requireEmployerProfile(Long userId) {
