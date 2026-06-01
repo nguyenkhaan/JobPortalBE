@@ -13,5 +13,6 @@ public enum EntityName {
     OAuth,
     Social,
     UserRole,
-    Token
+    Token,
+    Notification
 }

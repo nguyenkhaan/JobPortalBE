@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
         }
 )
 
-// dùng cho tính năng employer lưu jobseeker 
+// dùng cho tính năng employer lưu jobseeker
 public class SavedCandidate {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
