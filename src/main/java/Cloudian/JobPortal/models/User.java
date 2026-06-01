@@ -45,7 +45,12 @@ public class User {
     @UpdateTimestamp
     @Column(nullable = false , name = "updated_at")
     private LocalDateTime updatedAt;
-
+    @Column(nullable = false , name = "banned")
+    @Builder.Default
+    private Boolean banned = false;
+    //Mặc định khi tạo tài khoản thì sẽ có trường banned là false.
+    //Kiểm tra trường banned ngay tại JWT luôn. Ừ khi người dùng gửi JWT về server, việc đầu tiên
+    //con server làm là nó kiểm tra JWT. Thì bổ sung 1 điều kiện vào, nếu như trường banned là true thì cho out ngay tại JWT luôn
     //Foreign keys
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private JobSeekerProfile jobSeekerProfile;
