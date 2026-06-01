@@ -352,24 +352,24 @@ public class DataSeeder implements ApplicationRunner {
     }
 
     private List<Payment> seedPayments(List<User> users) {
-        PaymentMethod[] methods = {
-                PaymentMethod.MOMO, PaymentMethod.ZALO_PAY, PaymentMethod.CASH,
-                PaymentMethod.MOMO, PaymentMethod.ZALO_PAY, PaymentMethod.CASH
-        };
-        PaymentStatus[] statuses = {
-                PaymentStatus.AGREE, PaymentStatus.PENDING, PaymentStatus.REJECT,
-                PaymentStatus.AGREE, PaymentStatus.PENDING, PaymentStatus.AGREE
-        };
-        Double[] costs = {199_000.0, 299_000.0, 99_000.0, 499_000.0, 149_000.0, 249_000.0};
-
         List<Payment> payments = new ArrayList<>();
-        for (int i = 0; i < SEED_COUNT; i++) {
+        java.util.Random random = new java.util.Random();
+
+        PaymentMethod[] methods = PaymentMethod.values();
+        PaymentStatus[] statuses = PaymentStatus.values();
+        String[] plans = {"Basic Plan", "Standard Plan", "Premium Plan"};
+        Double[] costs = {49.0, 149.0, 299.0};
+        int limit = Math.min(users.size(), SEED_COUNT);
+        for (int i = 0; i < limit; i++) {
+            int planIndex = random.nextInt(plans.length);
             payments.add(Payment.builder()
                     .user(users.get(i))
-                    .cost(costs[i])
-                    .method(methods[i])
-                    .status(statuses[i])
-                    .note("Sample payment #" + (i + 1))
+                    .planName(plans[planIndex])
+                    .cost(costs[planIndex])
+                    .method(methods[random.nextInt(methods.length)])
+                    .status(statuses[random.nextInt(statuses.length)])
+                    .transactionRef("TXN-" + System.currentTimeMillis() + "-" + i)
+                    .note("Auto-seeded payment for testing")
                     .build());
         }
         return payments;

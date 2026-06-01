@@ -3,8 +3,10 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,8 +55,39 @@ public class EmployerProfile {
     @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null;
+
+    // trạng thái hoạt động , dùng để admin khóa mở tài khoản:
     @Builder.Default
     private Boolean active = false;
+
+    // Trạng thái duyệt: Dùng cho luồng đăng ký ban đầu của nhà tuyển dụng
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false)
+    @Builder.Default
+    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
+
+    // Thời gian nộp hồ sơ
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    // Thời gian cập nhật hồ sơ gần nhất
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @Column(name = "banner")
+    private String banner;
+
+    @Column(name = "business_license")
+    private String businessLicense;
+
+    @Column(name = "industry")
+    private String industry;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
     //Foreign key
     @OneToMany(mappedBy = "employer")  //mappedBy phai trung voi ten ben bang ben kia
     @Builder.Default
