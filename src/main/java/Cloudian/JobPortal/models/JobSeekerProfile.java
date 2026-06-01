@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,34 @@ public class JobSeekerProfile {
     private Long id;
     @Column(nullable = false)
     private String fullName;
+
+    @Column(name = "professional_title")
+    private String professionalTitle;
+
+    @Column(columnDefinition = "TEXT")
+    private String biography;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    private String nationality;
+
+    @Column(name = "marital_status")
+    private String maritalStatus;
+
+    private String gender;
+
+    @Column(columnDefinition = "TEXT")
+    private String experienceSummary;
+
+    @Column(columnDefinition = "TEXT")
+    private String educationSummary;
+
+    private String website;
+
+    @Column(name = "secondary_phone")
+    private String secondaryPhone;
+
     @Column(nullable = false)
     private String address;
     @Column(nullable = false)
