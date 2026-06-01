@@ -23,8 +23,9 @@ public class PaymentResponse {
     private PaymentStatus status;
     private String note;
     private LocalDateTime createdAt;
+    private String checkoutUrl;
 
-    public static PaymentResponse from(Payment payment) {
+    public static PaymentResponse from(Payment payment, String checkoutUrl) {
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .planName(payment.getPlanName())
@@ -34,6 +35,7 @@ public class PaymentResponse {
                 .status(payment.getStatus())
                 .note(payment.getNote())
                 .createdAt(payment.getCreatedAt())
+                .checkoutUrl(checkoutUrl)
                 .build();
     }
 }
