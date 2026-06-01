@@ -14,6 +14,18 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.Map;
 @Entity
+@Table(
+        name = "audit_log",
+        indexes = {
+                @Index(name = "idx_audit_event_time", columnList = "event_time"),
+                @Index(name = "idx_audit_action_entity", columnList = "action_type,entity_name")
+        }
+)
+@SQLDelete(
+        sql = """
+                UPDATE audit_log SET delete_at = NOW() WHERE id = ? 
+                """
+)
 @SQLDelete(
         sql = """
                 UPDATE audit_log SET delete_at = NOW() WHERE id = ? 
