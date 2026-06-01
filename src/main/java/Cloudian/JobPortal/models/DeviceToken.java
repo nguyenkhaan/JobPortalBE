@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,33 +14,31 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Table(
-        name = "notifications",
+        name = "device_tokens",
         indexes = {
-                @Index(name = "idx_notification_user_read", columnList = "user_id, is_read"),
-                @Index(name = "idx_notification_created_at", columnList = "created_at")
+                @Index(name = "idx_device_user_id", columnList = "user_id"),
+                @Index(name = "idx_device_token", columnList = "token")
         }
 )
-public class Notification {
+public class DeviceToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String title;
-
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String message;
+    private String token;
 
-    @Column(name = "is_read", nullable = false)
+    @Column(name = "device_type")
     @Builder.Default
-    private Boolean isRead = false;
-
-    @Column(name = "target_url")
-    private String targetUrl;
+    private String deviceType = "web";
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "last_active_at", nullable = false)
+    private LocalDateTime lastActiveAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

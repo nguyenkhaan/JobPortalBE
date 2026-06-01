@@ -14,5 +14,6 @@ public enum EntityName {
     Social,
     UserRole,
     Token,
-    Notification
+    Notification,
+    DiviceToken
 }

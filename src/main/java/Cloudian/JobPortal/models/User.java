@@ -94,4 +94,8 @@ public class User {
     //soft delete
     @Builder.Default
     LocalDateTime deleteAt = null;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<DeviceToken> deviceTokens = new java.util.ArrayList<>();
 }
