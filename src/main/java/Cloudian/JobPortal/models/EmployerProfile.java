@@ -106,6 +106,15 @@ public class EmployerProfile {
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;
 
+    @Column(name = "vision", columnDefinition = "TEXT")
+    private String vision;
+
+    @Column(name = "founded")
+    private String founded;
+
+    @Column(name = "team_size")
+    private String teamSize;
+
     //Foreign key
     @OneToMany(mappedBy = "employer")  //mappedBy phai trung voi ten ben bang ben kia
     @Builder.Default
