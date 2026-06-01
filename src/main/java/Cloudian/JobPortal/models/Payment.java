@@ -26,6 +26,13 @@ public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "plan_name")
+    private String planName; // premium, free,...
+
+    @Column(name = "transaction_ref", unique = true)
+    private String transactionRef; // mã của công thanh toán trả về để đối soát.
+
     @Column(nullable = false)
     @Builder.Default
     private Double cost = 0.0;

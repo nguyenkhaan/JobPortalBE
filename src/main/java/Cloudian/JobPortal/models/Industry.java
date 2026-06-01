@@ -2,8 +2,10 @@ package Cloudian.JobPortal.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,6 +32,15 @@ public class Industry {
     private Long id;
     @Column(nullable = false)
     private String name;
+
+    @CreationTimestamp
+    @Column(nullable = false , name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(nullable = false , name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null;
@@ -37,6 +48,5 @@ public class Industry {
     @OneToMany(mappedBy = "industry")
     @Builder.Default
     private List<JobIndustry> jobIndustryList = new ArrayList<>();
-
 
 }

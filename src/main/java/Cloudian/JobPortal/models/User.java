@@ -21,7 +21,8 @@ import java.time.LocalDateTime;
 @Builder
 @Table(
         indexes = {
-                @Index(name = "idx_active", columnList = "active")
+                @Index(name = "idx_active", columnList = "active"),
+                @Index(name = "idx_user_fullname", columnList = "full_name")
         },
         name = "users"
 )
@@ -35,6 +36,14 @@ public class User {
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "avatar")
+    private String avatar;
+
+
     //email
     @Email
     @NotBlank
@@ -85,4 +94,8 @@ public class User {
     //soft delete
     @Builder.Default
     LocalDateTime deleteAt = null;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<DeviceToken> deviceTokens = new java.util.ArrayList<>();
 }
