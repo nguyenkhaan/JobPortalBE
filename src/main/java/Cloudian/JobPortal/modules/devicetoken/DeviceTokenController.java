@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("device-tokens")
@@ -28,29 +29,31 @@ public class DeviceTokenController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<DeviceTokenResponse>> registerDeviceToken(
+    public ResponseEntity<Map<String, Object>> registerDeviceToken(
             @RequestBody @Valid CreateDeviceTokenDto dto,
             Authentication authentication
     ) {
         Long userId = getUserIdFromAuth(authentication);
-        DeviceTokenResponse response = deviceTokenService.registerDeviceToken(userId, dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Device token registered", response));
+        Map<String, Object> response = deviceTokenService.registerDeviceToken(userId, dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<DeviceTokenResponse>>> getUserDeviceTokens(
+    public ResponseEntity<Map<String , Object>> getUserDeviceTokens(
             Authentication authentication
     ) {
         Long userId = getUserIdFromAuth(authentication);
-        List<DeviceTokenResponse> response = deviceTokenService.getUserDeviceTokens(userId);
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        Map<String, Object> response = deviceTokenService.getUserDeviceTokens(userId);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> unregisterDeviceToken(
-            @RequestBody CreateDeviceTokenDto dto
+            @RequestBody CreateDeviceTokenDto dto,
+            Authentication authentication
     ) {
-        deviceTokenService.unregisterDeviceToken(dto.getToken());
+        Long userId = getUserIdFromAuth(authentication);
+        deviceTokenService.unregisterDeviceToken(userId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

@@ -14,6 +14,4 @@ import lombok.NoArgsConstructor;
 public class CreateDeviceTokenDto {
     @NotBlank(message = "Token is required")
     private String token;
-    
-    private String deviceType;
 }

@@ -1,6 +1,11 @@
 package Cloudian.JobPortal.modules.notification;
 
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.events.notification.NotificationPublisher;
+import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
+import Cloudian.JobPortal.models.Channel;
+import Cloudian.JobPortal.modules.base.BaseController;
 import Cloudian.JobPortal.modules.base.dto.ApiResponse;
 import Cloudian.JobPortal.modules.notification.dto.NotificationResponse;
 import Cloudian.JobPortal.security.UserDetailsImpl;
@@ -16,18 +21,34 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationController {
     private final NotificationService notificationService;
-
+    private final NotificationPublisher notificationPublisher; //using for testing only
     private long getUserIdFromAuth(Authentication authentication) {
         if (authentication == null || authentication.getPrincipal() == null) {
             throw new UnauthorizedException("Must be logged in to perform this action");
         }
         return ((UserDetailsImpl) authentication.getPrincipal()).getId();
     }
-    
+    //__________________using for testing only________________
     @PostMapping
-    private ResponseEntity<?> pushNotification()
+    private ResponseEntity<?> pushNotification(
+            Authentication authentication
+    )
     {
-        return ResponseEntity.ok("Hello world");
+        Long userId = getUserIdFromAuth(authentication);
+        notificationPublisher.publish(
+                NotificationEvent.builder()
+                        .userId(userId)
+                        .type(NotificationType.CANDIDATE_APPLY)
+                        .title("New Application")
+                        .message("A candidate applied to your job")
+                        .targetUrl("/applications")
+                        .channels(List.of(
+                                Channel.IN_APP,
+                                Channel.DEVICE
+                        ))
+                        .build()
+        );
+        return ResponseEntity.ok("Notification has been sent successfully");
     }
 
     @GetMapping

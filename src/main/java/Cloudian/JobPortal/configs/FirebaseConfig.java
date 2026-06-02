@@ -12,10 +12,18 @@ import java.io.IOException;
 public class FirebaseConfig {
     @PostConstruct
     public void initialize() throws IOException {
-        FileInputStream serviceAccount = new FileInputStream("src/main/resources/firebase-service-account.json");
+
+        GoogleCredentials credentials = GoogleCredentials
+                .fromStream(
+                        getClass()
+                                .getClassLoader()
+                                .getResourceAsStream("firebase-service-account.json")
+                );
+
         FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .setCredentials(credentials)
                 .build();
+
         if (FirebaseApp.getApps().isEmpty()) {
             FirebaseApp.initializeApp(options);
         }

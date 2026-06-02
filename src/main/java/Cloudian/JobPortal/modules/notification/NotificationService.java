@@ -22,19 +22,17 @@ public class NotificationService {
     private final FirebasePushService firebasePushService;
     private final UserRepository userRepository;
     //________ HELPER
+    //Firebase Notification
     private NotificationChannel sendDeviceNotification(
             Notification notification
     ) {
-
         NotificationChannel channel =
                 NotificationChannel.builder()
                         .notification(notification)
                         .channel(Channel.DEVICE)
                         .status(NotificationStatus.PENDING)
                         .build();
-
         channel = notificationChannelRepository.save(channel);
-
         try {
 
             String fcmToken =
@@ -47,20 +45,17 @@ public class NotificationService {
                     notification.getTitle(),
                     notification.getMessage()
             );
-
             channel.setStatus(
                     NotificationStatus.SENT
             );
-
         } catch (Exception ex) {
-
             channel.setStatus(
                     NotificationStatus.FAILED
             );
         }
-
         return notificationChannelRepository.save(channel);
     }
+    //InApp Notification
     private NotificationChannel sendInAppNotification(
             Notification notification
     ) {

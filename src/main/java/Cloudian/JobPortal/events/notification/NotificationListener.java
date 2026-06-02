@@ -15,6 +15,6 @@ public class NotificationListener {
     public void handleNotification(
             NotificationEvent event
     ) {
-        
+        notificationService.createNotification(event);
     }
 }
