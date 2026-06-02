@@ -23,12 +23,13 @@ public class NotificationController {
         }
         return ((UserDetailsImpl) authentication.getPrincipal()).getId();
     }
-
+    
     @PostMapping
     private ResponseEntity<?> pushNotification()
     {
         return ResponseEntity.ok("Hello world");
     }
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<NotificationResponse>>> getUserNotifications(
             Authentication authentication
@@ -74,5 +75,6 @@ public class NotificationController {
         notificationService.markAllAsRead(userId);
         return ResponseEntity.ok(ApiResponse.ok("All notifications marked as read", null));
     }
+
     //firebase (POST), (GET_ALL - ADMIN ONLY) , (Call 2 duong link API cung 1 luc ?? -> Call in application -> Admin se
 }

@@ -1,9 +1,15 @@
 package Cloudian.JobPortal.modules.notification;
 
-import Cloudian.JobPortal.models.Notification;
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.exceptions.custom.NotFoundException;
+import Cloudian.JobPortal.models.*;
+import Cloudian.JobPortal.modules.notification.dto.CreateNotificationDto;
 import Cloudian.JobPortal.modules.notification.dto.NotificationResponse;
+import Cloudian.JobPortal.modules.notificationchannel.NotificationChannelRepository;
+import Cloudian.JobPortal.modules.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +18,62 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
+    private final NotificationChannelRepository notificationChannelRepository;
+    private final FirebasePushService firebasePushService;
+    private final UserRepository userRepository;
+    //________ HELPER
+    private NotificationChannel sendDeviceNotification(
+            Notification notification
+    ) {
+
+        NotificationChannel channel =
+                NotificationChannel.builder()
+                        .notification(notification)
+                        .channel(Channel.DEVICE)
+                        .status(NotificationStatus.PENDING)
+                        .build();
+
+        channel = notificationChannelRepository.save(channel);
+
+        try {
+
+            String fcmToken =
+                    notification.getUser()
+                                    .getFcmToken();
+            if (fcmToken == null)
+                return null;
+            firebasePushService.send(
+                    fcmToken,
+                    notification.getTitle(),
+                    notification.getMessage()
+            );
+
+            channel.setStatus(
+                    NotificationStatus.SENT
+            );
+
+        } catch (Exception ex) {
+
+            channel.setStatus(
+                    NotificationStatus.FAILED
+            );
+        }
+
+        return notificationChannelRepository.save(channel);
+    }
+    private NotificationChannel sendInAppNotification(
+            Notification notification
+    ) {
+
+        NotificationChannel channel =
+                NotificationChannel.builder()
+                        .notification(notification)
+                        .channel(Channel.IN_APP)
+                        .status(NotificationStatus.SENT)
+                        .build();
+
+        return notificationChannelRepository.save(channel);  //Fuck
+    }
     //Lay tat ca notification cua users;
     @Transactional
     public List<NotificationResponse> getUserNotifications(Long userId) {
@@ -47,5 +109,33 @@ public class NotificationService {
             notification.setIsRead(true);
             notificationRepository.save(notification);
         });
+    }
+    @Transactional
+    public Notification createNotification(NotificationEvent notificationEvent)
+    {
+        User user = userRepository.findById(
+                notificationEvent.getUserId()
+        ).orElseThrow(
+                () -> new NotFoundException("User not found")
+        );
+        Notification notification = Notification.builder()
+                .title(notificationEvent.getTitle())
+                .message(notificationEvent.getMessage())
+                .targetUrl(notificationEvent.getTargetUrl())
+                . user(user)
+                .build();
+        notificationRepository.save(notification);
+        NotificationChannel notificationChannelInApp = null;
+        NotificationChannel notificationChannelDevice = null;
+        if (notificationEvent.getChannels().contains(Channel.IN_APP))
+        {
+            notificationChannelInApp = sendInAppNotification(notification);
+        }
+        if (notificationEvent.getChannels().contains(Channel.DEVICE))
+        {
+            //Device push notification
+            notificationChannelInApp = sendDeviceNotification(notification);
+        }
+        return notification;
     }
 }
