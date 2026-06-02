@@ -14,16 +14,19 @@ import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
 import Cloudian.JobPortal.modules.minio.MinioService;
+import Cloudian.JobPortal.modules.payment.SubscriptionRepository;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,12 +36,31 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JobPostService {
 
-    private final JobPostRepository jobPostRepository;
     private final EmployerRepository employerRepository;
     private final IndustryRepository industryRepository;
     private final JobIndustryRepository jobIndustryRepository;
     private final AuditService auditService;
     private final MinioService minioService;
+    private final SubscriptionRepository subscriptionRepository;
+    private final JobPostRepository jobPostRepository;
+
+    private void validatePostingRights(Long employerId) {
+        EmployerSubscription sub = subscriptionRepository.findByEmployerId(employerId)
+                .orElseThrow(() -> new BadRequestException("No information about the business's service package was found"));
+
+        if (sub.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Your package has expired on " + sub.getExpiresAt().toLocalDate() + ". Please renew to continue posting.");
+        }
+
+        java.time.YearMonth currentMonth = java.time.YearMonth.now();
+        LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+
+        int postCountThisMonth = jobPostRepository.countByEmployerIdAndCreatedAtBetween(employerId, startOfMonth, endOfMonth);
+        if (postCountThisMonth >= sub.getPlan().getMaxJobPostsPerMonth()) {
+            throw new BadRequestException("You have reached your maximum limit of " + sub.getPlan().getMaxJobPostsPerMonth() + " posts this month. Please upgrade your package to post more.");
+        }
+    }
 
     @Transactional
     public List<JobPostResponse> getAllJobPost(JobPostFilterRequest filter, int limit, int offset) {
@@ -99,6 +121,7 @@ public class JobPostService {
     @Transactional
     public JobPostResponse createJobPost(Long userId, CreateJobPostDto data) {
         EmployerProfile employer = requireEmployerProfile(userId);
+        validatePostingRights(employer.getId());
         validateSalaries(data.getSalaryMin(), data.getSalaryMax());
 
         JobPost jobPost = JobPost.builder()

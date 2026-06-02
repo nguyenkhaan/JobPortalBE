@@ -21,6 +21,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import Cloudian.JobPortal.modules.payment.PlanRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,6 +49,7 @@ public class DataSeeder implements ApplicationRunner {
     private final SocialRepository socialRepository;
     private final OAuthRepository oAuthRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PlanRepository planRepository;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -92,6 +94,12 @@ public class DataSeeder implements ApplicationRunner {
         List<JobPost> jobPosts = jobPostRepository.count() == 0
                 ? jobPostRepository.saveAll(seedJobPosts(employers))
                 : jobPostRepository.findAll();
+
+
+        if (planRepository.count() == 0) {
+            log.info("DataSeeder: seeding subscription plans...");
+            planRepository.saveAll(seedPlans());
+        }
 
         if (jobIndustryRepository.count() == 0 && !jobPosts.isEmpty() && !industries.isEmpty()) {
             jobIndustryRepository.saveAll(seedJobIndustries(industries, jobPosts));
@@ -432,5 +440,35 @@ public class DataSeeder implements ApplicationRunner {
                     .build());
         }
         return oAuths;
+    }
+
+    private List<Plan> seedPlans() {
+        List<Plan> plans = new ArrayList<>();
+
+        plans.add(Plan.builder()
+                .name("Free")
+                .price(0.0)
+                .priority(0)
+                .duration(1)
+                .maxJobPostsPerMonth(2)
+                .build());
+
+        plans.add(Plan.builder()
+                .name("VIP")
+                .price(300000.0)
+                .priority(1)
+                .duration(1)
+                .maxJobPostsPerMonth(10)
+                .build());
+
+        plans.add(Plan.builder()
+                .name("Premium")
+                .price(600000.0)
+                .priority(2)
+                .duration(1)
+                .maxJobPostsPerMonth(30)
+                .build());
+
+        return plans;
     }
 }

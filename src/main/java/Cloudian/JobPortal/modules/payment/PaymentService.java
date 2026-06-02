@@ -1,9 +1,9 @@
 package Cloudian.JobPortal.modules.payment;
 
+import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
-import Cloudian.JobPortal.models.Payment;
-import Cloudian.JobPortal.models.PaymentStatus;
-import Cloudian.JobPortal.models.User;
+import Cloudian.JobPortal.models.*;
+import Cloudian.JobPortal.modules.employer.EmployerRepository;
 import Cloudian.JobPortal.modules.payment.dto.CreatePaymentDto;
 import Cloudian.JobPortal.modules.payment.dto.PaymentResponse;
 import Cloudian.JobPortal.modules.user.UserRepository;
@@ -22,6 +22,10 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final PayOS payOS;
+
+    private final EmployerRepository employerRepository;
+    private final PlanRepository planRepository;
+    private final SubscriptionService subscriptionService;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
@@ -77,9 +81,16 @@ public class PaymentService {
         if (payment.getStatus() == PaymentStatus.COMPLETED) {
             return;
         }
-
         payment.setStatus(PaymentStatus.COMPLETED);
         paymentRepository.save(payment);
+
+        EmployerProfile employer = employerRepository.findByOwnerId(payment.getUser().getId())
+                .orElseThrow(() -> new BadRequestException("Employer profile not found for this user"));
+
+        Plan purchasedPlan = planRepository.findByName(payment.getPlanName())
+                .orElseThrow(() -> new BadRequestException("Plan configuration '" + payment.getPlanName() + "' not found"));
+
+        subscriptionService.processPlanUpgrade(employer, purchasedPlan);
     }
 
     @Transactional

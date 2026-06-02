@@ -1,8 +1,11 @@
 package Cloudian.JobPortal.modules.payment;
 
+import Cloudian.JobPortal.models.EmployerProfile;
 import Cloudian.JobPortal.models.Payment;
 import Cloudian.JobPortal.models.PaymentStatus;
+import Cloudian.JobPortal.models.Plan;
 import Cloudian.JobPortal.models.User;
+import Cloudian.JobPortal.modules.employer.EmployerRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +46,13 @@ public class PaymentWebhookIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    // 👇 Khai báo thêm 2 Repository để nạp dữ liệu giả
+    @Autowired
+    private EmployerRepository employerRepository;
+
+    @Autowired
+    private PlanRepository planRepository;
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
@@ -52,11 +62,34 @@ public class PaymentWebhookIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // 1. Tạo User giả
         User dummyUser = new User();
         dummyUser.setEmail("test_webhook_" + System.currentTimeMillis() + "@jobportal.com");
         dummyUser.setPassword("RawPassword123!");
         userRepository.save(dummyUser);
 
+        // 2. TẠO THÊM: EmployerProfile liên kết với User
+        EmployerProfile employer = EmployerProfile.builder()
+                .owner(dummyUser)
+                .companyName("Công ty Test Webhook")
+                .companyWebsite("https://test.com")
+                .address("123 Test Street")
+                .phone("0987654321")
+                .email(dummyUser.getEmail())
+                .build();
+        employerRepository.save(employer);
+
+        // 3. TẠO THÊM: Gói Plan "PREMIUM" mà test đang gọi tới
+        Plan premiumPlan = Plan.builder()
+                .name("PREMIUM")
+                .price(50000.0)
+                .duration(1)
+                .maxJobPostsPerMonth(30)
+                .priority(2)
+                .build();
+        planRepository.save(premiumPlan);
+
+        // 4. Tạo Hóa đơn thanh toán giả
         testPayment = Payment.builder()
                 .planName("PREMIUM")
                 .cost(50000.0)
@@ -83,7 +116,7 @@ public class PaymentWebhookIntegrationTest {
         mockMvc.perform(post("/payments/webhook")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(mockPayload)))
-                .andExpect(status().isOk())
+                .andExpect(status().isOk()) // Kỳ vọng 200 OK
                 .andExpect(jsonPath("$.error").value(0))
                 .andExpect(jsonPath("$.message").value("Webhook processed successfully"));
 
