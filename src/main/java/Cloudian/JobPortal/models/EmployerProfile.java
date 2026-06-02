@@ -82,23 +82,6 @@ public class EmployerProfile {
     @Column(name = "business_license")
     private String businessLicense;
 
-    @Column(name = "current_plan", nullable = false)
-    @Builder.Default
-    private String currentPlan = "Free";
-
-    @Column(name = "plan_amount")
-    @Builder.Default
-    private Double planAmount = 0.0;
-
-    @Column(name = "package_started_at")
-    private LocalDateTime packageStartedAt;
-
-    @Column(name = "package_expires_at")
-    private LocalDateTime packageExpiresAt;
-
-    @Column(name = "is_subscription_canceled", nullable = false)
-    @Builder.Default
-    private Boolean isSubscriptionCanceled = false;
 
     @Column(name = "industry")
     private String industry;
@@ -119,5 +102,8 @@ public class EmployerProfile {
     @OneToMany(mappedBy = "employer")  //mappedBy phai trung voi ten ben bang ben kia
     @Builder.Default
     private List<JobPost> jobPostList = new ArrayList<>();
+
+    @OneToOne(mappedBy = "employer", cascade = CascadeType.ALL)
+    private EmployerSubscription subscription;
 
 }

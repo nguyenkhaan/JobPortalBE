@@ -9,12 +9,15 @@ import Cloudian.JobPortal.modules.employer.dto.CreateEmployerProfileRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileUpdateRequest;
 import Cloudian.JobPortal.modules.minio.MinioService;
+import Cloudian.JobPortal.modules.payment.PlanRepository;
+import Cloudian.JobPortal.modules.payment.SubscriptionRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +32,15 @@ public class EmployerService {
     MinioService minioService;
     @Autowired
     AuditService auditService;
+    @Autowired
+    PlanRepository planRepository;
+    @Autowired
+    SubscriptionRepository subscriptionRepository;
+
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
     {
+        EmployerSubscription sub = profile.getSubscription();
         EmployerProfileResponse response = EmployerProfileResponse.builder()
                 .id(profile.getId())
                 .logo(minioService.getFileUrl(profile.getLogo()))
@@ -51,14 +60,17 @@ public class EmployerService {
                 .active(profile.getActive())
                 .approvalStatus(profile.getApprovalStatus())
                 .rejectionReason(profile.getRejectionReason())
-                .currentPlan(profile.getCurrentPlan())
-                .planAmount(profile.getPlanAmount())
-                .packageStartedAt(profile.getPackageStartedAt())
-                .packageExpiresAt(profile.getPackageExpiresAt())
-                .isSubscriptionCanceled(profile.getIsSubscriptionCanceled())
+
+                .currentPlan(sub != null && sub.getPlan() != null ? sub.getPlan().getName() : "Free")
+                .planAmount(sub != null && sub.getPlan() != null ? sub.getPlan().getPrice() : 0.0)
+                .packageStartedAt(sub != null ? sub.getStartedAt() : null)
+                .packageExpiresAt(sub != null ? sub.getExpiresAt() : null)
+                .isSubscriptionCanceled(sub != null ? sub.getIsCanceled() : false)
+
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();
+
         List<EmployerProfileResponse.JobPostSummary> summaries =
                 profile.getJobPostList().stream()
                         .map(it -> EmployerProfileResponse.JobPostSummary.builder()
@@ -76,6 +88,7 @@ public class EmployerService {
         EmployerProfile profile = employerRepository.findByOwnerId(userId).orElse(null);
         if (profile != null)
             throw new BadRequestException("Profile has been initialized");
+
         String fileName = "";
         if (file != null)
         {
@@ -98,7 +111,24 @@ public class EmployerService {
                 .founded(data.getFounded())
                 .teamSize(data.getTeamSize())
                 .build();
+
         employerRepository.save(newEmployerProfile);
+
+        Plan freePlan = planRepository.findByName("Free")
+                .orElseThrow(() -> new BadRequestException("Default plan 'Free' not found trong hệ thống"));
+
+        EmployerSubscription subscription = EmployerSubscription.builder()
+                .employer(newEmployerProfile)
+                .plan(freePlan)
+                .startedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusMonths(freePlan.getDuration()))
+                .isCanceled(false)
+                .build();
+
+        subscriptionRepository.save(subscription);
+
+        newEmployerProfile.setSubscription(subscription);
+
         Map<String, Object> auditData = new HashMap<>();
         auditData.put("companyName", newEmployerProfile.getCompanyName());
         auditService.createAuditLog(CreateAuditDto.builder()
@@ -108,8 +138,10 @@ public class EmployerService {
                 .entityName(EntityName.EmploymentProfile)
                 .data(auditData)
                 .build());
+
         return mappingToEmployerResponse(newEmployerProfile);
     }
+
     @Transactional
     public EmployerProfileResponse getEmployerProfile(Long userId)
     {
