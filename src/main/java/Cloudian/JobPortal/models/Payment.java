@@ -36,20 +36,26 @@ public class Payment {
     @Column(nullable = false)
     @Builder.Default
     private Double cost = 0.0;
+
     @Enumerated(EnumType.STRING)
     @Builder.Default
     PaymentMethod method = PaymentMethod.MOMO;
+
     @Column(name = "note" , columnDefinition = "TEXT")
     private String note;
+
     @Enumerated(EnumType.STRING)
     @Builder.Default
     PaymentStatus status = PaymentStatus.PENDING;
+
     @Column(name = "created_at" , nullable = false)
     @CreationTimestamp
     LocalDateTime createdAt;
+
     @Column(name = "delete_at")
     @Builder.Default
     LocalDateTime deleteAt = null;
+
     @ManyToOne
     @JoinColumn(name = "user_id" , nullable = false)
     private User user;

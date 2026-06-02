@@ -60,7 +60,7 @@ public class SecurityConfig {
                                 //hasRole("ADMIN") tu dong them tien to ROLE_ vao. => O Spring Security thi map thanh ROLE_, jwt luu ADMIN thoi cung duoc
                                 .requestMatchers("/h2-console/**").permitAll()
                                 .requestMatchers("/auth/refresh").permitAll()
-                                .requestMatchers("/error").permitAll() // trả về đúng lỗi !!!
+                                .requestMatchers("/error").permitAll()
                                 .requestMatchers("/auth/register").permitAll()
                                 .requestMatchers("/health").permitAll()
                                 .requestMatchers("/email").permitAll()
@@ -75,6 +75,7 @@ public class SecurityConfig {
                                 .requestMatchers("/auth/reset-password").permitAll()
                                 .requestMatchers("/test").permitAll()
                                 .requestMatchers("/auth/login").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/payments/webhook").permitAll()
                                 .anyRequest().authenticated()  //Ap dung cho route nao thi khai bao vao day
                 );
 

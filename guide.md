@@ -36,7 +36,7 @@ Một số lưu ý trong Spring Boot
 
 ## Setup minio chạy bằng Docker thành public 
 - Bucket trong minio phải được set thành public thì mới có thể truy cập hình ảnh được 
-- Vài trong Shell của minio (truy cập shell này băng lệnh docker exec -it) 
+- Vào trong Shell của minio (truy cập shell này băng lệnh docker exec -it) 
 
 Chạy 2 lệnh sau: 
 
