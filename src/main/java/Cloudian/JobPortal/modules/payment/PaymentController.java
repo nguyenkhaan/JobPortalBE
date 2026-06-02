@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import vn.payos.PayOS;
 
 import java.util.List;
@@ -72,8 +73,11 @@ public class PaymentController {
     }
 
     @PostMapping("/webhook")
-    public ResponseEntity<Map<String, Object>> handlePayOSWebhook(@RequestBody ObjectNode body) {
+    public ResponseEntity<Map<String, Object>> handlePayOSWebhook(@RequestBody String jsonBody) {
         try {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode body = mapper.readValue(jsonBody, ObjectNode.class);
+
             var webhookData = payOS.webhooks().verify(body);
             Long paymentId = webhookData.getOrderCode();
             paymentService.completePayment(paymentId);

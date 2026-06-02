@@ -16,7 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import vn.payos.PayOS;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,8 +26,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
+@Transactional
 public class PaymentWebhookIntegrationTest {
+
+    static {
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -38,8 +43,7 @@ public class PaymentWebhookIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
     private PayOS payOS;
@@ -48,11 +52,9 @@ public class PaymentWebhookIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        paymentRepository.deleteAll();
-        userRepository.deleteAll();
-
         User dummyUser = new User();
-        // Cấu hình user mồi nếu bảng của bạn có các trường bắt buộc (Not Null)
+        dummyUser.setEmail("test_webhook_" + System.currentTimeMillis() + "@jobportal.com");
+        dummyUser.setPassword("RawPassword123!");
         userRepository.save(dummyUser);
 
         testPayment = Payment.builder()
@@ -66,10 +68,8 @@ public class PaymentWebhookIntegrationTest {
 
     @Test
     void shouldCompletePaymentSuccessfullyWhenWebhookIsCalled() throws Exception {
-        // --- BƯỚC 1: GIẢ LẬP HÀNH VI CỦA SDK PAYOS ---
         Mockito.when(payOS.webhooks().verify(any()).getOrderCode()).thenReturn(testPayment.getId());
 
-        // --- BƯỚC 2: TẠO GÓI TIN JSON MỒI ---
         Map<String, Object> mockPayload = Map.of(
                 "code", "00",
                 "desc", "success",
@@ -80,7 +80,6 @@ public class PaymentWebhookIntegrationTest {
                 "signature", "mocked_checksum_signature"
         );
 
-        // --- BƯỚC 3: BẮN REQUEST VÀO CONTROLLER ---
         mockMvc.perform(post("/payments/webhook")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(mockPayload)))
@@ -88,7 +87,6 @@ public class PaymentWebhookIntegrationTest {
                 .andExpect(jsonPath("$.error").value(0))
                 .andExpect(jsonPath("$.message").value("Webhook processed successfully"));
 
-        // --- BƯỚC 4: ĐỐI SOÁT KẾT QUẢ DATABASE ---
         Payment updatedPayment = paymentRepository.findById(testPayment.getId()).orElseThrow();
         assertEquals(PaymentStatus.COMPLETED, updatedPayment.getStatus());
     }

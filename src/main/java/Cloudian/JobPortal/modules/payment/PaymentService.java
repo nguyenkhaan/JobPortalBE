@@ -31,6 +31,7 @@ public class PaymentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
+        // save draft
         Payment payment = Payment.builder()
                 .planName(dto.getPlanName())
                 .cost(dto.getCost())
@@ -44,9 +45,9 @@ public class PaymentService {
             CreatePaymentLinkRequest paymentRequest = CreatePaymentLinkRequest.builder()
                     .orderCode(payment.getId())
                     .amount(dto.getCost().longValue())
-                    .description("Mua goi " + dto.getPlanName().toUpperCase())
-                    .cancelUrl(frontendUrl + "/employer/post-job")
-                    .returnUrl(frontendUrl + "/employer/post-job/create")
+                    .description("by " + dto.getPlanName().toUpperCase())
+                    .cancelUrl(frontendUrl + "/payment/cancel")
+                    .returnUrl(frontendUrl + "/payment/success")
                     .build();
 
             var checkoutData = payOS.paymentRequests().create(paymentRequest);
@@ -54,17 +55,24 @@ public class PaymentService {
             payment.setTransactionRef(checkoutData.getPaymentLinkId());
             paymentRepository.save(payment);
 
-            return PaymentResponse.from(payment, checkoutData.getCheckoutUrl());
+            return PaymentResponse.from(
+                    payment,
+                    checkoutData.getCheckoutUrl(),
+                    checkoutData.getQrCode(),
+                    checkoutData.getBin(),
+                    checkoutData.getAccountNumber(),
+                    checkoutData.getAccountName()
+            );
 
         } catch (Exception e) {
-            throw new RuntimeException("Thất bại khi khởi tạo cổng thanh toán PayOS: " + e.getMessage());
+            throw new RuntimeException(" PayOS: " + e.getMessage());
         }
     }
 
     @Transactional
     public void completePayment(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new NotFoundException("Hóa đơn thanh toán không tồn tại"));
+                .orElseThrow(() -> new NotFoundException("Payment invoice does not exist"));
 
         if (payment.getStatus() == PaymentStatus.COMPLETED) {
             return;
@@ -77,7 +85,7 @@ public class PaymentService {
     @Transactional
     public List<PaymentResponse> getUserPayments(Long userId) {
         return paymentRepository.findByUserId(userId).stream()
-                .map(p -> PaymentResponse.from(p, null))
+                .map(PaymentResponse::from)
                 .toList();
     }
 
@@ -85,7 +93,7 @@ public class PaymentService {
     public PaymentResponse getPaymentByTransactionRef(String transactionRef) {
         Payment payment = paymentRepository.findByTransactionRef(transactionRef)
                 .orElseThrow(() -> new NotFoundException("Payment not found"));
-        return PaymentResponse.from(payment, null);
+        return PaymentResponse.from(payment);
     }
 
     @Transactional
@@ -95,6 +103,6 @@ public class PaymentService {
 
         payment.setStatus(status);
         paymentRepository.save(payment);
-        return PaymentResponse.from(payment, null);
+        return PaymentResponse.from(payment);
     }
 }

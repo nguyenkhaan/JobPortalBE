@@ -23,9 +23,14 @@ public class PaymentResponse {
     private PaymentStatus status;
     private String note;
     private LocalDateTime createdAt;
-    private String checkoutUrl;
 
-    public static PaymentResponse from(Payment payment, String checkoutUrl) {
+    private String checkoutUrl;
+    private String qrCode;
+    private String bin;
+    private String accountNumber;
+    private String accountName;
+
+    public static PaymentResponse from(Payment payment, String checkoutUrl, String qrCode, String bin, String accountNumber, String accountName) {
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .planName(payment.getPlanName())
@@ -36,6 +41,14 @@ public class PaymentResponse {
                 .note(payment.getNote())
                 .createdAt(payment.getCreatedAt())
                 .checkoutUrl(checkoutUrl)
+                .qrCode(qrCode)
+                .bin(bin)
+                .accountNumber(accountNumber)
+                .accountName(accountName)
                 .build();
+    }
+
+    public static PaymentResponse from(Payment payment) {
+        return from(payment, null, null, null, null, null);
     }
 }

@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 public class JobSeekerController {
     private final JobSeekerService jobSeekerService;
 
-    // Helper lấy UserId từ Token.
     private long getUserIdFromAuth(Authentication authentication) {
         if(authentication == null || authentication.getPrincipal() == null) {
             throw new UnauthorizedException("must login to perform this function");
