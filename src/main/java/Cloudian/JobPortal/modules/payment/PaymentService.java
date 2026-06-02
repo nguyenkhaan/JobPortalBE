@@ -105,4 +105,16 @@ public class PaymentService {
         paymentRepository.save(payment);
         return PaymentResponse.from(payment);
     }
+
+    @Transactional
+    public org.springframework.data.domain.Page<PaymentResponse> getAllPaymentsForAdmin(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                page,
+                size,
+                org.springframework.data.domain.Sort.by("createdAt").descending()
+        );
+
+        return paymentRepository.findAll(pageable)
+                .map(PaymentResponse::from);
+    }
 }
