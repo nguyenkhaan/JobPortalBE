@@ -252,8 +252,12 @@ public class JobPostService {
                 .data(auditData)
                 .build());
         List<JobIndustry> links = jobIndustryRepository.findByJobPostId(id);
-        jobIndustryRepository.deleteAll(links);
-        jobPostRepository.delete(jobPost);
+        for (JobIndustry link : links) {
+            link.setDeleteAt(LocalDateTime.now());
+            jobIndustryRepository.save(link);
+        }
+        jobPost.setDeleteAt(LocalDateTime.now());
+        jobPostRepository.save(jobPost);
     }
 
     private EmployerProfile requireEmployerProfile(Long userId) {

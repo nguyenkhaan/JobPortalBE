@@ -73,8 +73,10 @@ public class AuthService
         }
         Long id = user.getId();
         Token verifiedToken = tokenRepository.findByUserIdAndType(id , TokenType.REGISTER).orElse(null);
-        if (verifiedToken != null)
-            tokenRepository.deleteById(verifiedToken.getId());
+        if (verifiedToken != null) {
+            verifiedToken.setDeleteAt(LocalDateTime.now());
+            tokenRepository.save(verifiedToken);
+        }
             //Tien hanh tao token moi
         System.out.println(user.getId());
         String token = jwtService.generateToken(new TokenBody(user.getEmail() , user.getId() , null , TokenType.REGISTER, Provider.LOCAL) , TokenType.REGISTER);

@@ -17,6 +17,7 @@ import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.resume.ResumeRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -110,7 +111,8 @@ public class JobApplicationService {
     public void deleteJobApplicationAdmin(Long applicationId) {
         JobApplication application = jobApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new NotFoundException("Job application cannot be found"));
-        jobApplicationRepository.delete(application);
+        application.setDeleteAt(LocalDateTime.now());
+        jobApplicationRepository.save(application);
     }
 
     public Page<JobApplicationResponse> getAllJobApplication(Integer limit , Integer offset)

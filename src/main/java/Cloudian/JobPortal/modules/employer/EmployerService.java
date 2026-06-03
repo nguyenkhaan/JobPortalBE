@@ -45,7 +45,7 @@ public class EmployerService {
                 .id(profile.getId())
                 .logo(minioService.getFileUrl(profile.getLogo()))
                 .banner(minioService.getFileUrl(profile.getBanner()))
-                .businessLicense(minioService.getFileUrl(profile.getBusinessLicense()))
+                .businessLicense(profile.getBusinessLicense())
                 .address(profile.getAddress())
                 .capacity(profile.getCapacity())
                 .companyName(profile.getCompanyName())
@@ -90,11 +90,16 @@ public class EmployerService {
             throw new BadRequestException("Profile has been initialized");
 
         String fileName = "";
+        String bannerName = "";
         if (file != null)
         {
+
             fileName = minioService.uploadFile(file);
         }
-
+        if (data.getBanner() != null)
+        {
+            bannerName = minioService.uploadFile(data.getBanner());
+        }
         EmployerProfile newEmployerProfile = EmployerProfile.builder()
                 .owner(user)
                 .active(false)
@@ -106,6 +111,8 @@ public class EmployerService {
                 .description(data.getDescription())
                 .phone(data.getPhone())
                 .logo(fileName.isEmpty() ? null : fileName)
+                .banner(bannerName.isEmpty()? null : bannerName)
+                .businessLicense(data.getBusinessLicense())
                 .industry(data.getIndustry())
                 .vision(data.getVision())
                 .founded(data.getFounded())
@@ -115,7 +122,7 @@ public class EmployerService {
         employerRepository.save(newEmployerProfile);
 
         Plan freePlan = planRepository.findByName("Free")
-                .orElseThrow(() -> new BadRequestException("Default plan 'Free' not found trong hệ thống"));
+                .orElseThrow(() -> new BadRequestException("Default 'Free' is unavailable"));
 
         EmployerSubscription subscription = EmployerSubscription.builder()
                 .employer(newEmployerProfile)

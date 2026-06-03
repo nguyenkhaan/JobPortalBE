@@ -30,6 +30,13 @@ public class GlobalException {
                 new ExceptionDto(e.getMessage() , e.getCode())
         );
     }
+    @ExceptionHandler(value = ContentTooLargeException.class)
+    public ResponseEntity<?> handleContentTooLargeExcpetion(ContentTooLargeException e)
+    {
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(
+                new ExceptionDto(e.getMessage() , e.getCode())
+        );
+    }
     @ExceptionHandler(value = ConflictException.class)
     public ResponseEntity<?> handleConflictException(ConflictException e)
     {

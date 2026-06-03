@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -51,8 +53,16 @@ public class Notification {
     @Column(name = "delete_at")
     @Builder.Default
     private LocalDateTime deleteAt = null;
+    //Tach ra thanh mot bang trung gian cho de dang xu ly
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+    @OneToMany(
+            mappedBy = "notification",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private List<NotificationChannel> deliveries = new ArrayList<>();
 }

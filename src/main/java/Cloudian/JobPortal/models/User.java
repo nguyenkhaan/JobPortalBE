@@ -14,9 +14,10 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+
 @Table(
         indexes = {
                 @Index(name = "idx_active" , columnList = "active")
@@ -60,6 +61,10 @@ public class User {
     @OneToMany(mappedBy = "user")
     @Builder.Default
     private List<UserRole> userRoleList = new ArrayList<>();
+
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
 
     //Foreign key
     @OneToMany(mappedBy = "user")

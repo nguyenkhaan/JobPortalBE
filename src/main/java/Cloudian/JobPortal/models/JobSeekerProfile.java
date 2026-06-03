@@ -25,7 +25,7 @@ import java.util.List;
 )
 @SQLDelete(
         sql = """
-                UPDATE job_seeker_profile SET delete_at = NOW() WHERE id = ? 
+                UPDATE job_seeker_profile SET delete_at = CURRENT_TIMESTAMP WHERE id=?
                 """
 )
 @SQLRestriction("delete_at is NULL")
@@ -82,7 +82,7 @@ public class JobSeekerProfile {
     @Column(nullable = false , name = "approve")
     @Builder.Default
     private Boolean approve = true;
-    @Column(name = "delete_at")
+    @Column(name = "delete_at" , columnDefinition = "TIMESTAMP NULL")
     @Builder.Default
     LocalDateTime deleteAt = null;
 

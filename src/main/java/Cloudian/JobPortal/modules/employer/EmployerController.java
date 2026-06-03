@@ -8,6 +8,7 @@ import Cloudian.JobPortal.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +18,10 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("employer")
 public class EmployerController {
     @Autowired EmployerService employerService;
-    @PostMapping
+    @PostMapping()
     public ResponseEntity<?> createEmployerProfile(
-            @ModelAttribute() @Valid  CreateEmployerProfileRequest data,
-            @RequestParam(value = "logo" , required = false) MultipartFile file,
+            @ModelAttribute @Valid CreateEmployerProfileRequest data,
+//            @RequestPart(value = "logo" , required = false) MultipartFile file,
             Authentication authentication
     ){
         System.out.println("Da vao route");
@@ -28,7 +29,7 @@ public class EmployerController {
         System.out.println(user.getId());
         if (user == null)
             throw new UnauthorizedException("User not found");
-        EmployerProfileResponse emp = employerService.createEmployer(data , user.getId() , file);
+        EmployerProfileResponse emp = employerService.createEmployer(data , user.getId() , data.getLogo());
         return ResponseEntity.status(HttpStatus.CREATED).body(emp);
     }
     @GetMapping

@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @Builder
@@ -38,4 +39,7 @@ public class CreateEmployerProfileRequest {
     private String vision;
     private String founded;
     private String teamSize;
+    private String businessLicense;
+    MultipartFile logo;
+    MultipartFile banner;
 }

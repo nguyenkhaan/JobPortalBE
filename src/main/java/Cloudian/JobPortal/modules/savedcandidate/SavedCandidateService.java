@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -61,6 +62,7 @@ public class SavedCandidateService {
         SavedCandidate savedCandidate = savedCandidateRepository.findByEmployerIdAndJobSeekerId(employer.getId(), jobSeekerId)
                 .orElseThrow(() -> new NotFoundException("Saved candidate not found"));
 
-        savedCandidateRepository.delete(savedCandidate);
+        savedCandidate.setDeleteAt(LocalDateTime.now());
+        savedCandidateRepository.save(savedCandidate);
     }
 }

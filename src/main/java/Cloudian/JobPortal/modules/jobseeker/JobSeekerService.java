@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -179,9 +180,12 @@ public class JobSeekerService {
     }
     @Transactional
     public void deleteProfile(Long userId) {
+        System.out.println("START DELETE");
+
         JobSeekerProfile profile = jobSeekerRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile does not exist!"));
-        jobSeekerRepository.delete(profile);
+        profile.setDeleteAt(LocalDateTime.now());
+        jobSeekerRepository.flush();
     }
 
 }
