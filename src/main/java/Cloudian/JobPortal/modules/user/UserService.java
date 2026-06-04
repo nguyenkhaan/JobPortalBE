@@ -1,6 +1,11 @@
 package Cloudian.JobPortal.modules.user;
 
+
+import Cloudian.JobPortal.models.ActionType;
+import Cloudian.JobPortal.models.EntityName;
 import Cloudian.JobPortal.models.User;
+import Cloudian.JobPortal.modules.audit.AuditService;
+import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,14 +13,20 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UserService
 {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AuditService auditService;
 
     public List<UserResponse> getAllUsers(int limit, int offset)
     {
@@ -50,5 +61,32 @@ public class UserService
          */
 
     }
+    // admin ban user
+    @Transactional
+    public UserResponse toggleUserActive(Long adminId, Long targetUserId){
+        if(adminId.equals(targetUserId)) {
+            throw new BadRequestException("Admin cannot self-lock account");
+        }
 
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        boolean newBannedStatus = !targetUser.getBanned();
+        targetUser.setBanned(newBannedStatus);
+        userRepository.save(targetUser);
+
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("targetEmail", targetUser.getEmail());
+        auditData.put("action", newBannedStatus ? "LOCKED" : "UNLOCKED");
+
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(adminId)
+                .recordId(targetUser.getId())
+                .entityName(EntityName.User)
+                .data(auditData)
+                .build());
+
+        return new UserResponse(targetUser.getId(), targetUser.getEmail(), targetUser.getCreatedAt(), targetUser.getActive());
+    }
 }

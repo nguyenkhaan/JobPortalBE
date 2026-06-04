@@ -5,6 +5,8 @@ import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.auth.dto.*;
+import Cloudian.JobPortal.modules.employer.EmployerRepository;
+import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.role.UserRoleRepository;
 import Cloudian.JobPortal.modules.token.TokenRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
@@ -22,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,10 +41,15 @@ public class AuthService
     private UserRoleRepository userRoleRepository;
     @org.springframework.beans.factory.annotation.Autowired(required=true)
     private PasswordEncoder passwordEncoder;
-    @Transactional   //Dam bao khong bi loi database khi them du lieu vao
+    @Autowired
+    private JobSeekerRepository jobSeekerRepository;
+    @Autowired
+    private EmployerRepository employerRepository;
+
+
+    @Transactional
     public AuthRegisterResponse register(AuthRegisterRequest data)
     {
-        //Tien hanh thuc hien viec dang ky
         User user = userRepository.findByEmail(data.getEmail()).orElse(null);
         if (user != null && user.getActive())
         {
@@ -59,8 +67,12 @@ public class AuthService
                     .build();
             UserRole userRole = new UserRole();
             //n - 1
-            userRole.setRole(Role.SEEKER);
-            userRole.setUser(user);  //Co getter - setter nen co the hoan thien
+            Role requestedRole = data.getRole();
+            if (requestedRole != Role.SEEKER && requestedRole != Role.EMPLOYER) {
+                throw new BadRequestException("Invalid role. Registration as SEEKER or EMPLOYER is only allowed.");
+            }
+            userRole.setRole(requestedRole);
+            userRole.setUser(user);
             //1 - n
             //add user roles
             user.getUserRoleList().add(userRole);
@@ -256,5 +268,39 @@ public class AuthService
                 TokenType.ACCESS
         );
         return new RefreshResponse(accessToken);
+    }
+
+    public AuthMeResponse getMe(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
+
+        List<Role> roles = user.getUserRoleList().stream()
+                .map(UserRole::getRole)
+                .toList();
+
+        boolean hasProfile = false;
+        ApprovalStatus approvalStatus = null;
+
+        if (roles.contains(Role.ADMIN)) {
+            hasProfile = true;
+        } else if (roles.contains(Role.SEEKER)) {
+            hasProfile = jobSeekerRepository.findByUserId(user.getId()).isPresent();
+        } else if (roles.contains(Role.EMPLOYER)) {
+            var employerOpt = employerRepository.findByOwnerId(user.getId());
+            if (employerOpt.isPresent()) {
+                hasProfile = true;
+                approvalStatus = employerOpt.get().getApprovalStatus();
+            }
+        }
+
+        return AuthMeResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .isEmailVerified(user.getActive())
+                .roles(roles)
+                .createdAt(user.getCreatedAt())
+                .hasProfile(hasProfile)
+                .employerApprovalStatus(approvalStatus)
+                .build();
     }
 }
