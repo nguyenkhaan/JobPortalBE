@@ -47,7 +47,6 @@ public class EmployerService {
                 .id(profile.getId())
                 .logo(profile.getLogo() != null ? minioService.getFileUrl(profile.getLogo()) : null)
                 .banner(profile.getBanner() != null ? minioService.getFileUrl(profile.getBanner()) : null)
-                .businessLicense(profile.getBusinessLicense() != null ? minioService.getFileUrl(profile.getBusinessLicense()) : null)
                 .companyName(profile.getCompanyName())
                 .companyWebsite(profile.getCompanyWebsite())
                 .address(profile.getAddress())
@@ -105,10 +104,6 @@ public class EmployerService {
         if (data.getBanner() != null && !data.getBanner().isEmpty()) {
             bannerName = minioService.uploadFile(data.getBanner());
         }
-        if (data.getBusinessLicense() != null && !data.getBusinessLicense().isEmpty()) {
-            businessLicenseName = minioService.uploadFile(data.getBusinessLicense());
-        }
-
         EmployerProfile newEmployerProfile = EmployerProfile.builder()
                 .owner(user)
                 .active(false)
@@ -120,7 +115,6 @@ public class EmployerService {
                 .phone(data.getPhone())
                 .logo(logoName.isEmpty() ? null : logoName)
                 .banner(bannerName.isEmpty() ? null : bannerName)
-                .businessLicense(businessLicenseName.isEmpty() ? null : businessLicenseName)
                 .youtubeUrl(data.getYoutubeUrl() != null ? data.getYoutubeUrl() : "")
                 .facebookUrl(data.getFacebookUrl() != null ? data.getFacebookUrl() : "")
                 .linkedlnUrl(data.getLinkedlnUrl() != null ? data.getLinkedlnUrl() : "")
@@ -251,15 +245,6 @@ public class EmployerService {
             }
         }
 
-        // Handle business license update
-        if (req.getBusinessLicense() != null && !req.getBusinessLicense().isEmpty()) {
-            String oldLicense = profile.getBusinessLicense();
-            String licenseName = minioService.uploadFile(req.getBusinessLicense());
-            profile.setBusinessLicense(licenseName);
-            if (oldLicense != null && !oldLicense.equals(licenseName)) {
-                minioService.deleteFile(oldLicense);
-            }
-        }
 
         employerRepository.save(profile);
 

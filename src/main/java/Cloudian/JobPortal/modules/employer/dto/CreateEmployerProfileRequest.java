@@ -43,5 +43,4 @@ public class CreateEmployerProfileRequest {
     private OrganizationType organizationType;
     MultipartFile logo;
     MultipartFile banner;
-    MultipartFile businessLicense;
 }

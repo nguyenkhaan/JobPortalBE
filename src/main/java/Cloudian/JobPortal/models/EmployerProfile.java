@@ -78,9 +78,6 @@ public class EmployerProfile {
     @Column(name = "banner")
     private String banner;
 
-    @Column(name = "business_license")
-    private String businessLicense;
-
 
     @Column(name = "industry")
     private String industry;

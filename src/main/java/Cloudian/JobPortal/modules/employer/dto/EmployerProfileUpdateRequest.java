@@ -30,5 +30,4 @@ public class EmployerProfileUpdateRequest {
     private OrganizationType organizationType;
     MultipartFile logo;
     MultipartFile banner;
-    MultipartFile businessLicense;
 }
