@@ -1,7 +1,9 @@
 package Cloudian.JobPortal.modules.auth.dto;
 
+import Cloudian.JobPortal.models.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,6 +19,8 @@ public class AuthRegisterRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 5, max = 12, message = "Password must be between 5 and 12 length")
     private String password;
+    @NotNull(message = "Role is required")
+    private Role role;
     //More information for seeker profile
     
 }

@@ -38,6 +38,8 @@ public class AuthService
     private UserRoleRepository userRoleRepository;
     @org.springframework.beans.factory.annotation.Autowired(required=true)
     private PasswordEncoder passwordEncoder;
+
+
     @Transactional   //Dam bao khong bi loi database khi them du lieu vao
     public AuthRegisterResponse register(AuthRegisterRequest data)
     {
@@ -59,8 +61,12 @@ public class AuthService
                     .build();
             UserRole userRole = new UserRole();
             //n - 1
-            userRole.setRole(Role.SEEKER);
-            userRole.setUser(user);  //Co getter - setter nen co the hoan thien
+            Role requestedRole = data.getRole();
+            if (requestedRole != Role.SEEKER && requestedRole != Role.EMPLOYER) {
+                throw new BadRequestException("Invalid role. Registration as SEEKER or EMPLOYER is only allowed.");
+            }
+            userRole.setRole(requestedRole);
+            userRole.setUser(user);
             //1 - n
             //add user roles
             user.getUserRoleList().add(userRole);
