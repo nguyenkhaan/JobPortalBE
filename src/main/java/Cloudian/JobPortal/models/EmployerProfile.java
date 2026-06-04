@@ -49,8 +49,7 @@ public class EmployerProfile {
     @Builder.Default
     private String description = "";
     private String phone;
-    @Builder.Default
-    private Integer capacity = 0;
+
     //Soft delete
     @Column(name = "delete_at")
     @Builder.Default
@@ -91,6 +90,22 @@ public class EmployerProfile {
 
     @Column(name = "vision", columnDefinition = "TEXT")
     private String vision;
+
+    @Column(name = "organization_type")
+    @Enumerated(EnumType.STRING)
+    OrganizationType organizationType;
+
+    @Column(name = "facebook_url")
+    @Builder.Default
+    private String facebookUrl = "";
+
+    @Column(name = "youtube_url")
+    @Builder.Default
+    private String youtubeUrl = "";
+
+    @Column(name = "linkedln_url")
+    @Builder.Default
+    private  String linkedlnUrl = "";
 
     @Column(name = "founded")
     private String founded;

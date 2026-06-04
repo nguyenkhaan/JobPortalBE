@@ -8,6 +8,8 @@ import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.employer.dto.CreateEmployerProfileRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileUpdateRequest;
+import Cloudian.JobPortal.modules.employer.dto.EmployerSubscriptionResponse;
+import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.payment.PlanRepository;
 import Cloudian.JobPortal.modules.payment.SubscriptionRepository;
@@ -19,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -36,22 +37,22 @@ public class EmployerService {
     PlanRepository planRepository;
     @Autowired
     SubscriptionRepository subscriptionRepository;
+    @Autowired
+    JobSeekerRepository jobSeekerRepository;
 
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
     {
-        EmployerSubscription sub = profile.getSubscription();
-        EmployerProfileResponse response = EmployerProfileResponse.builder()
+        return EmployerProfileResponse.builder()
                 .id(profile.getId())
-                .logo(minioService.getFileUrl(profile.getLogo()))
-                .banner(minioService.getFileUrl(profile.getBanner()))
-                .businessLicense(profile.getBusinessLicense())
-                .address(profile.getAddress())
-                .capacity(profile.getCapacity())
+                .logo(profile.getLogo() != null ? minioService.getFileUrl(profile.getLogo()) : null)
+                .banner(profile.getBanner() != null ? minioService.getFileUrl(profile.getBanner()) : null)
+                .businessLicense(profile.getBusinessLicense() != null ? minioService.getFileUrl(profile.getBusinessLicense()) : null)
                 .companyName(profile.getCompanyName())
                 .companyWebsite(profile.getCompanyWebsite())
-                .phone(profile.getPhone())
+                .address(profile.getAddress())
                 .email(profile.getEmail())
+                .phone(profile.getPhone())
                 .description(profile.getDescription())
                 .industry(profile.getIndustry())
                 .vision(profile.getVision())
@@ -60,46 +61,54 @@ public class EmployerService {
                 .active(profile.getActive())
                 .approvalStatus(profile.getApprovalStatus())
                 .rejectionReason(profile.getRejectionReason())
-
-                .currentPlan(sub != null && sub.getPlan() != null ? sub.getPlan().getName() : "Free")
-                .planAmount(sub != null && sub.getPlan() != null ? sub.getPlan().getPrice() : 0.0)
-                .packageStartedAt(sub != null ? sub.getStartedAt() : null)
-                .packageExpiresAt(sub != null ? sub.getExpiresAt() : null)
-                .isSubscriptionCanceled(sub != null ? sub.getIsCanceled() : false)
-
+                .organizationType(profile.getOrganizationType())
+                .youtubeUrl(profile.getYoutubeUrl())
+                .facebookUrl(profile.getFacebookUrl())
+                .linkedlnUrl(profile.getLinkedlnUrl())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();
-
-        List<EmployerProfileResponse.JobPostSummary> summaries =
-                profile.getJobPostList().stream()
-                        .map(it -> EmployerProfileResponse.JobPostSummary.builder()
-                                .id(it.getId())
-                                .title(it.getTitle())
-                                .build()
-                        )
-                        .toList();
-        response.setJobPosts(summaries);
-        return response;
     }
-    public EmployerProfileResponse createEmployer(CreateEmployerProfileRequest data , Long userId , MultipartFile file)
+
+    @Transactional
+    EmployerSubscriptionResponse mappingToSubscriptionResponse(EmployerSubscription sub)
+    {
+        return EmployerSubscriptionResponse.builder()
+                .currentPlan(sub != null && sub.getPlan() != null ? sub.getPlan().getName() : "Free")
+                .amount(sub != null && sub.getPlan() != null ? sub.getPlan().getPrice() : 0.0)
+                .startedAt(sub != null ? sub.getStartedAt() : null)
+                .expiresAt(sub != null ? sub.getExpiresAt() : null)
+                .canceled(sub != null ? sub.getIsCanceled() : false)
+                .build();
+    }
+
+    public EmployerProfileResponse createEmployer(CreateEmployerProfileRequest data, Long userId)
     {
         User user = userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("User not found"));
+
+        // Check if user already has job seeker profile
+        if (jobSeekerRepository.findByUserId(userId).isPresent()) {
+            throw new BadRequestException("You are on the job seeker account");
+        }
+
         EmployerProfile profile = employerRepository.findByOwnerId(userId).orElse(null);
         if (profile != null)
             throw new BadRequestException("Profile has been initialized");
 
-        String fileName = "";
+        String logoName = "";
         String bannerName = "";
-        if (file != null)
-        {
+        String businessLicenseName = "";
 
-            fileName = minioService.uploadFile(file);
+        if (data.getLogo() != null && !data.getLogo().isEmpty()) {
+            logoName = minioService.uploadFile(data.getLogo());
         }
-        if (data.getBanner() != null)
-        {
+        if (data.getBanner() != null && !data.getBanner().isEmpty()) {
             bannerName = minioService.uploadFile(data.getBanner());
         }
+        if (data.getBusinessLicense() != null && !data.getBusinessLicense().isEmpty()) {
+            businessLicenseName = minioService.uploadFile(data.getBusinessLicense());
+        }
+
         EmployerProfile newEmployerProfile = EmployerProfile.builder()
                 .owner(user)
                 .active(false)
@@ -107,16 +116,19 @@ public class EmployerService {
                 .companyName(data.getCompanyName())
                 .companyWebsite(data.getCompanyWebsite())
                 .address(data.getAddress())
-                .capacity(data.getCapacity())
                 .description(data.getDescription())
                 .phone(data.getPhone())
-                .logo(fileName.isEmpty() ? null : fileName)
-                .banner(bannerName.isEmpty()? null : bannerName)
-                .businessLicense(data.getBusinessLicense())
+                .logo(logoName.isEmpty() ? null : logoName)
+                .banner(bannerName.isEmpty() ? null : bannerName)
+                .businessLicense(businessLicenseName.isEmpty() ? null : businessLicenseName)
+                .youtubeUrl(data.getYoutubeUrl() != null ? data.getYoutubeUrl() : "")
+                .facebookUrl(data.getFacebookUrl() != null ? data.getFacebookUrl() : "")
+                .linkedlnUrl(data.getLinkedlnUrl() != null ? data.getLinkedlnUrl() : "")
                 .industry(data.getIndustry())
                 .vision(data.getVision())
                 .founded(data.getFounded())
                 .teamSize(data.getTeamSize())
+                .organizationType(data.getOrganizationType())
                 .build();
 
         employerRepository.save(newEmployerProfile);
@@ -152,21 +164,30 @@ public class EmployerService {
     @Transactional
     public EmployerProfileResponse getEmployerProfile(Long userId)
     {
-        User user = userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("user not found"));
+        userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("user not found"));
         EmployerProfile profile = employerRepository.findByOwnerId(userId)
                 .orElseThrow(() -> new BadRequestException("profile has not been initialized"));
         return mappingToEmployerResponse(profile);
     }
+
+    @Transactional
+    public EmployerSubscriptionResponse getEmployerSubscription(Long userId) {
+        userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("user not found"));
+        EmployerProfile profile = employerRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new BadRequestException("profile has not been initialized"));
+        return mappingToSubscriptionResponse(profile.getSubscription());
+    }
+
     @Transactional
     public EmployerProfileResponse updateEmployerProfile(
             Long userId,
-            EmployerProfileUpdateRequest req,
-            MultipartFile file
+            EmployerProfileUpdateRequest req
     ) {
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
         EmployerProfile profile = employerRepository.findByOwnerId(userId)
                 .orElseThrow(() -> new BadRequestException("Profile not found"));
+
         if (req.getCompanyName() != null) {
             profile.setCompanyName(req.getCompanyName());
         }
@@ -185,9 +206,6 @@ public class EmployerService {
         if (req.getPhone() != null) {
             profile.setPhone(req.getPhone());
         }
-        if (req.getCapacity() != null) {
-            profile.setCapacity(req.getCapacity());
-        }
         if (req.getIndustry() != null) {
             profile.setIndustry(req.getIndustry());
         }
@@ -200,14 +218,51 @@ public class EmployerService {
         if (req.getTeamSize() != null) {
             profile.setTeamSize(req.getTeamSize());
         }
-        if (file != null && !file.isEmpty()) {
-            String oldFileName = profile.getLogo();
-            String fileName = minioService.uploadFile(file);
-            profile.setLogo(fileName);
-            if (!oldFileName.equals(fileName))
-                minioService.deleteFile(oldFileName);
+        if (req.getYoutubeUrl() != null) {
+            profile.setYoutubeUrl(req.getYoutubeUrl());
         }
+        if (req.getFacebookUrl() != null) {
+            profile.setFacebookUrl(req.getFacebookUrl());
+        }
+        if (req.getLinkedlnUrl() != null) {
+            profile.setLinkedlnUrl(req.getLinkedlnUrl());
+        }
+        if (req.getOrganizationType() != null) {
+            profile.setOrganizationType(req.getOrganizationType());
+        }
+
+        // Handle logo update
+        if (req.getLogo() != null && !req.getLogo().isEmpty()) {
+            String oldFileName = profile.getLogo();
+            String fileName = minioService.uploadFile(req.getLogo());
+            profile.setLogo(fileName);
+            if (oldFileName != null && !oldFileName.equals(fileName)) {
+                minioService.deleteFile(oldFileName);
+            }
+        }
+
+        // Handle banner update
+        if (req.getBanner() != null && !req.getBanner().isEmpty()) {
+            String oldBanner = profile.getBanner();
+            String bannerName = minioService.uploadFile(req.getBanner());
+            profile.setBanner(bannerName);
+            if (oldBanner != null && !oldBanner.equals(bannerName)) {
+                minioService.deleteFile(oldBanner);
+            }
+        }
+
+        // Handle business license update
+        if (req.getBusinessLicense() != null && !req.getBusinessLicense().isEmpty()) {
+            String oldLicense = profile.getBusinessLicense();
+            String licenseName = minioService.uploadFile(req.getBusinessLicense());
+            profile.setBusinessLicense(licenseName);
+            if (oldLicense != null && !oldLicense.equals(licenseName)) {
+                minioService.deleteFile(oldLicense);
+            }
+        }
+
         employerRepository.save(profile);
+
         Map<String, Object> auditData = new HashMap<>();
         auditData.put("companyName", profile.getCompanyName());
         auditService.createAuditLog(CreateAuditDto.builder()
@@ -217,6 +272,7 @@ public class EmployerService {
                 .entityName(EntityName.EmploymentProfile)
                 .data(auditData)
                 .build());
+
         return mappingToEmployerResponse(profile);
     }
 }

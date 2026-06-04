@@ -1,9 +1,9 @@
 package Cloudian.JobPortal.modules.employer.dto;
 
+import Cloudian.JobPortal.models.OrganizationType;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,15 +31,17 @@ public class CreateEmployerProfileRequest {
     private String description;
     @NotBlank(message = "Phone is required")
     private String phone;
-    @Min(0)
-    private Integer capacity;
     
     // Additional employer profile fields
     private String industry;
     private String vision;
     private String founded;
     private String teamSize;
-    private String businessLicense;
+    private String youtubeUrl;
+    private String facebookUrl;
+    private String linkedlnUrl;
+    private OrganizationType organizationType;
     MultipartFile logo;
     MultipartFile banner;
+    MultipartFile businessLicense;
 }
