@@ -41,6 +41,13 @@ public class AuthController {
         AuthLoginResponse responseData = authService.login(data);
         return ResponseEntity.status(HttpStatus.OK).body(responseData);
     }
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe(Authentication authentication) {
+        String email = authentication.getName();
+        AuthMeResponse response = authService.getMe(email);
+        return ResponseEntity.ok(response);
+    }
+
     @PreAuthorize("hasRole('SEEKER')")   //Them has Role vao phia truoc la kiem tra duoc role
     @GetMapping("testing-role")
     public String testingRole(Authentication authentication)
