@@ -294,11 +294,8 @@ public class AuthService
         }
 
         return AuthMeResponse.builder()
-                .id(user.getId())
                 .email(user.getEmail())
-                .isEmailVerified(user.getActive())
                 .roles(roles)
-                .createdAt(user.getCreatedAt())
                 .hasProfile(hasProfile)
                 .employerApprovalStatus(approvalStatus)
                 .build();
