@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +36,13 @@ public class GlobalException {
     {
         return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(
                 new ExceptionDto(e.getMessage() , e.getCode())
+        );
+    }
+    @ExceptionHandler(value = MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e)
+    {
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(
+                new ExceptionDto("Upload size exceeds maximum limit (100MB per file, 300MB total)", HttpStatus.CONTENT_TOO_LARGE)
         );
     }
     @ExceptionHandler(value = ConflictException.class)

@@ -201,7 +201,6 @@ public class DataSeeder implements ApplicationRunner {
                     .email(owner.getEmail())
                     .description("Sample employer profile for " + companies[i])
                     .phone("090000000" + (i + 1))
-                    .capacity(50 + i * 10)
                     .active(true)
                     .build());
         }
