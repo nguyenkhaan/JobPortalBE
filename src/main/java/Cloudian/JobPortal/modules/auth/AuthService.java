@@ -104,7 +104,7 @@ public class AuthService
         newToken.setToken(hashedToken);
         tokenRepository.save(newToken);
         return new AuthRegisterResponse(
-                new UserResponse(user.getId() , user.getEmail() , user.getCreatedAt() , user.getActive())
+                new UserResponse(user.getId() , user.getEmail() , null, user.getCreatedAt() , user.getActive() , null, null)
                 ,token
         );
         //Neu user la null -> Tien hanh tap user moi

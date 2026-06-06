@@ -56,7 +56,7 @@ public class AuditService {
                 predicates.add(
                         cb.or(
                                 cb.like(cb.lower(root.get("user").get("email")), value),
-                                cb.like(cb.lower(cb.string(root.get("user").get("id"))), value)
+                                cb.equal(root.get("user").get("id"), value)
                         )
                 );
             }

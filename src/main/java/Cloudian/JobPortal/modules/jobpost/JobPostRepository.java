@@ -1,9 +1,6 @@
 package Cloudian.JobPortal.modules.jobpost;
 
-import Cloudian.JobPortal.models.EducationLevel;
-import Cloudian.JobPortal.models.EmploymentType;
-import Cloudian.JobPortal.models.JobLevel;
-import Cloudian.JobPortal.models.JobPost;
+import Cloudian.JobPortal.models.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
