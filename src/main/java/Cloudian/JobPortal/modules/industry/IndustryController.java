@@ -1,6 +1,8 @@
 package Cloudian.JobPortal.modules.industry;
 
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
+import Cloudian.JobPortal.modules.base.dto.ApiResponse;
+import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.industry.dto.CreateIndustryDto;
 import Cloudian.JobPortal.modules.industry.dto.IndustryResponse;
 import Cloudian.JobPortal.modules.industry.dto.UpdateIndustry;
@@ -30,14 +32,14 @@ public class IndustryController {
     }
     @GetMapping()   //?name=?limit=?offset=
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getAllIndustry(
+    public ResponseEntity<ApiResponse<PageResponse<IndustryResponse>>> getAllIndustry(
             @RequestParam(required = false) String name,
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "20") int limit
     )
     {
-        List<IndustryResponse> response = industryService.getAllIndustry(name , offset , limit);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        var response = industryService.getAllIndustry(name , offset , limit);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.ok(PageResponse.from(response)));
     }
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")

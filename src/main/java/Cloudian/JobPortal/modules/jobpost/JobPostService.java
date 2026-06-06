@@ -9,6 +9,7 @@ import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.employer.EmployerRepository;
 import Cloudian.JobPortal.modules.industry.IndustryRepository;
 import Cloudian.JobPortal.modules.industry.dto.IndustryResponse;
+import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobindustry.JobIndustryRepository;
 import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
@@ -43,6 +44,7 @@ public class JobPostService {
     private final MinioService minioService;
     private final SubscriptionRepository subscriptionRepository;
     private final JobPostRepository jobPostRepository;
+    private final JobApplicationRepository jobApplicationRepository;
 
     private void validatePostingRights(Long employerId) {
         EmployerSubscription sub = subscriptionRepository.findByEmployerId(employerId)
@@ -62,8 +64,7 @@ public class JobPostService {
         }
     }
 
-    @Transactional
-    public List<JobPostResponse> getAllJobPost(JobPostFilterRequest filter, int limit, int offset) {
+    private Pageable buildPageable(int limit, int offset) {
         if (limit <= 0 || limit > 100) {
             throw new BadRequestException("Limit must be between 1 and 100");
         }
@@ -71,10 +72,19 @@ public class JobPostService {
             throw new BadRequestException("Offset cannot be less than 0");
         }
         int page = offset / limit;
-        Pageable pageable = PageRequest.of(page, limit);
+        return PageRequest.of(page, limit);
+    }
+
+    @Transactional
+    public org.springframework.data.domain.Page<JobPostResponse> getAllJobPost(JobPostFilterRequest filter, int limit, int offset) {
+        Pageable pageable = buildPageable(limit, offset);
 
         Specification<JobPost> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(cb.equal(root.get("status"), JobPostStatus.OPEN));
+            predicates.add(cb.equal(root.get("employer").get("approvalStatus"), ApprovalStatus.APPROVED));
+            predicates.add(cb.equal(root.get("employer").get("active"), true));
 
             if (filter.getKeyword() != null && !filter.getKeyword().trim().isEmpty()) {
                 predicates.add(cb.like(
@@ -107,9 +117,13 @@ public class JobPostService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        return jobPostRepository.findAll(spec, pageable).getContent().stream()
-                .map(this::toResponse)
-                .toList();
+        return jobPostRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional
+    public org.springframework.data.domain.Page<JobPostResponse> getEmployerJobPosts(Long userId, int limit, int offset) {
+        return jobPostRepository.findByEmployer_Owner_Id(userId, buildPageable(limit, offset))
+                .map(this::toResponse);
     }
 
     @Transactional
@@ -146,7 +160,9 @@ public class JobPostService {
                 .build();
 
         jobPost = jobPostRepository.save(jobPost);
-        saveJobIndustries(jobPost, data.getIndustryIds());
+        if (data.getIndustryIds() != null && !data.getIndustryIds().isEmpty()) {
+            saveJobIndustries(jobPost, data.getIndustryIds());
+        }
         Map<String, Object> auditData = new HashMap<>();
         auditData.put("title", jobPost.getTitle());
         auditService.createAuditLog(CreateAuditDto.builder()
@@ -336,6 +352,7 @@ public class JobPostService {
                 .responsibilities(jobPost.getResponsibilities())
                 .vacancies(jobPost.getVacancies())
                 .salaryType(jobPost.getSalaryType())
+                .applicationCount(jobApplicationRepository.countByJobPost_Id(jobPost.getId()))
                 .employer(JobPostResponse.EmployerSummary.builder()
                         .id(employer.getId())
                         .companyName(employer.getCompanyName())

@@ -10,6 +10,10 @@ import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerPhoneDto;
 import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerRequest;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +37,7 @@ public class JobSeekerService {
         return JobSeekerResponse.builder()
                 .id(profile.getId())
                 .fullName(profile.getFullName())
+                .email(profile.getUser() != null ? profile.getUser().getEmail() : null)
                 .address(profile.getAddress())
                 .phone(profile.getPhone())
                 .professionalTitle(profile.getProfessionalTitle())
@@ -99,6 +104,29 @@ public class JobSeekerService {
         return jobSeekerRepository.findByUserId(userId)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("profile's user does not exist!"));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<JobSeekerResponse> discoverProfiles(String search, int limit, int offset) {
+        if (limit < 1 || limit > 100) {
+            throw new BadRequestException("Invalid limit");
+        }
+        if (offset < 0) {
+            throw new BadRequestException("Invalid offset");
+        }
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        Specification<JobSeekerProfile> spec = (root, query, cb) -> {
+            if (search == null || search.isBlank()) {
+                return cb.conjunction();
+            }
+            String value = "%" + search.trim().toLowerCase() + "%";
+            return cb.or(
+                    cb.like(cb.lower(root.get("fullName")), value),
+                    cb.like(cb.lower(root.get("professionalTitle")), value),
+                    cb.like(cb.lower(root.get("address")), value)
+            );
+        };
+        return jobSeekerRepository.findAll(spec, pageable).map(this::mapToResponse);
     }
 
     @Transactional

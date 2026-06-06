@@ -17,4 +17,7 @@ import java.util.List;
 
 public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpecificationExecutor<JobPost> {
     int countByEmployerIdAndCreatedAtBetween(Long employerId, LocalDateTime startDate, LocalDateTime endDate);
+    long countByStatus(JobPostStatus status);
+    Page<JobPost> findByEmployer_Owner_Id(Long ownerId, Pageable pageable);
+    long countByEmployer_Owner_Id(Long ownerId);
 }

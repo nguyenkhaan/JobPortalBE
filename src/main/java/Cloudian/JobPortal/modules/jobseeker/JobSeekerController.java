@@ -1,6 +1,8 @@
 package Cloudian.JobPortal.modules.jobseeker;
 
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
+import Cloudian.JobPortal.modules.base.dto.ApiResponse;
+import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.jobseeker.dto.CreateJobSeekerRequest;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
 import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerPhoneDto;
@@ -8,6 +10,7 @@ import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerRequest;
 import Cloudian.JobPortal.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,6 +45,17 @@ public class JobSeekerController {
         Long userId = getUserIdFromAuth(authentication);
         JobSeekerResponse response = jobSeekerService.getProfile(userId);
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @GetMapping("/discover")
+    public ResponseEntity<ApiResponse<PageResponse<JobSeekerResponse>>> discoverProfiles(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "20") Integer limit,
+            @RequestParam(defaultValue = "0") Integer offset
+    ) {
+        Page<JobSeekerResponse> response = jobSeekerService.discoverProfiles(search, limit, offset);
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(response)));
     }
     @PreAuthorize("hasRole('SEEKER')")
     @PatchMapping("change-phone")

@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,6 +22,12 @@ import org.springframework.web.bind.annotation.*;
 public class JobApplicationController extends BaseController {
     @Autowired
     JobApplicationService jobApplicationService;
+
+    private boolean hasRole(Authentication authentication, String role) {
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(("ROLE_" + role)::equals);
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('SEEKER')")
@@ -35,37 +42,72 @@ public class JobApplicationController extends BaseController {
     }
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<JobApplicationResponse>>> getAllJobApplication(
+            Authentication authentication,
             @RequestParam(required = false, defaultValue = "20") Integer limit,
-            @RequestParam(required = false , defaultValue = "1") Integer offset
+            @RequestParam(required = false , defaultValue = "0") Integer offset,
+            @RequestParam(required = false) Long jobPostId
     )
     {
-        Page<JobApplicationResponse> jobApplications = jobApplicationService.getAllJobApplication(limit , offset);
+        Long userId = getUserIdFromAuth(authentication);
+        Page<JobApplicationResponse> jobApplications;
+        if (hasRole(authentication, "ADMIN")) {
+            jobApplications = jobApplicationService.getApplicationsForAdmin(limit, offset);
+        } else if (hasRole(authentication, "EMPLOYER")) {
+            jobApplications = jobApplicationService.getApplicationsForEmployer(userId, jobPostId, limit, offset);
+        } else {
+            jobApplications = jobApplicationService.getApplicationsForSeeker(userId, limit, offset);
+        }
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(jobApplications)));
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('SEEKER')")
+    @PreAuthorize("hasRole('SEEKER') or hasRole('EMPLOYER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<JobApplicationResponse>> updateJobApplication(
             @PathVariable Long id,
             @RequestBody @Valid UpdateJobApplicationDto data,
             Authentication authentication
     ) {
         Long userId = getUserIdFromAuth(authentication);
-        JobApplicationResponse response = jobApplicationService.updateJobApplication(id, userId, data);
+        JobApplicationResponse response;
+        if (hasRole(authentication, "ADMIN")) {
+            response = jobApplicationService.updateApplicationStatusForAdmin(id, data);
+        } else if (hasRole(authentication, "EMPLOYER")) {
+            response = jobApplicationService.updateApplicationStatusForEmployer(id, userId, data);
+        } else {
+            response = jobApplicationService.updateApplicationForSeeker(id, userId, data);
+        }
         return ResponseEntity.ok(ApiResponse.ok("Updated job application successfully", response));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<JobApplicationDetailResponse>> getJobApplicationDetailAdmin(@PathVariable Long id) {
-        JobApplicationDetailResponse response = jobApplicationService.getJobApplicationDetailAdmin(id);
+    @PreAuthorize("hasRole('SEEKER') or hasRole('EMPLOYER') or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<JobApplicationDetailResponse>> getJobApplicationDetailAdmin(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Long userId = getUserIdFromAuth(authentication);
+        JobApplicationDetailResponse response;
+        if (hasRole(authentication, "ADMIN")) {
+            response = jobApplicationService.getJobApplicationDetailAdmin(id);
+        } else if (hasRole(authentication, "EMPLOYER")) {
+            response = jobApplicationService.getApplicationDetailForEmployer(id, userId);
+        } else {
+            response = jobApplicationService.getApplicationDetailForSeeker(id, userId);
+        }
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteJobApplicationAdmin(@PathVariable Long id) {
-        jobApplicationService.deleteJobApplicationAdmin(id);
+    @PreAuthorize("hasRole('SEEKER') or hasRole('EMPLOYER') or hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteJobApplicationAdmin(@PathVariable Long id, Authentication authentication) {
+        Long userId = getUserIdFromAuth(authentication);
+        if (hasRole(authentication, "ADMIN")) {
+            jobApplicationService.deleteJobApplicationAdmin(id);
+        } else if (hasRole(authentication, "EMPLOYER")) {
+            jobApplicationService.deleteApplicationForEmployer(id, userId);
+        } else {
+            jobApplicationService.deleteApplicationForSeeker(id, userId);
+        }
         return ResponseEntity.noContent().build();
     }
 }

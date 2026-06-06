@@ -39,6 +39,34 @@ public class JobApplicationService {
     UserRepository userRepository;
     @Autowired
     MinioService minioService;
+
+    private Pageable buildPageable(Integer limit, Integer offset) {
+        if (limit == null || limit < 1 || limit > 100) {
+            throw new BadRequestException("Invalid limit");
+        }
+        if (offset == null || offset < 0) {
+            throw new BadRequestException("Invalid offset");
+        }
+        return PageRequest.of(offset / limit, limit);
+    }
+
+    private JobApplication requireApplication(Long applicationId) {
+        return jobApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("Job application cannot be found"));
+    }
+
+    private void assertEmployerOwnsApplication(JobApplication application, Long userId) {
+        if (!Objects.equals(application.getJobPost().getEmployer().getOwner().getId(), userId)) {
+            throw new ForbiddenException("You are not allowed to access this job application");
+        }
+    }
+
+    private void assertSeekerOwnsApplication(JobApplication application, Long userId) {
+        if (!Objects.equals(application.getJobSeeker().getUser().getId(), userId)) {
+            throw new ForbiddenException("You are not allowed to access this job application");
+        }
+    }
+
     public JobApplicationResponse createJobApplication(Long userId , CreateJobApplicationDto data)
     {
         JobPost jobPost = jobPostRepository.findById(data.getJobPostId()).orElseThrow(() -> new NotFoundException("Job Post cannot be found"));
@@ -64,21 +92,32 @@ public class JobApplicationService {
 
     }
 
-    public JobApplicationResponse updateJobApplication(Long applicationId, Long userId, UpdateJobApplicationDto data) {
-        JobApplication application = jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException("Job application cannot be found"));
+    public Page<JobApplicationResponse> getApplicationsForAdmin(Integer limit, Integer offset) {
+        return jobApplicationRepository.findAll(buildPageable(limit, offset)).map(this::toJobApplicationResponse);
+    }
 
-        if (!Objects.equals(application.getJobSeeker().getUser().getId(), userId)) {
-            throw new ForbiddenException("You are not allowed to edit this job application");
-        }
+    public Page<JobApplicationResponse> getApplicationsForSeeker(Long userId, Integer limit, Integer offset) {
+        return jobApplicationRepository.findByJobSeeker_User_Id(userId, buildPageable(limit, offset))
+                .map(this::toJobApplicationResponse);
+    }
+
+    public Page<JobApplicationResponse> getApplicationsForEmployer(Long userId, Long jobPostId, Integer limit, Integer offset) {
+        Pageable pageable = buildPageable(limit, offset);
+        Page<JobApplication> applications = jobPostId != null
+                ? jobApplicationRepository.findByJobPost_Employer_Owner_IdAndJobPost_Id(userId, jobPostId, pageable)
+                : jobApplicationRepository.findByJobPost_Employer_Owner_Id(userId, pageable);
+        return applications.map(this::toJobApplicationResponse);
+    }
+
+    public JobApplicationResponse updateApplicationForSeeker(Long applicationId, Long userId, UpdateJobApplicationDto data) {
+        JobApplication application = requireApplication(applicationId);
+        assertSeekerOwnsApplication(application, userId);
 
         boolean hasAnyUpdate = false;
-
         if (data.getCoverLetter() != null) {
             application.setCoverLetter(data.getCoverLetter());
             hasAnyUpdate = true;
         }
-
         if (data.getResumeId() != null) {
             Resume resume = resumeRepository.findById(data.getResumeId())
                     .orElseThrow(() -> new NotFoundException("Resume cannot be found"));
@@ -88,42 +127,65 @@ public class JobApplicationService {
             application.setResume(resume);
             hasAnyUpdate = true;
         }
-
-        if (data.getStatus() != null) {
-            application.setStatus(data.getStatus());
-            hasAnyUpdate = true;
-        }
-
         if (!hasAnyUpdate) {
             throw new BadRequestException("No fields to update");
         }
-
-        JobApplication saved = jobApplicationRepository.save(application);
-        return toJobApplicationResponse(saved);
+        return toJobApplicationResponse(jobApplicationRepository.save(application));
     }
 
-    public JobApplicationDetailResponse getJobApplicationDetailAdmin(Long applicationId) {
-        JobApplication application = jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException("Job application cannot be found"));
+    public JobApplicationResponse updateApplicationStatusForEmployer(Long applicationId, Long userId, UpdateJobApplicationDto data) {
+        if (data.getStatus() == null) {
+            throw new BadRequestException("Status is required");
+        }
+        JobApplication application = requireApplication(applicationId);
+        assertEmployerOwnsApplication(application, userId);
+        application.setStatus(data.getStatus());
+        return toJobApplicationResponse(jobApplicationRepository.save(application));
+    }
+
+    public JobApplicationResponse updateApplicationStatusForAdmin(Long applicationId, UpdateJobApplicationDto data) {
+        if (data.getStatus() == null) {
+            throw new BadRequestException("Status is required");
+        }
+        JobApplication application = requireApplication(applicationId);
+        application.setStatus(data.getStatus());
+        return toJobApplicationResponse(jobApplicationRepository.save(application));
+    }
+
+    public JobApplicationDetailResponse getApplicationDetailForSeeker(Long applicationId, Long userId) {
+        JobApplication application = requireApplication(applicationId);
+        assertSeekerOwnsApplication(application, userId);
         return toJobApplicationDetailResponse(application);
     }
 
-    public void deleteJobApplicationAdmin(Long applicationId) {
-        JobApplication application = jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException("Job application cannot be found"));
+    public JobApplicationDetailResponse getApplicationDetailForEmployer(Long applicationId, Long userId) {
+        JobApplication application = requireApplication(applicationId);
+        assertEmployerOwnsApplication(application, userId);
+        return toJobApplicationDetailResponse(application);
+    }
+
+    public JobApplicationDetailResponse getJobApplicationDetailAdmin(Long applicationId) {
+        return toJobApplicationDetailResponse(requireApplication(applicationId));
+    }
+
+    public void deleteApplicationForSeeker(Long applicationId, Long userId) {
+        JobApplication application = requireApplication(applicationId);
+        assertSeekerOwnsApplication(application, userId);
         application.setDeleteAt(LocalDateTime.now());
         jobApplicationRepository.save(application);
     }
 
-    public Page<JobApplicationResponse> getAllJobApplication(Integer limit , Integer offset)
-    {
-        if (limit < 1 || limit > 100) throw new BadRequestException("Invalid limit");
-        if (offset < 0) throw new BadRequestException("Invalid offset");
-        int page = offset / limit;
-        Pageable pageable = PageRequest.of(page, limit);
+    public void deleteApplicationForEmployer(Long applicationId, Long userId) {
+        JobApplication application = requireApplication(applicationId);
+        assertEmployerOwnsApplication(application, userId);
+        application.setDeleteAt(LocalDateTime.now());
+        jobApplicationRepository.save(application);
+    }
 
-        Page<JobApplication> applications =  jobApplicationRepository.findAll(pageable);
-        return applications.map(this::toJobApplicationResponse);
+    public void deleteJobApplicationAdmin(Long applicationId) {
+        JobApplication application = requireApplication(applicationId);
+        application.setDeleteAt(LocalDateTime.now());
+        jobApplicationRepository.save(application);
     }
 
     private JobApplicationResponse toJobApplicationResponse(JobApplication application) {
@@ -132,10 +194,12 @@ public class JobApplicationService {
                 .id(application.getId())
                 .coverLetter(application.getCoverLetter())
                 .status(application.getStatus())
+                .appliedAt(application.getAppliedAt())
                 .jobSeekerProfile(
                         JobSeekerResponse.builder()
                                 .id(profile.getId())
                                 .fullName(profile.getFullName())
+                                .email(profile.getUser() != null ? profile.getUser().getEmail() : null)
                                 .address(profile.getAddress())
                                 .phone(profile.getPhone())
                                 .professionalTitle(profile.getProfessionalTitle())
@@ -171,6 +235,7 @@ public class JobApplicationService {
                         JobSeekerResponse.builder()
                                 .id(profile.getId())
                                 .fullName(profile.getFullName())
+                                .email(profile.getUser() != null ? profile.getUser().getEmail() : null)
                                 .address(profile.getAddress())
                                 .phone(profile.getPhone())
                                 .professionalTitle(profile.getProfessionalTitle())
