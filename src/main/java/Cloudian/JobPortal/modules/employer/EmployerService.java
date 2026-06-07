@@ -270,7 +270,6 @@ public class EmployerService {
 
     @Transactional
     public EmployerStatisticResponse getEmployerStatistics(Long userId) {
-        userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("User not found"));
         EmployerProfile employer = employerRepository.findByOwnerId(userId)
                 .orElseThrow(() -> new BadRequestException("Profile has not been initialized"));
 

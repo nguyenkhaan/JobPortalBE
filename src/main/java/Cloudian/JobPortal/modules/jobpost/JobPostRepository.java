@@ -22,4 +22,7 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpec
 
     @Query("SELECT jp.id FROM JobPost jp WHERE jp.employer.id = :employerId")
     List<Long> findIdsByEmployerId(@Param("employerId") Long employerId);
+
+    @Query("SELECT jp FROM JobPost jp LEFT JOIN FETCH jp.employer WHERE jp.id = :id")
+    java.util.Optional<JobPost> findByIdWithEmployer(@Param("id") Long id);
 }
