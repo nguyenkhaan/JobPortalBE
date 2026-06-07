@@ -65,6 +65,7 @@ public class SecurityConfig {
                                 .requestMatchers("/error").permitAll()
                                 .requestMatchers("/auth/register").permitAll()
                                 .requestMatchers("/health").permitAll()
+                                .requestMatchers("/health/**").permitAll()
                                 .requestMatchers("/email").permitAll()
                                 .requestMatchers("/auth/reset-password").permitAll()
                                 .requestMatchers("/auth/verify-reset-password").permitAll()
