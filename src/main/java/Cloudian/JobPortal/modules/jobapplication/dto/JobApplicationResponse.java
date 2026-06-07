@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Builder
 @Data
 @NoArgsConstructor
@@ -15,6 +17,7 @@ public class JobApplicationResponse {
     private Long id;
     private String coverLetter;
     private JobApplicationStatus status;
+    private LocalDateTime appliedAt;
     private JobSeekerResponse jobSeekerProfile;
     private JobApplicationJobPostSummaryResponse jobPost;
 }

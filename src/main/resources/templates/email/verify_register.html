@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Verification</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td align="center" style="padding:40px 20px;">
+                <table width="600" cellpadding="0" cellspacing="0"
+                       style="background:#ffffff;border-radius:12px;padding:40px;">
+                    <tr>
+                        <td align="center">
+                            <h1 style="margin:0;color:#111827;">Welcome to MyJob</h1>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding-top:24px;color:#4b5563;font-size:16px;line-height:1.6;">
+                            Thank you for registering an account.
+                            Please verify your email address by clicking the button below.
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="padding:32px 0;">
+                            <a th:href="${verificationUrl}"
+                               style="
+                                    background:#2563eb;
+                                    color:#ffffff;
+                                    text-decoration:none;
+                                    padding:14px 28px;
+                                    border-radius:8px;
+                                    font-weight:600;
+                                    display:inline-block;
+                               ">
+                                Verify Email
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="color:#6b7280;font-size:14px;line-height:1.6;">
+                            If the button above does not work, copy and paste the following URL into your browser:
+                            <br><br>
+                            <a th:href="${verificationUrl}"
+                               th:text="${verificationUrl}">
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding-top:32px;color:#9ca3af;font-size:13px;">
+                            © MyJob. All rights reserved.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

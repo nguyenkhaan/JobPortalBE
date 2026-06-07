@@ -37,6 +37,7 @@ public class JobPostResponse {
     private String responsibilities;
     private Integer vacancies;
     private SalaryType salaryType;
+    private Long applicationCount;
 
     @Data
     @Builder

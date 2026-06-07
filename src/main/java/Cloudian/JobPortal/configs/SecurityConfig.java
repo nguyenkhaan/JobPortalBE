@@ -51,19 +51,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> {})
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/api/auth/**").hasRole("ADMIN")  //Hoac co the dung annotation ben trong Jwt
-                                .requestMatchers("/api/test/**").permitAll()
+                        auth.requestMatchers("/api/test/**").permitAll()
                                 //hasRole("ADMIN") tu dong them tien to ROLE_ vao. => O Spring Security thi map thanh ROLE_, jwt luu ADMIN thoi cung duoc
                                 .requestMatchers("/h2-console/**").permitAll()
                                 .requestMatchers("/plans/**").permitAll()
+                                .requestMatchers("/auth/**").permitAll()
                                 .requestMatchers("/auth/refresh").permitAll()
                                 .requestMatchers("/error").permitAll()
                                 .requestMatchers("/auth/register").permitAll()
                                 .requestMatchers("/health").permitAll()
+                                .requestMatchers("/health/**").permitAll()
                                 .requestMatchers("/email").permitAll()
                                 .requestMatchers("/auth/reset-password").permitAll()
                                 .requestMatchers("/auth/verify-reset-password").permitAll()

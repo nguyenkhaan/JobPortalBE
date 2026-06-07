@@ -3,7 +3,6 @@ package Cloudian.JobPortal.modules.jobpost.dto;
 import Cloudian.JobPortal.models.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,7 +25,6 @@ public class CreateJobPostDto {
     @NotBlank(message = "Description is required")
     String description;
 
-    @NotEmpty(message = "At least one industry is required")
     private List<Long> industryIds;
 
     @NotNull(message = "Salary min cannot be null")

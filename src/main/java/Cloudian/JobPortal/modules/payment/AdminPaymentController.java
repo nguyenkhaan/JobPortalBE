@@ -1,6 +1,7 @@
 package Cloudian.JobPortal.modules.payment;
 
 import Cloudian.JobPortal.modules.base.dto.ApiResponse;
+import Cloudian.JobPortal.models.PaymentStatus;
 import Cloudian.JobPortal.modules.payment.dto.PaymentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,10 +21,12 @@ public class AdminPaymentController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<PaymentResponse>>> getAllPayments(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) PaymentStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<PaymentResponse> response = paymentService.getAllPaymentsForAdmin(page, size);
+        Page<PaymentResponse> response = paymentService.getAllPaymentsForAdmin(page, size, search, status);
         return ResponseEntity.ok(ApiResponse.ok("Fetched all payments successfully", response));
     }
 }

@@ -1,5 +1,5 @@
 // Running seeder (stop any app already on 8080 first, or use another port):
-//   .\gradlew bootRun --args="--seeder --server.port=8081"
+//   .\gradlew bootRun --args="--seeder --server.port=8080"
 package Cloudian.JobPortal.configs;
 
 import Cloudian.JobPortal.models.*;

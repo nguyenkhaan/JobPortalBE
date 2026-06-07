@@ -8,6 +8,7 @@ import Cloudian.JobPortal.models.JobIndustry;
 import Cloudian.JobPortal.models.JobPost;
 import Cloudian.JobPortal.modules.industry.dto.IndustryResponse;
 import Cloudian.JobPortal.modules.industry.dto.UpdateIndustry;
+import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.jobindustry.JobIndustryRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import jakarta.transaction.Transactional;
@@ -31,7 +32,16 @@ public class IndustryService {
     JobIndustryRepository jobIndustryRepository;
     @Autowired
     AuditService auditService;
-    public List<IndustryResponse> getAllIndustry(String name , int offset , int limit)
+    private IndustryResponse toResponse(Industry industry) {
+        return IndustryResponse.builder()
+                .id(industry.getId())
+                .name(industry.getName())
+                .jobCount(jobIndustryRepository.findByIndustryId(industry.getId()).size())
+                .createdAt(industry.getCreatedAt())
+                .build();
+    }
+
+    public Page<IndustryResponse> getAllIndustry(String name , int offset , int limit)
     {
         if (limit < 1 || limit > 100) throw new BadRequestException("Invalid limit"); 
         if (offset < 0) throw new BadRequestException("Invalid offset"); 
@@ -43,12 +53,12 @@ public class IndustryService {
         else
             result = industryRepository.findByDeleteAtIsNull(pageable);
 
-        return result.getContent().stream().map(it -> IndustryResponse.builder().id(it.getId()).name(it.getName()).build()).toList();
+        return result.map(this::toResponse);
     }
     public IndustryResponse getIndustryById(Long id)
     {
         Industry industry = industryRepository.findById(id).orElseThrow(() -> new BadRequestException("industry not found"));
-        return IndustryResponse.builder().name(industry.getName()).id(industry.getId()).build();
+        return toResponse(industry);
     }
     @Transactional
     public IndustryResponse createIndustry(String name, Long userId)
@@ -64,7 +74,7 @@ public class IndustryService {
                 .entityName(EntityName.Industry)
                 .data(auditData)
                 .build());
-        return IndustryResponse.builder().id(industry.getId()).name(industry.getName()).build();
+        return toResponse(industry);
     }
     @Transactional
     public IndustryResponse updateIndustry(Long id , UpdateIndustry data, Long userId)
@@ -83,7 +93,7 @@ public class IndustryService {
                 .entityName(EntityName.Industry)
                 .data(auditData)
                 .build());
-        return IndustryResponse.builder().name(industry.getName()).id(industry.getId()).build();
+        return toResponse(industry);
     }
     @Transactional
     public Boolean deleteIndustry(Long id, Long userId)

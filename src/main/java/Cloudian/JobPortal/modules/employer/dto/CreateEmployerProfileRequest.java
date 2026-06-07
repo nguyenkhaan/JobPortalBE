@@ -4,6 +4,9 @@ import Cloudian.JobPortal.models.OrganizationType;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
@@ -47,13 +50,13 @@ public class CreateEmployerProfileRequest {
     private String vision;
 
     @Schema(description = "Năm thành lập", example = "2020")
-    private String founded;
+    private LocalDate founded;
 
     @Schema(description = "Quy mô đội ngũ", example = "50-100 nhân viên")
     private String teamSize;
 
-    @Schema(description = "Link YouTube", example = "https://youtube.com/@cloudian")
-    private String youtubeUrl;
+    @Schema(description = "Link Twitter", example = "https://twitter.com")
+    private String twitterUrl;
 
     @Schema(description = "Link Facebook", example = "https://facebook.com/cloudian")
     private String facebookUrl;

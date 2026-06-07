@@ -2,6 +2,7 @@ package Cloudian.JobPortal.modules.jobpost;
 
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.modules.base.dto.ApiResponse;
+import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
@@ -17,7 +18,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -40,14 +40,27 @@ public class JobPostController {
                 .anyMatch("ROLE_ADMIN"::equals);
     }
 
+    private boolean hasRole(Authentication authentication, String role) {
+        if (authentication == null) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(("ROLE_" + role)::equals);
+    }
+
     @GetMapping
-    public ResponseEntity<List<JobPostResponse>> getAllJobPost(
+    public ResponseEntity<ApiResponse<PageResponse<JobPostResponse>>> getAllJobPost(
+            Authentication authentication,
             @ModelAttribute JobPostFilterRequest request,
-            @RequestParam(required = false, defaultValue = "1") Integer offset,
-            @RequestParam(required = false, defaultValue = "20") Integer limit
+            @RequestParam(required = false, defaultValue = "0") Integer offset,
+            @RequestParam(required = false, defaultValue = "20") Integer limit,
+            @RequestParam(required = false, defaultValue = "false") boolean mine
     ) {
-        List<JobPostResponse> response = jobPostService.getAllJobPost(request, limit, offset);
-        return ResponseEntity.ok(response);
+        org.springframework.data.domain.Page<JobPostResponse> response = mine && hasRole(authentication, "EMPLOYER")
+                ? jobPostService.getEmployerJobPosts(getUserIdFromAuth(authentication), limit, offset)
+                : jobPostService.getAllJobPost(request, limit, offset);
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(response)));
     }
 
     @GetMapping("/{id}")

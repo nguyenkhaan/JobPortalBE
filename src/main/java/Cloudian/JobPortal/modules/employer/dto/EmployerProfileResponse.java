@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -49,7 +50,7 @@ public class EmployerProfileResponse {
     private String facebookUrl;
 
     @Schema(description = "Link YouTube")
-    private String youtubeUrl;
+    private String twitterUrl;
 
     @Schema(description = "Link LinkedIn")
     private String linkedlnUrl;
@@ -61,7 +62,7 @@ public class EmployerProfileResponse {
     private String vision;
 
     @Schema(description = "Năm thành lập")
-    private String founded;
+    private LocalDate founded;
 
     @Schema(description = "Quy mô đội ngũ")
     private String teamSize;
