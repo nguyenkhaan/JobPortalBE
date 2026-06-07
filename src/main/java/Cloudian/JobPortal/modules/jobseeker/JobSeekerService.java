@@ -4,8 +4,10 @@ import Cloudian.JobPortal.exceptions.custom.*;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.audit.AuditService;
 import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
+import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobseeker.dto.CreateJobSeekerRequest;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
+import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerStatisticResponse;
 import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerPhoneDto;
 import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerRequest;
 import Cloudian.JobPortal.modules.user.UserRepository;
@@ -25,6 +27,9 @@ public class JobSeekerService {
     private final JobSeekerRepository jobSeekerRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final JobApplicationRepository jobApplicationRepository;
+    private final ProfileViewRepository profileViewRepository;
+    private final SavedJobRepository savedJobRepository;
     @org.springframework.beans.factory.annotation.Autowired(required=true)
     private PasswordEncoder passwordEncoder;
     private static final Pattern PHONE_PATTERN =
@@ -188,4 +193,28 @@ public class JobSeekerService {
         jobSeekerRepository.flush();
     }
 
+    @Transactional(readOnly = true)
+    public JobSeekerStatisticResponse getStatistics(Long userId) {
+        userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("User not found"));
+        JobSeekerProfile profile = jobSeekerRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile does not exist!"));
+
+        Long jobSeekerId = profile.getId();
+
+        long totalApplied = jobApplicationRepository.countByJobSeekerId(jobSeekerId);
+        long pendingApplications = jobApplicationRepository.countByJobSeekerIdAndStatus(jobSeekerId, JobApplicationStatus.PENDING);
+        long rejectedApplications = jobApplicationRepository.countByJobSeekerIdAndStatus(jobSeekerId, JobApplicationStatus.REJECTED);
+        long reviewedApplications = totalApplied - pendingApplications - rejectedApplications;
+        long totalProfileViews = profileViewRepository.countByJobSeekerId(jobSeekerId);
+        long totalSavedJobs = savedJobRepository.countByJobSeekerId(jobSeekerId);
+
+        return JobSeekerStatisticResponse.builder()
+                .totalApplied(totalApplied)
+                .pendingApplications(pendingApplications)
+                .reviewedApplications(Math.max(reviewedApplications, 0))
+                .rejectedApplications(rejectedApplications)
+                .totalProfileViews(totalProfileViews)
+                .totalSavedJobs(totalSavedJobs)
+                .build();
+    }
 }

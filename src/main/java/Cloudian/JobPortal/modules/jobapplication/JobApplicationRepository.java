@@ -1,6 +1,7 @@
 package Cloudian.JobPortal.modules.jobapplication;
 
 import Cloudian.JobPortal.models.JobApplication;
+import Cloudian.JobPortal.models.JobApplicationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,4 +31,10 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
            "LEFT JOIN FETCH ja.resume r " +
            "WHERE ja.jobPost.id = :jobPostId")
     List<JobApplication> findByJobPostIdWithDetails(@Param("jobPostId") Long jobPostId);
+
+    @Query("SELECT COUNT(ja) FROM JobApplication ja WHERE ja.jobSeeker.id = :jobSeekerId")
+    long countByJobSeekerId(@Param("jobSeekerId") Long jobSeekerId);
+
+    @Query("SELECT COUNT(ja) FROM JobApplication ja WHERE ja.jobSeeker.id = :jobSeekerId AND ja.status = :status")
+    long countByJobSeekerIdAndStatus(@Param("jobSeekerId") Long jobSeekerId, @Param("status") JobApplicationStatus status);
 }
