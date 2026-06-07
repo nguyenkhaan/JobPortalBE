@@ -8,6 +8,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,16 +97,16 @@ public class EmployerProfile {
     @Builder.Default
     private String facebookUrl = "";
 
-    @Column(name = "youtube_url")
+    @Column(name = "twitterUrl")
     @Builder.Default
-    private String youtubeUrl = "";
+    private String twitterUrl = "";
 
     @Column(name = "linkedln_url")
     @Builder.Default
     private  String linkedlnUrl = "";
 
     @Column(name = "founded")
-    private String founded;
+    private LocalDate founded;
 
     @Column(name = "team_size")
     private String teamSize;

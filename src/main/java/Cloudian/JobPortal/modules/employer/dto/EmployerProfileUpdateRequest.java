@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 @Data
 @Builder
 @NoArgsConstructor
@@ -41,13 +43,13 @@ public class EmployerProfileUpdateRequest {
     private String vision;
 
     @Schema(description = "Năm thành lập", example = "2020")
-    private String founded;
+    private LocalDate founded;
 
     @Schema(description = "Quy mô đội ngũ", example = "50-100 nhân viên")
     private String teamSize;
 
     @Schema(description = "Link YouTube", example = "https://youtube.com/@cloudian")
-    private String youtubeUrl;
+    private String twitterUrl;
 
     @Schema(description = "Link Facebook", example = "https://facebook.com/cloudian")
     private String facebookUrl;

@@ -67,7 +67,7 @@ public class EmployerService {
                 .approvalStatus(profile.getApprovalStatus())
                 .rejectionReason(profile.getRejectionReason())
                 .organizationType(profile.getOrganizationType())
-                .youtubeUrl(profile.getYoutubeUrl())
+                .twitterUrl(profile.getTwitterUrl())
                 .facebookUrl(profile.getFacebookUrl())
                 .linkedlnUrl(profile.getLinkedlnUrl())
                 .createdAt(profile.getCreatedAt())
@@ -154,7 +154,7 @@ public class EmployerService {
                 .phone(data.getPhone())
                 .logo(logoName.isEmpty() ? null : logoName)
                 .banner(bannerName.isEmpty() ? null : bannerName)
-                .youtubeUrl(data.getYoutubeUrl() != null ? data.getYoutubeUrl() : "")
+                .twitterUrl(data.getTwitterUrl() != null ? data.getTwitterUrl() : "")
                 .facebookUrl(data.getFacebookUrl() != null ? data.getFacebookUrl() : "")
                 .linkedlnUrl(data.getLinkedlnUrl() != null ? data.getLinkedlnUrl() : "")
                 .industry(data.getIndustry())
@@ -258,8 +258,8 @@ public class EmployerService {
         if (req.getTeamSize() != null) {
             profile.setTeamSize(req.getTeamSize());
         }
-        if (req.getYoutubeUrl() != null) {
-            profile.setYoutubeUrl(req.getYoutubeUrl());
+        if (req.getTwitterUrl() != null) {
+            profile.setTwitterUrl(req.getTwitterUrl());
         }
         if (req.getFacebookUrl() != null) {
             profile.setFacebookUrl(req.getFacebookUrl());
