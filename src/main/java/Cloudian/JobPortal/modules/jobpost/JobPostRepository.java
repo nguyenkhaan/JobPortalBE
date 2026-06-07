@@ -17,4 +17,11 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpec
     long countByStatus(JobPostStatus status);
     Page<JobPost> findByEmployer_Owner_Id(Long ownerId, Pageable pageable);
     long countByEmployer_Owner_Id(Long ownerId);
+    long countByEmployerId(Long employerId);
+
+    @Query("SELECT jp.id FROM JobPost jp WHERE jp.employer.id = :employerId")
+    List<Long> findIdsByEmployerId(@Param("employerId") Long employerId);
+
+    @Query("SELECT jp FROM JobPost jp LEFT JOIN FETCH jp.employer WHERE jp.id = :id")
+    java.util.Optional<JobPost> findByIdWithEmployer(@Param("id") Long id);
 }

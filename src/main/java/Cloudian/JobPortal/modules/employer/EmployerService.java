@@ -347,4 +347,22 @@ public class EmployerService {
 
         return mappingToEmployerResponse(profile);
     }
+    @Transactional
+    public EmployerStatisticResponse getEmployerStatistics(Long userId) {
+        EmployerProfile employer = employerRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new BadRequestException("Profile has not been initialized"));
+
+        long totalJobs = jobPostRepository.countByEmployerId(employer.getId());
+
+        List<Long> jobPostIds = jobPostRepository.findIdsByEmployerId(employer.getId());
+        long totalApplicants = 0;
+        if (!jobPostIds.isEmpty()) {
+            totalApplicants = jobApplicationRepository.countByJobPostIds(jobPostIds);
+        }
+
+        return EmployerStatisticResponse.builder()
+                .totalJobs(totalJobs)
+                .totalApplicants(totalApplicants)
+                .build();
+    }
 }
