@@ -17,4 +17,9 @@ import java.util.List;
 
 public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpecificationExecutor<JobPost> {
     int countByEmployerIdAndCreatedAtBetween(Long employerId, LocalDateTime startDate, LocalDateTime endDate);
+
+    long countByEmployerId(Long employerId);
+
+    @Query("SELECT jp.id FROM JobPost jp WHERE jp.employer.id = :employerId")
+    List<Long> findIdsByEmployerId(@Param("employerId") Long employerId);
 }
