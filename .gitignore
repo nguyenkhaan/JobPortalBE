@@ -27,6 +27,8 @@ test_device_token.html
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+.clinerules
+
 
 ### NetBeans ###
 /nbproject/private/
@@ -38,3 +40,5 @@ out/
 ### VS Code ###
 .vscode/
 app.jar
+
+

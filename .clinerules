@@ -1,0 +1,29 @@
+# BỘ QUY TẮC CỐT LÕI (SYSTEM RULES) CHO DỰ ÁN JOB PORTAL
+
+1. TƯ DUY KIẾN TRÚC & DÒNG CHẢY HỆ THỐNG (Rất Quan Trọng):
+- Không chỉ viết code cho 1 function chạy được, phải luôn nhìn vào tác động của code đến luồng chảy toàn hệ thống, khả năng bảo trì và nâng cấp. Không tạo nợ kỹ thuật vô lý.
+- Tuân thủ tuyệt đối quy tắc SOLID trong mọi quyết định thiết kế.
+- Kiến trúc phân tầng bắt buộc: 
+  + Controller (nhận/trả HTTP, gọi Service, tuyệt đối không chứa business logic).
+  + DTO (chứa validation, vd: @NotBlank, @Email).
+  + Service (chứa 100% Business Logic, @Transactional, kiểm tra quyền hạn).
+  + Repository (chỉ thao tác Database).
+- Tuyệt đối KHÔNG trả Entity trực tiếp ra Controller, phải dùng DTO.
+
+2. CẤU TRÚC THƯ MỤC HIỆN TẠI (Tôn trọng cấu trúc này):
+- Entity/Model nằm trong: `src/main/java/Cloudian/JobPortal/models/`
+- Các module nghiệp vụ nằm trong: `src/main/java/Cloudian/JobPortal/modules/` (ví dụ: auth, user, jobseeker, employer, jobpost).
+- Test class phải có hậu tố `Test.java` (Ví dụ: `JobPostServiceTest.java`) và nằm trong `src/test/java/Cloudian/JobPortal/modules/`.
+
+3. QUY TRÌNH LÀM VIỆC TỰ ĐỘNG (AUTONOMOUS MODE):
+- Bạn được cấp quyền tự động tạo file và sửa file mà không cần hỏi trước.
+- Luôn rà soát kiến trúc hiện tại, tận dụng những file dùng chung. 
+- Tuy nhiên, phải tuân thủ tuyệt đối QUY TẮC CÁCH LY (ISOLATION RULE): 
+  + CHỈ được phép tạo file mới hoặc sửa các file thuộc đúng module được giao.
+  + TUYỆT ĐỐI KHÔNG được thay đổi logic, xóa hàm, hoặc sửa code của các module khác không liên quan đến yêu cầu hiện tại. Nếu phát hiện logic dùng chung cần sửa, PHẢI DỪNG LẠI và hỏi ý kiến tôi.
+- Luôn suy nghĩ từng bước (Think step-by-step) trong thẻ <thought> trước khi bắt đầu ghi file.
+
+4. TIÊU CHUẨN CODE BẢO MẬT & XỬ LÝ:
+- Các thao tác nhạy cảm của Admin (như duyệt, khóa) PHẢI tích hợp `AuditService` để ghi log.
+- Khai thác tối đa `HttpServletRequest` (chứa attribute "userId") hoặc `SecurityContextHolder` để lấy thông tin User đang đăng nhập, KHÔNG yêu cầu Front-end truyền ID từ body.
+- Dùng `ApiResponse` cho mọi JSON trả về để chuẩn hóa cấu trúc.

@@ -105,3 +105,12 @@ CREATE UNIQUE INDEX idx_token_value
 CREATE UNIQUE INDEX idx_token_type_user
     ON "token"("type", "user_id")
     WHERE "delete_at" IS NULL;
+
+-------------------------------------------------------------------------------
+-- 10. SavedJob (Mỗi ứng viên chỉ lưu 1 job 1 lần)
+-------------------------------------------------------------------------------
+ALTER TABLE "saved_jobs" DROP CONSTRAINT IF EXISTS "saved_jobs_job_seeker_id_job_post_id_key";
+DROP INDEX IF EXISTS idx_saved_jobs_seeker_post;
+
+CREATE UNIQUE INDEX idx_saved_jobs_seeker_post
+    ON "saved_jobs"("job_seeker_id", "job_post_id");

@@ -108,6 +108,10 @@ public class JobPost {
     @Builder.Default
     private Boolean isHighlighted = false;  //Những JobPost nào được đánh dấu highlighted thì sẽ được đẩy, đề xuất lên đầu (sắp xếp theo highlited true trước)
 
+    @Column(name = "pushed_at")
+    @Builder.Default
+    private LocalDateTime pushedAt = null;  //Thời gian lần cuối được đẩy bài
+
     @Column(name = "job_role")
     private String jobRole;
 

@@ -8,7 +8,10 @@ import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.employer.dto.CreateEmployerProfileRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileUpdateRequest;
+import Cloudian.JobPortal.modules.employer.dto.EmployerStatisticResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerSubscriptionResponse;
+import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
+import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.payment.PlanRepository;
@@ -17,10 +20,10 @@ import Cloudian.JobPortal.modules.user.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -39,6 +42,10 @@ public class EmployerService {
     SubscriptionRepository subscriptionRepository;
     @Autowired
     JobSeekerRepository jobSeekerRepository;
+    @Autowired
+    private JobPostRepository jobPostRepository;
+    @Autowired
+    private JobApplicationRepository jobApplicationRepository;
 
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
@@ -259,5 +266,24 @@ public class EmployerService {
                 .build());
 
         return mappingToEmployerResponse(profile);
+    }
+
+    @Transactional
+    public EmployerStatisticResponse getEmployerStatistics(Long userId) {
+        EmployerProfile employer = employerRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new BadRequestException("Profile has not been initialized"));
+
+        long totalJobs = jobPostRepository.countByEmployerId(employer.getId());
+
+        List<Long> jobPostIds = jobPostRepository.findIdsByEmployerId(employer.getId());
+        long totalApplicants = 0;
+        if (!jobPostIds.isEmpty()) {
+            totalApplicants = jobApplicationRepository.countByJobPostIds(jobPostIds);
+        }
+
+        return EmployerStatisticResponse.builder()
+                .totalJobs(totalJobs)
+                .totalApplicants(totalApplicants)
+                .build();
     }
 }
