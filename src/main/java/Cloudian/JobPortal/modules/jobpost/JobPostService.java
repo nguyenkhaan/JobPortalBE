@@ -323,6 +323,70 @@ public class JobPostService {
         saveJobIndustries(jobPost, industryIds);
     }
 
+    @Transactional
+    public Map<String, Object> highlightJobPost(Long jobId, Long userId) {
+        EmployerProfile employer = requireEmployerProfile(userId);
+
+        JobPost jobPost = jobPostRepository.findById(jobId)
+                .orElseThrow(() -> new NotFoundException("Job post not found"));
+
+        // IDOR check: ensure this job belongs to this employer
+        if (!jobPost.getEmployer().getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("You do not have permission to highlight this job post");
+        }
+
+        // Check subscription exists and is not expired
+        EmployerSubscription sub = subscriptionRepository.findByEmployerId(employer.getId())
+                .orElseThrow(() -> new BadRequestException("No information about the business's service package was found"));
+
+        if (sub.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Your package has expired. Please renew to continue using highlight feature.");
+        }
+
+        // Block Free plan — only paid plans can highlight
+        if (sub.getPlan() == null || sub.getPlan().getPrice() <= 0) {
+            throw new ForbiddenException("You are on the Free plan. Please upgrade to a paid plan to use the highlight feature.");
+        }
+
+        // Cooldown check: at least 4 hours between highlights
+        if (jobPost.getPushedAt() != null) {
+            LocalDateTime nextAllowedTime = jobPost.getPushedAt().plusHours(4);
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(nextAllowedTime)) {
+                long totalMinutes = java.time.Duration.between(now, nextAllowedTime).toMinutes();
+                long hours = totalMinutes / 60;
+                long minutes = totalMinutes % 60;
+                String remaining;
+                if (hours > 0 && minutes > 0) {
+                    remaining = hours + " giờ " + minutes + " phút";
+                } else if (hours > 0) {
+                    remaining = hours + " giờ";
+                } else {
+                    remaining = minutes + " phút";
+                }
+                throw new BadRequestException("Bạn thao tác quá nhanh. Vui lòng thử lại sau " + remaining + ".");
+            }
+        }
+
+        // Update the push/highlight fields
+        jobPost.setIsHighlighted(true);
+        jobPost.setPushedAt(LocalDateTime.now());
+        jobPostRepository.save(jobPost);
+
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("title", jobPost.getTitle());
+        auditData.put("highlightedAt", LocalDateTime.now().toString());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(userId)
+                .recordId(jobPost.getId())
+                .entityName(EntityName.JobPost)
+                .data(auditData)
+                .build());
+
+        return Map.of("message", "Job post highlighted successfully");
+    }
+
     private JobPostResponse toResponse(JobPost jobPost) {
         EmployerProfile employer = jobPost.getEmployer();
         List<IndustryResponse> industries = jobIndustryRepository.findByJobPostId(jobPost.getId()).stream()

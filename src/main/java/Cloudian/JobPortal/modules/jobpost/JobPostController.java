@@ -7,6 +7,7 @@ import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
 import Cloudian.JobPortal.security.UserDetailsImpl;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -103,5 +104,19 @@ public class JobPostController {
         body.put("status", true);
         body.put("message", "Job post deleted successfully");
         return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/{id}/highlight")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> highlightJobPost(
+            @PathVariable Long id,
+            HttpServletRequest request
+    ) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        Map<String, Object> result = jobPostService.highlightJobPost(id, userId);
+        return ResponseEntity.ok(ApiResponse.ok((String) result.get("message"), result));
     }
 }

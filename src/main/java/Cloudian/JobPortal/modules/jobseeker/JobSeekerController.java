@@ -5,6 +5,7 @@ import Cloudian.JobPortal.modules.base.dto.ApiResponse;
 import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.jobseeker.dto.CreateJobSeekerRequest;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
+import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerStatisticResponse;
 import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerPhoneDto;
 import Cloudian.JobPortal.modules.jobseeker.dto.UpdateJobSeekerRequest;
 import Cloudian.JobPortal.security.UserDetailsImpl;
@@ -79,5 +80,15 @@ public class JobSeekerController {
         Long userId = getUserIdFromAuth(authentication);
         jobSeekerService.deleteProfile(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/statistics")
+    @PreAuthorize("hasRole('SEEKER')")
+    public ResponseEntity<ApiResponse<JobSeekerStatisticResponse>> getStatistics(
+            Authentication authentication
+    ) {
+        Long userId = getUserIdFromAuth(authentication);
+        JobSeekerStatisticResponse data = jobSeekerService.getStatistics(userId);
+        return ResponseEntity.ok(ApiResponse.ok(data));
     }
 }
