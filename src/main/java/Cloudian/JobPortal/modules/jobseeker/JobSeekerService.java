@@ -48,6 +48,7 @@ public class JobSeekerService {
                 .id(profile.getId())
                 .fullName(profile.getFullName())
                 .email(profile.getUser() != null ? profile.getUser().getEmail() : null)
+                .avatar(profile.getAvatar() != null ? minioService.getFileUrl(profile.getAvatar()) : null)
                 .address(profile.getAddress())
                 .phone(profile.getPhone())
                 .professionalTitle(profile.getProfessionalTitle())
@@ -59,6 +60,9 @@ public class JobSeekerService {
                 .experienceSummary(profile.getExperienceSummary())
                 .educationSummary(profile.getEducationSummary())
                 .website(profile.getWebsite())
+                .facebookUrl(profile.getFacebookUrl())
+                .twitterUrl(profile.getTwitterUrl())
+                .linkedlnUrl(profile.getLinkedlnUrl())
                 .secondaryPhone(profile.getSecondaryPhone())
                 .approve(profile.getApprove())
                 .build();
@@ -66,13 +70,14 @@ public class JobSeekerService {
 
     @Transactional
     public JobSeekerResponse createProfile(CreateJobSeekerRequest request, Long userId){
-        if (request.getPhone() != null && !request.getPhone().trim().isEmpty()) {
-            if (jobSeekerRepository.existsByPhone(request.getPhone().trim())) {
-                throw new BadRequestException("Phone number already exists!");
-            }
-        }
+        validatePhoneUniquenessForCreate(request.getPhone(), request.getSecondaryPhone());
         User user = userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("user does not exist!"));
         jobSeekerRepository.findByUserId(userId).ifPresent(p -> {throw new ConflictException("this user already have job seeker profile on the system!"); });
+
+        String avatarName = null;
+        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
+            avatarName = minioService.uploadFile(request.getAvatar());
+        }
 
         JobSeekerProfile profile = JobSeekerProfile.builder()
                 .fullName(request.getFullName())
@@ -87,7 +92,11 @@ public class JobSeekerService {
                 .experienceSummary(request.getExperienceSummary())
                 .educationSummary(request.getEducationSummary())
                 .website(request.getWebsite())
+                .facebookUrl(request.getFacebookUrl() != null ? request.getFacebookUrl() : "")
+                .twitterUrl(request.getTwitterUrl() != null ? request.getTwitterUrl() : "")
+                .linkedlnUrl(request.getLinkedlnUrl() != null ? request.getLinkedlnUrl() : "")
                 .secondaryPhone(request.getSecondaryPhone())
+                .avatar(avatarName)
                 .user(user)
                 .build();
 
@@ -152,11 +161,30 @@ public class JobSeekerService {
         if(request.getExperienceSummary() != null) profile.setExperienceSummary(request.getExperienceSummary());
         if(request.getEducationSummary() != null) profile.setEducationSummary(request.getEducationSummary());
         if(request.getWebsite() != null) profile.setWebsite(request.getWebsite());
+        if(request.getFacebookUrl() != null) profile.setFacebookUrl(request.getFacebookUrl());
+        if(request.getTwitterUrl() != null) profile.setTwitterUrl(request.getTwitterUrl());
+        if(request.getLinkedlnUrl() != null) profile.setLinkedlnUrl(request.getLinkedlnUrl());
+        if(request.getSecondaryPhone() != null) {
+            String secondaryPhone = request.getSecondaryPhone().trim();
+            if (!secondaryPhone.isEmpty() && jobSeekerRepository.existsBySecondaryPhoneOrPhoneAndIdNot(secondaryPhone, secondaryPhone, profile.getId())) {
+                throw new BadRequestException("Your secondary phone has been used by another account");
+            }
+            profile.setSecondaryPhone(secondaryPhone.isEmpty() ? null : secondaryPhone);
+        }
+        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
+            String oldAvatar = profile.getAvatar();
+            String avatarName = minioService.uploadFile(request.getAvatar());
+            profile.setAvatar(avatarName);
+            if (oldAvatar != null && !oldAvatar.equals(avatarName)) {
+                minioService.deleteFile(oldAvatar);
+            }
+        }
 
         JobSeekerProfile saved = jobSeekerRepository.save(profile);
         Map<String, Object> auditData = new HashMap<>();
         if (request.getFullName() != null) auditData.put("fullName", saved.getFullName());
         if (request.getAddress() != null) auditData.put("address", saved.getAddress());
+        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) auditData.put("avatar", saved.getAvatar());
         auditService.createAuditLog(CreateAuditDto.builder()
                 .actionType(ActionType.UPDATE)
                 .userId(userId)
@@ -175,24 +203,44 @@ public class JobSeekerService {
             throw new BadRequestException("Wrong password");
 
         if (isValidPhone(data.getPhone())) {
-            if (jobSeekerRepository.existsByPhoneOrSecondaryPhoneAndIdNot(data.getPhone(), data.getSecondaryPhone(), userId))
+            if (jobSeekerRepository.existsByPhoneOrSecondaryPhoneAndIdNot(data.getPhone(), data.getPhone(), jobSeekerProfile.getId()))
                 throw new BadRequestException("Your phone has been used by another account");
             jobSeekerProfile.setPhone(data.getPhone());
         }
         if (isValidPhone(data.getSecondaryPhone())) {
-            if (jobSeekerRepository.existsBySecondaryPhoneOrPhoneAndIdNot(data.getSecondaryPhone(), data.getPhone(), userId))
+            if (jobSeekerRepository.existsBySecondaryPhoneOrPhoneAndIdNot(data.getSecondaryPhone(), data.getSecondaryPhone(), jobSeekerProfile.getId()))
                 throw new BadRequestException("Your secondary phone has been used by another account");
             jobSeekerProfile.setSecondaryPhone(data.getSecondaryPhone());
         }
-        return Map.of("phone", data.getPhone(), "secondaryPhone", data.getSecondaryPhone());
+        Map<String, String> response = new HashMap<>();
+        response.put("phone", data.getPhone());
+        response.put("secondaryPhone", data.getSecondaryPhone());
+        return response;
     }
 
     @Transactional
     public void deleteProfile(Long userId) {
         JobSeekerProfile profile = jobSeekerRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile does not exist!"));
+        if (profile.getAvatar() != null && !profile.getAvatar().isBlank()) {
+            minioService.deleteFile(profile.getAvatar());
+            profile.setAvatar(null);
+        }
         profile.setDeleteAt(LocalDateTime.now());
         jobSeekerRepository.flush();
+    }
+
+    private void validatePhoneUniquenessForCreate(String phone, String secondaryPhone) {
+        if (isValidPhone(phone)) {
+            if (jobSeekerRepository.existsByPhone(phone) || jobSeekerRepository.existsBySecondaryPhone(phone)) {
+                throw new BadRequestException("Phone number already exists!");
+            }
+        }
+        if (isValidPhone(secondaryPhone)) {
+            if (jobSeekerRepository.existsBySecondaryPhone(secondaryPhone) || jobSeekerRepository.existsByPhone(secondaryPhone)) {
+                throw new BadRequestException("Secondary phone number already exists!");
+            }
+        }
     }
 
     // ==================== STEP 1: Toggle Saved Job ====================

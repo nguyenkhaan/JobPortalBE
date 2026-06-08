@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -30,9 +31,9 @@ public class JobSeekerController {
         return userDetails.getId();
     }
 
-    @PostMapping
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @PreAuthorize("hasRole('SEEKER')")
-    public ResponseEntity<JobSeekerResponse> createProfile(@Valid @RequestBody CreateJobSeekerRequest request, Authentication auth){
+    public ResponseEntity<JobSeekerResponse> createProfile(@Valid @ModelAttribute CreateJobSeekerRequest request, Authentication auth){
         Long userId = getUserIdFromAuth(auth);
         JobSeekerResponse response = jobSeekerService.createProfile(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -65,8 +66,8 @@ public class JobSeekerController {
         return ResponseEntity.ok(response);
     }
     @PreAuthorize("hasRole('SEEKER')")
-    @PatchMapping
-    public ResponseEntity<JobSeekerResponse> updateProfile(@Valid @RequestBody UpdateJobSeekerRequest request, Authentication authentication) {
+    @PatchMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<JobSeekerResponse> updateProfile(@Valid @ModelAttribute UpdateJobSeekerRequest request, Authentication authentication) {
         Long userId = getUserIdFromAuth(authentication);
         JobSeekerResponse response = jobSeekerService.updateProfile(request, userId);
         return ResponseEntity.ok(response);

@@ -201,6 +201,7 @@ public class DataSeeder implements ApplicationRunner {
                     .address(addresses[i])
                     .email(owner.getEmail())
                     .description("Sample employer profile for " + companies[i])
+                    .approvalStatus(ApprovalStatus.APPROVED)
                     .founded(LocalDate.of(2006, 1, 19))
                     .phone("090000000" + (i + 1))
                     .active(true)
@@ -304,7 +305,9 @@ public class DataSeeder implements ApplicationRunner {
                 now.plusDays(9), now.plusDays(7), now.minusDays(6),
                 now.plusDays(4)
         };
-
+        String[] locations = {
+                "Khanh Hoa", "Ca Mau", "Ninh Thuan", "Binh Duong", "Kien Giang", "Thai Binh", "Ha Noi", "Ho Chi Minh", "Ninh Binh"
+        }; 
         Boolean[] featuredArray = { true, false, false, false, false, false, false, false, false, false };
         Boolean[] highlightedArray = { false, false, true, false, false, false, false, false, false, false };
 
@@ -322,6 +325,7 @@ public class DataSeeder implements ApplicationRunner {
                     .status(statuses[idx])
                     .educationLevel(educationLevels[idx])
                     .experience(idx)
+                    .location(locations[i])
                     .jobLevel(jobLevels[idx])
                     .expiresAt(expiresAt[idx])
                     .tags(tags[idx])
