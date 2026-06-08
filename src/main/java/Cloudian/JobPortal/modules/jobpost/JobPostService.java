@@ -235,6 +235,7 @@ public class JobPostService {
                 .employer(employer)
                 .title(data.getTitle())
                 .description(data.getDescription())
+                .location(data.getLocation())
                 .jobLevel(data.getJobLevel())
                 .experience(data.getExperience())
                 .educationLevel(data.getEducationLevel())
@@ -278,6 +279,9 @@ public class JobPostService {
         }
         if (data.getDescription() != null && !data.getDescription().isBlank()) {
             jobPost.setDescription(data.getDescription());
+        }
+        if (data.getLocation() != null && !data.getLocation().isBlank()) {
+            jobPost.setLocation(data.getLocation());
         }
         if (data.getJobLevel() != null) {
             jobPost.setJobLevel(data.getJobLevel());
@@ -521,7 +525,9 @@ public class JobPostService {
                 .jobLevelLabel(getJobLevelLabel(jobPost.getJobLevel()))
                 .experienceLabel(formatExperience(jobPost.getExperience()))
                 .salary(formatSalary(jobPost.getSalaryMin(), jobPost.getSalaryMax(), jobPost.getSalaryType()))
-                .location(employer != null ? employer.getAddress() : null)
+                .location(jobPost.getLocation() != null && !jobPost.getLocation().isBlank()
+                        ? jobPost.getLocation()
+                        : (employer != null ? employer.getAddress() : null))
                 .daysRemaining(calcDaysRemaining(jobPost.getExpiresAt()))
                 .employer(JobPostResponse.EmployerSummary.builder()
                         .id(employer != null ? employer.getId() : null)
@@ -546,7 +552,9 @@ public class JobPostService {
                 .expireIn(calcExpireIn(jobPost.getExpiresAt()))
                 .education(getEducationLabel(jobPost.getEducationLevel()))
                 .salary(formatSalary(jobPost.getSalaryMin(), jobPost.getSalaryMax(), jobPost.getSalaryType()))
-                .location(employer != null ? employer.getAddress() : null)
+                .location(jobPost.getLocation() != null && !jobPost.getLocation().isBlank()
+                        ? jobPost.getLocation()
+                        : (employer != null ? employer.getAddress() : null))
                 .jobType(getEmploymentTypeLabel(jobPost.getEmploymentType()))
                 .experience(formatExperience(jobPost.getExperience()))
                 .build();

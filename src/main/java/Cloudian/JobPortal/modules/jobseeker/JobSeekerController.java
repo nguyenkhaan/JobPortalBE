@@ -90,7 +90,6 @@ public class JobSeekerController {
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
 
-    // ==================== STEP 1: Toggle Saved Job ====================
 
     @PostMapping("/saved-jobs/{jobId}/toggle")
     @PreAuthorize("hasRole('SEEKER')")
@@ -103,7 +102,6 @@ public class JobSeekerController {
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
-    // ==================== STEP 2: Get Saved Jobs List ====================
 
     @GetMapping("/saved-jobs")
     @PreAuthorize("hasRole('SEEKER')")
@@ -117,7 +115,6 @@ public class JobSeekerController {
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(page)));
     }
 
-    // ==================== STEP 3: Apply for Job ====================
 
     @PostMapping("/apply")
     @PreAuthorize("hasRole('SEEKER')")
@@ -130,7 +127,6 @@ public class JobSeekerController {
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
-    // ==================== STEP 4: Get Applications List ====================
 
     @GetMapping("/applications")
     @PreAuthorize("hasRole('SEEKER')")
@@ -144,7 +140,6 @@ public class JobSeekerController {
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(page)));
     }
 
-    // ==================== STEP 6: Job Alerts ====================
 
     @PostMapping("/alerts")
     @PreAuthorize("hasRole('SEEKER')")
