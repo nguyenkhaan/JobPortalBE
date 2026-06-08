@@ -152,7 +152,7 @@ public class EmployerService {
         }
         EmployerProfile newEmployerProfile = EmployerProfile.builder()
                 .owner(user)
-                .active(false)
+                .active(true)
                 .email(data.getEmail())
                 .companyName(data.getCompanyName())
                 .companyWebsite(data.getCompanyWebsite())
@@ -329,7 +329,7 @@ public class EmployerService {
                 .orElseThrow(() -> new NotFoundException("Employer profile not found"));
 
         profile.setApprovalStatus(status);
-        profile.setActive(status == ApprovalStatus.APPROVED);
+        // profile.setActive(status == ApprovalStatus.APPROVED);
         profile.setRejectionReason(status == ApprovalStatus.REJECTED ? rejectionReason : null);
         employerRepository.save(profile);
 

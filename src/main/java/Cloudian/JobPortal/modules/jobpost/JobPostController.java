@@ -51,17 +51,15 @@ public class JobPostController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<JobPostResponse>>> getAllJobPost(
-            Authentication authentication,
             @ModelAttribute JobPostFilterRequest request,
-            @RequestParam(required = false, defaultValue = "0") Integer offset,
-            @RequestParam(required = false, defaultValue = "20") Integer limit,
-            @RequestParam(required = false, defaultValue = "false") boolean mine
+            @RequestParam(required = false, defaultValue = "1") Integer offset,
+            @RequestParam(required = false, defaultValue = "20") Integer limit
+            //Bo di employer, di chuyen ham lay tat ca jobpost cua 1 employer sang ebn API employer 
     ) {
-        org.springframework.data.domain.Page<JobPostResponse> response = mine && hasRole(authentication, "EMPLOYER")
-                ? jobPostService.getEmployerJobPosts(getUserIdFromAuth(authentication), limit, offset)
-                : jobPostService.getAllJobPost(request, limit, offset);
+        org.springframework.data.domain.Page<JobPostResponse> response = jobPostService.getAllJobPost(request, limit, offset);
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(response)));
     }
+    // /jobpost/employer -> Lay tat ca jobpost cua 1 employer nao do, theo id (???)
 
     @GetMapping("/{id}")
     public ResponseEntity<JobPostResponse> getJobPostById(@PathVariable Long id) {

@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import Cloudian.JobPortal.modules.payment.PlanRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -200,6 +201,7 @@ public class DataSeeder implements ApplicationRunner {
                     .address(addresses[i])
                     .email(owner.getEmail())
                     .description("Sample employer profile for " + companies[i])
+                    .founded(LocalDate.of(2006, 1, 19))
                     .phone("090000000" + (i + 1))
                     .active(true)
                     .build());

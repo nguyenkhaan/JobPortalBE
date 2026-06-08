@@ -58,7 +58,7 @@ public class EmployerProfile {
 
     // trạng thái hoạt động , dùng để admin khóa mở tài khoản:
     @Builder.Default
-    private Boolean active = false;
+    private Boolean active = true; //Change to true to verify that an employer account still be activated 
 
     // Trạng thái duyệt: Dùng cho luồng đăng ký ban đầu của nhà tuyển dụng
     @Enumerated(EnumType.STRING)
