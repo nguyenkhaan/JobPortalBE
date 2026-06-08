@@ -44,4 +44,10 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     Page<JobApplication> findByJobPost_Employer_Owner_Id(Long userId, Pageable pageable);
     Page<JobApplication> findByJobPost_Employer_Owner_IdAndJobPost_Id(Long userId, Long jobPostId, Pageable pageable);
     long countByJobPost_Id(Long jobPostId);
+
+    @Query("SELECT ja FROM JobApplication ja LEFT JOIN FETCH ja.jobPost jp LEFT JOIN FETCH jp.employer WHERE ja.jobSeeker.user.id = :userId ORDER BY ja.appliedAt DESC")
+    Page<JobApplication> findByUserIdWithJobPost(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT ja FROM JobApplication ja LEFT JOIN FETCH ja.jobPost jp LEFT JOIN FETCH jp.employer WHERE ja.jobSeeker.user.id = :userId ORDER BY ja.appliedAt DESC")
+    List<JobApplication> findTop5ByUserIdWithJobPost(@Param("userId") Long userId, Pageable pageable);
 }

@@ -89,6 +89,10 @@ public class EmployerProfile {
     @Column(name = "vision", columnDefinition = "TEXT")
     private String vision;
 
+    @Column(name = "benefits", columnDefinition = "TEXT")
+    @Builder.Default
+    private String benefits = "";
+
     @Column(name = "organization_type")
     @Enumerated(EnumType.STRING)
     OrganizationType organizationType;

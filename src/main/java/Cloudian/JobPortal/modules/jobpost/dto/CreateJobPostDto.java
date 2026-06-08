@@ -25,6 +25,9 @@ public class CreateJobPostDto {
     @NotBlank(message = "Description is required")
     String description;
 
+    @NotBlank(message = "Location is required")
+    String location;
+
     private List<Long> industryIds;
 
     @NotNull(message = "Salary min cannot be null")

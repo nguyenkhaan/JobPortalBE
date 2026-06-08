@@ -126,6 +126,10 @@ public class JobPost {
     @Column(name = "salary_type")
     @Builder.Default
     private SalaryType salaryType = SalaryType.MONTHLY;
+
+    @Column(nullable = false, name = "location")
+    @Builder.Default
+    private String location = "";
     //------------------------------------------------------------------------------------
     //Foreign Key Map
     @OneToMany(mappedBy = "jobPost")
