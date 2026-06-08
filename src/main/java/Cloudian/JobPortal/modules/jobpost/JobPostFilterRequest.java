@@ -18,7 +18,6 @@ public class JobPostFilterRequest {
     private JobLevel jobLevel;
     private String keyword;
 
-    // --- New filter fields for Job Seeker (matching FE JobFilterParams) ---
     private String location;
     private String jobType;
     private String experience;

@@ -123,7 +123,6 @@ public class JobPostService {
                 predicates.add(jobIndustryList.get("industry").get("id").in(filter.getIndustryIds()));
             }
 
-            // --- New filter predicates ---
             if (filter.getLocation() != null && !filter.getLocation().trim().isEmpty()) {
                 predicates.add(cb.like(
                         cb.lower(root.get("employer").get("address")),
@@ -158,7 +157,6 @@ public class JobPostService {
 
             if (filter.getExperience() != null && !filter.getExperience().trim().isEmpty()) {
                 String exp = filter.getExperience().trim();
-                // Support ranges like "1-2", "3-5", "5+", or exact number
                 if (exp.endsWith("+")) {
                     int minExp = Integer.parseInt(exp.replace("+", "").trim());
                     predicates.add(cb.greaterThanOrEqualTo(root.get("experience"), minExp));
@@ -222,7 +220,6 @@ public class JobPostService {
 
     @Transactional
     public JobPostDetailResponse getJobPostById(Long id) {
-        // Use JOIN FETCH to avoid N+1
         JobPost jobPost = jobPostRepository.findByIdWithEmployer(id)
                 .orElseThrow(() -> new NotFoundException("Job post not found"));
         return toDetailResponse(jobPost);
@@ -426,7 +423,6 @@ public class JobPostService {
         JobPost jobPost = jobPostRepository.findById(jobId)
                 .orElseThrow(() -> new NotFoundException("Job post not found"));
 
-        // IDOR check: ensure this job belongs to this employer
         if (!jobPost.getEmployer().getOwner().getId().equals(userId)) {
             throw new ForbiddenException("You do not have permission to highlight this job post");
         }
@@ -483,11 +479,7 @@ public class JobPostService {
         return Map.of("message", "Job post highlighted successfully");
     }
 
-    // ===================== MAPPING HELPERS =====================
 
-    /**
-     * Build response for Job Post list view (matches FE Job interface).
-     */
     private JobPostResponse toResponse(JobPost jobPost) {
         EmployerProfile employer = jobPost.getEmployer();
         String logoUrl = employer != null && employer.getLogo() != null
@@ -522,7 +514,6 @@ public class JobPostService {
                 .vacancies(jobPost.getVacancies())
                 .salaryType(jobPost.getSalaryType())
                 .applicationCount(jobApplicationRepository.countByJobPost_Id(jobPost.getId()))
-                // --- New fields for Job Seeker list view ---
                 .companyName(employer != null ? employer.getCompanyName() : null)
                 .logo(logoUrl)
                 .type(getEmploymentTypeLabel(jobPost.getEmploymentType()))
@@ -532,7 +523,6 @@ public class JobPostService {
                 .salary(formatSalary(jobPost.getSalaryMin(), jobPost.getSalaryMax(), jobPost.getSalaryType()))
                 .location(employer != null ? employer.getAddress() : null)
                 .daysRemaining(calcDaysRemaining(jobPost.getExpiresAt()))
-                // --- End new fields ---
                 .employer(JobPostResponse.EmployerSummary.builder()
                         .id(employer != null ? employer.getId() : null)
                         .companyName(employer != null ? employer.getCompanyName() : null)
@@ -543,9 +533,7 @@ public class JobPostService {
                 .build();
     }
 
-    /**
-     * Build response for Job Post detail view (matches FE JobDetailType interface).
-     */
+
     private JobPostDetailResponse toDetailResponse(JobPost jobPost) {
         EmployerProfile employer = jobPost.getEmployer();
 
@@ -553,7 +541,6 @@ public class JobPostService {
                 ? minioService.getFileUrl(employer.getLogo())
                 : null;
 
-        // Build overview
         JobPostDetailResponse.JobOverview overview = JobPostDetailResponse.JobOverview.builder()
                 .postedDate(formatPostedDate(jobPost.getCreatedAt()))
                 .expireIn(calcExpireIn(jobPost.getExpiresAt()))
@@ -564,7 +551,6 @@ public class JobPostService {
                 .experience(formatExperience(jobPost.getExperience()))
                 .build();
 
-        // Build company profile
         JobPostDetailResponse.CompanyProfile companyProfile = JobPostDetailResponse.CompanyProfile.builder()
                 .industry(employer != null ? employer.getIndustry() : null)
                 .foundedIn(employer != null && employer.getFounded() != null
@@ -592,12 +578,6 @@ public class JobPostService {
                 .build();
     }
 
-    // ===================== HELPER METHODS =====================
-
-    /**
-     * Calculate remaining days as a display string.
-     * Example: "Còn 5 ngày", "Còn 1 ngày", "Đã hết hạn", "Vô thời hạn"
-     */
     private String calcDaysRemaining(LocalDateTime expiresAt) {
         if (expiresAt == null) {
             return "Vô thời hạn";
@@ -615,9 +595,6 @@ public class JobPostService {
         }
     }
 
-    /**
-     * Calculate expire-in text (for detail view).
-     */
     private String calcExpireIn(LocalDateTime expiresAt) {
         if (expiresAt == null) {
             return "Vô thời hạn";
@@ -635,10 +612,6 @@ public class JobPostService {
         }
     }
 
-    /**
-     * Format salary amount with currency and period.
-     * Example: "15.000.000 - 20.000.000 VND / tháng", "Thỏa thuận"
-     */
     private String formatSalary(BigDecimal salaryMin, BigDecimal salaryMax, SalaryType salaryType) {
         if (salaryMin == null && salaryMax == null) {
             return "Thỏa thuận";
@@ -650,10 +623,6 @@ public class JobPostService {
         return minStr + " - " + maxStr + " VND / " + period;
     }
 
-    /**
-     * Format experience as a display string.
-     * Example: "1 năm", "3-5 năm", "Không yêu cầu"
-     */
     private String formatExperience(Integer experience) {
         if (experience == null) {
             return "Không yêu cầu";
@@ -661,10 +630,6 @@ public class JobPostService {
         return experience + " năm";
     }
 
-    /**
-     * Format posted date as relative time.
-     * Example: "3 ngày trước", "1 tháng trước", "Hôm nay"
-     */
     private String formatPostedDate(LocalDateTime createdAt) {
         if (createdAt == null) {
             return null;
@@ -691,10 +656,6 @@ public class JobPostService {
         }
     }
 
-    /**
-     * Split a text block into a list of paragraphs by double newline.
-     * Returns empty list if input is null or blank.
-     */
     private List<String> splitTextToList(String text) {
         if (text == null || text.isBlank()) {
             return List.of();
@@ -702,17 +663,11 @@ public class JobPostService {
         return List.of(text.split("\\n\\n"));
     }
 
-    /**
-     * Get display label for EmploymentType.
-     */
     private String getEmploymentTypeLabel(EmploymentType type) {
         if (type == null) return null;
         return type.label;
     }
 
-    /**
-     * Get display label for EducationLevel.
-     */
     private String getEducationLabel(EducationLevel level) {
         if (level == null) return null;
         switch (level) {
@@ -725,9 +680,6 @@ public class JobPostService {
         }
     }
 
-    /**
-     * Get display label for JobLevel.
-     */
     private String getJobLevelLabel(JobLevel level) {
         if (level == null) return null;
         switch (level) {
@@ -740,9 +692,6 @@ public class JobPostService {
         }
     }
 
-    /**
-     * Get display label for OrganizationType.
-     */
     private String getOrganizationTypeLabel(OrganizationType type) {
         if (type == null) return null;
         return type.label;
