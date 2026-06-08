@@ -27,7 +27,8 @@ public class Resume {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Column(nullable = false , name = "file_name") 
+    private String fileName; 
     @Column(nullable = false , name = "file_url")
     private String fileUrl;
 

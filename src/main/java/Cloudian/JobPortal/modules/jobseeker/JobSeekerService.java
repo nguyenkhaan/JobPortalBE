@@ -356,10 +356,11 @@ public class JobSeekerService {
         EmployerProfile employer = jobPost.getEmployer();
         Map<String, Object> map = new HashMap<>();
         map.put("id", String.valueOf(application.getId()));
+        map.put("jobPostId" , String.valueOf(jobPost.getId())); 
         map.put("logo", employer != null && employer.getLogo() != null ? minioService.getFileUrl(employer.getLogo()) : null);
         map.put("role", jobPost.getTitle());
         map.put("type", getEmploymentTypeLabel(jobPost.getEmploymentType()));
-        map.put("location", employer != null ? employer.getAddress() : null);
+        map.put("location", jobPost.getLocation() != null ? jobPost.getLocation() : "");
         map.put("salary", formatSalary(jobPost.getSalaryMin(), jobPost.getSalaryMax(), jobPost.getSalaryType()));
         map.put("dateApplied", formatPostedDate(application.getAppliedAt()));
         map.put("status", application.getStatus() != null ? application.getStatus().name() : "PENDING");

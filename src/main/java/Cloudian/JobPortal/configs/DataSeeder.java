@@ -244,10 +244,12 @@ public class DataSeeder implements ApplicationRunner {
     }
 
     private List<Resume> seedResumes(List<JobSeekerProfile> seekers) {
+        String BASE_RESUME_NAME = "Resume #"; 
         List<Resume> resumes = new ArrayList<>();
         for (int i = 0; i < SEED_COUNT; i++) {
             resumes.add(Resume.builder()
                     .jobSeeker(seekers.get(i))
+                    .fileName(BASE_RESUME_NAME + (i+1))
                     .fileUrl("https://storage.jobportal.test/resumes/resume-" + (i + 1) + ".pdf")
                     .isDefault(true)
                     .build());

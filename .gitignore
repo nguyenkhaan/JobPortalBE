@@ -29,7 +29,11 @@ out/
 !**/src/test/**/out/
 .clinerules
 
-
+.claude/
+.codex/
+.claude
+.codex
+CLAUDE.md
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

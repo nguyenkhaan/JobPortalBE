@@ -1,15 +1,16 @@
 package Cloudian.JobPortal.modules.resume;
 
-import Cloudian.JobPortal.models.Resume;
 import Cloudian.JobPortal.modules.base.BaseController;
+import Cloudian.JobPortal.modules.resume.dto.RenameResumeRequest;
 import Cloudian.JobPortal.modules.resume.dto.ResumeResponse;
+import Cloudian.JobPortal.modules.resume.dto.UploadResumeRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
@@ -24,12 +25,12 @@ public class ResumeController extends BaseController {
     @PostMapping("/upload")
     public ResponseEntity<ResumeResponse> uploadResume(
             Authentication authentication,
-            @RequestParam("file") MultipartFile file,
+            @ModelAttribute @Valid UploadResumeRequest uploadResumeRequest,
             @RequestParam(value = "isDefault", required = false) Boolean isDefaultReq
     )
     {
         Long userId = getUserIdFromAuth(authentication);
-        ResumeResponse response = resumeService.uploadResume(file, isDefaultReq, userId);
+        ResumeResponse response = resumeService.uploadResume(uploadResumeRequest, isDefaultReq, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -52,7 +53,18 @@ public class ResumeController extends BaseController {
         resumeService.setDefaultResume(resumeId, userId);
         return ResponseEntity.noContent().build();
     }
-
+    @PreAuthorize("hasRole('SEEKER')") 
+    @PatchMapping("/{resumeId}/name") 
+    public ResponseEntity<Void> renameResume(
+        @RequestBody() RenameResumeRequest data, 
+        @PathVariable("resumeId") Long resumeId, 
+        Authentication authentication
+    ) 
+    {
+        Long userId = getUserIdFromAuth(authentication);
+        resumeService.renameResume(userId, resumeId, data.getFileName());
+        return ResponseEntity.noContent().build(); 
+    }
     // delete
     @PreAuthorize("hasRole('SEEKER')")
     @DeleteMapping("/{resumeId}")
