@@ -24,4 +24,7 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpec
 
     @Query("SELECT jp FROM JobPost jp LEFT JOIN FETCH jp.employer WHERE jp.id = :id")
     java.util.Optional<JobPost> findByIdWithEmployer(@Param("id") Long id);
+
+    @Query("SELECT jp.employer.id AS employerId, COUNT(jp) AS openCount FROM JobPost jp WHERE jp.employer.id IN :employerIds AND jp.status = 'OPEN' GROUP BY jp.employer.id")
+    List<Object[]> countOpenJobsByEmployerIds(@Param("employerIds") List<Long> employerIds);
 }

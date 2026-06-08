@@ -71,6 +71,7 @@ public class SecurityConfig {
                                 .requestMatchers("/auth/verify-reset-password").permitAll()
                                 .requestMatchers("/docs/**", "/docs").permitAll()
                                 .requestMatchers(HttpMethod.GET , "/jobpost", "/jobpost/**").permitAll()
+                                .requestMatchers(HttpMethod.GET , "/employers", "/employers/**").permitAll()
                                 .requestMatchers("/scalar/**").permitAll()
                                 .requestMatchers("/openapi.json", "/v3/api-docs/**").permitAll()
                                 .requestMatchers("/auth/verify").permitAll()

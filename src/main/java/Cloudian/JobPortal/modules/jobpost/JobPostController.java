@@ -4,6 +4,7 @@ import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.modules.base.dto.ApiResponse;
 import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostDetailResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
 import Cloudian.JobPortal.security.UserDetailsImpl;
@@ -64,8 +65,8 @@ public class JobPostController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobPostResponse> getJobPostById(@PathVariable Long id) {
-        JobPostResponse response = jobPostService.getJobPostById(id);
+    public ResponseEntity<JobPostDetailResponse> getJobPostById(@PathVariable Long id) {
+        JobPostDetailResponse response = jobPostService.getJobPostById(id);
         return ResponseEntity.ok(response);
     }
 

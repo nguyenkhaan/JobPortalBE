@@ -2,6 +2,7 @@ package Cloudian.JobPortal.modules.jobpost.dto;
 
 import Cloudian.JobPortal.models.*;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,8 @@ import java.util.List;
 public class UpdateJobPostDto {
     private String title;
     private String description;
+    @NotBlank(message = "Location cannot be blank")
+    private String location;
     private List<Long> industryIds;
     private BigDecimal salaryMax;
     private BigDecimal salaryMin;
@@ -29,7 +32,7 @@ public class UpdateJobPostDto {
     private EmploymentType employmentType;
     private String tags;
     private LocalDateTime expiresAt;
-    private Boolean isUpdateExpires; //Chiu trach nhiem kiem tra xem nguoi dung co muon update expiresAt khong???
+    private Boolean isUpdateExpires;
     private Boolean isFeatured;
     private Boolean isHighlighted;
     private String jobRole;
