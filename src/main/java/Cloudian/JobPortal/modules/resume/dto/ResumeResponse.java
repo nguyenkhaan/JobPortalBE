@@ -10,5 +10,6 @@ public class ResumeResponse {
     private Long id;
     private String fileUrl;
     private Boolean defaultResume;
+    private String fileName; 
     private LocalDateTime uploadedAt;
 }

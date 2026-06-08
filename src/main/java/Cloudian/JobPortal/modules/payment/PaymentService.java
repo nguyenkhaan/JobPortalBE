@@ -10,6 +10,7 @@ import Cloudian.JobPortal.modules.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
@@ -118,14 +119,40 @@ public class PaymentService {
     }
 
     @Transactional
-    public org.springframework.data.domain.Page<PaymentResponse> getAllPaymentsForAdmin(int page, int size) {
+    public org.springframework.data.domain.Page<PaymentResponse> getAllPaymentsForAdmin(
+            int page,
+            int size,
+            String search,
+            PaymentStatus status
+    ) {
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
                 page,
                 size,
                 org.springframework.data.domain.Sort.by("createdAt").descending()
         );
 
-        return paymentRepository.findAll(pageable)
+        Specification<Payment> spec = (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> predicates = new java.util.ArrayList<>();
+
+            if (search != null && !search.isBlank()) {
+                String value = "%" + search.trim().toLowerCase() + "%";
+                predicates.add(
+                        cb.or(
+                                cb.like(cb.lower(root.get("transactionRef")), value),
+                                cb.like(cb.lower(root.get("planName")), value),
+                                cb.like(cb.lower(root.get("user").get("email")), value)
+                        )
+                );
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        return paymentRepository.findAll(spec, pageable)
                 .map(PaymentResponse::from);
     }
 }

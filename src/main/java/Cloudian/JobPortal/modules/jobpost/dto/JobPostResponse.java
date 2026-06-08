@@ -37,6 +37,18 @@ public class JobPostResponse {
     private String responsibilities;
     private Integer vacancies;
     private SalaryType salaryType;
+    private Long applicationCount;
+
+    // --- Fields added for Job Seeker list view (matching FE Job interface) ---
+    private String daysRemaining;
+    private String salary;
+    private String location;
+    private String type;          // display name of employmentType
+    private String education;     // display name of educationLevel
+    private String jobLevelLabel; // display name of jobLevel
+    private String experienceLabel; // formatted experience string
+    private String companyName;   // convenience field
+    private String logo;          // URL from Minio
 
     @Data
     @Builder

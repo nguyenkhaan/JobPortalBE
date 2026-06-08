@@ -27,7 +27,13 @@ test_device_token.html
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+.clinerules
 
+.claude/
+.codex/
+.claude
+.codex
+CLAUDE.md
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -38,3 +44,5 @@ out/
 ### VS Code ###
 .vscode/
 app.jar
+
+

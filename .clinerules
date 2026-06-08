@@ -1,0 +1,37 @@
+# BỘ QUY TẮC CỐT LÕI (SYSTEM RULES) CHO DỰ ÁN JOB PORTAL SPRING BOOT
+
+1. TƯ DUY KIẾN TRÚC & DÒNG CHẢY HỆ THỐNG (CRITICAL):
+- Không chỉ viết code cho 1 function chạy được, phải luôn nhìn vào tác động của code đến luồng chảy toàn hệ thống, khả năng bảo trì và nâng cấp. Không tạo nợ kỹ thuật vô lý.
+- Tuân thủ tuyệt đối quy tắc SOLID trong mọi quyết định thiết kế.
+- Kiến trúc phân tầng BẮT BUỘC: 
+  + Controller: Chỉ nhận/trả HTTP, gọi Service. Tuyệt đối KHÔNG chứa business logic. KHÔNG trả Entity trực tiếp, phải map qua DTO.
+  + DTO: Chứa data transfer và validation annotations (vd: @NotBlank, @NotNull).
+  + Service: Chứa 100% Business Logic, gắn @Transactional, xử lý quyền hạn.
+  + Repository: Chỉ thao tác Database.
+
+2. TIÊU CHUẨN SPRING BOOT & DATABASE:
+- Dependency Injection: BẮT BUỘC dùng Constructor Injection qua `@RequiredArgsConstructor` của Lombok. TUYỆT ĐỐI KHÔNG dùng `@Autowired` trên field.
+- Exception Handling: Ném các Custom Exception (như `NotFoundException`, `BadRequestException`, `ForbiddenException`) trong Service thay vì trả về ResponseEntity lỗi thủ công.
+- Tối ưu Database: 
+  + Bắt buộc chống lỗi N+1 Query bằng cách dùng `JOIN FETCH` hoặc `@EntityGraph` khi lấy dữ liệu quan hệ.
+  + Dùng `@Query COUNT` thay vì lấy List ra RAM rồi dùng `.size()`.
+  + Hệ thống dùng Soft Delete, luôn chú ý điều kiện `delete_at IS NULL` (nếu Repository chưa cấu hình @SQLRestriction).
+- Hardcode: Không dùng "magic strings". Trạng thái, vai trò bắt buộc phải dùng `Enum` (Ví dụ: `ApplicationStatus.PENDING`).
+
+3. CẤU TRÚC THƯ MỤC HIỆN TẠI:
+- Entity/Model: `src/main/java/Cloudian/JobPortal/models/`
+- Các module nghiệp vụ: `src/main/java/Cloudian/JobPortal/modules/` (auth, user, jobseeker, employer, jobpost...).
+- Test class phải có hậu tố `Test.java` và nằm trong `src/test/java/Cloudian/JobPortal/modules/`.
+
+4. QUY TRÌNH LÀM VIỆC TỰ ĐỘNG (AUTONOMOUS MODE):
+- Bạn được cấp quyền tự động tạo/sửa file mà không cần hỏi trước.
+- Luôn rà soát kiến trúc hiện tại, tận dụng code/hàm dùng chung đã có. 
+- QUY TẮC CÁCH LY (ISOLATION RULE - KHÔNG ĐƯỢC PHẠM PHẢI): 
+  + CHỈ được tạo/sửa các file thuộc đúng module đang được giao.
+  + TUYỆT ĐỐI KHÔNG sửa logic, xóa hàm của các module khác không liên quan. Nếu phát hiện logic dùng chung cần sửa, PHẢI DỪNG LẠI, báo cáo và hỏi ý kiến tôi.
+- Luôn suy nghĩ phân tích hệ thống (Think step-by-step) trong thẻ <thought> trước khi ghi file.
+
+5. TIÊU CHUẨN CODE BẢO MẬT:
+- Mọi thao tác nhạy cảm tạo/sửa/xóa PHẢI tích hợp `AuditService` để ghi log.
+- Trích xuất `userId` an toàn từ `HttpServletRequest` (attribute) hoặc `SecurityContext`. TUYỆT ĐỐI KHÔNG lấy `userId` từ Request Body hay Query Param để chống lỗi IDOR.
+- Mọi kết quả trả về Front-end BẮT BUỘC bọc trong cấu trúc `ApiResponse` chuẩn của dự án.

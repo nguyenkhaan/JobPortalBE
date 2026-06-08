@@ -3,12 +3,15 @@ package Cloudian.JobPortal.modules.resume;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.ResourceNotFoundException;
 import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
+import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.audit.AuditService;
 import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.resume.dto.ResumeResponse;
+import Cloudian.JobPortal.modules.resume.dto.UploadResumeRequest;
+import Cloudian.JobPortal.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +35,8 @@ public class ResumeService {
     private ResumeResponse mapToResponse(Resume resume) {
         return ResumeResponse.builder()
                 .id(resume.getId())
-                .fileUrl(minioService.getFileUrl(resume.getFileUrl()))
+                .fileUrl(resume.getFileUrl())
+                .fileName(resume.getFileName())
                 .defaultResume(resume.getIsDefault())
                 .uploadedAt(resume.getUploadedAt())
                 .build();
@@ -40,8 +44,9 @@ public class ResumeService {
 
     // upload / post
     @Transactional
-    public ResumeResponse uploadResume(MultipartFile file, Boolean isDefaultReq, Long userId)
+    public ResumeResponse uploadResume(UploadResumeRequest data , Boolean isDefaultReq, Long userId)
     {
+        MultipartFile file = data.getFile(); 
         if (file.isEmpty()) {
             throw new BadRequestException("File cannot be empty");
         }
@@ -73,9 +78,12 @@ public class ResumeService {
 
         String minioObjectName = minioService.uploadFile(file);
         String fileUrl = minioService.getFileUrl(minioObjectName);
-
+        String realFileName = "Untitle"; 
+        if (data.getFileName() != null && !data.getFileName().isEmpty()) 
+            realFileName = data.getFileName(); 
         Resume resume = Resume.builder()
                 .fileUrl(fileUrl)
+                .fileName(realFileName)
                 .isDefault(setAsDefault)
                 .jobSeeker(profile)
                 .build();
@@ -149,7 +157,18 @@ public class ResumeService {
                 .data(auditData)
                 .build());
     }
+    //rename 
+    @Transactional
+    public void renameResume(Long userId, Long resumeId , String name) 
+    {
+        if (name == null || name.isEmpty() || name.isBlank()) 
+            return; 
+        Resume resume = resumeRepository.findById(resumeId).orElseThrow(() -> new NotFoundException("Resume not found")); 
+        if (resume.getJobSeeker().getUser().getId() != userId) 
+            throw new BadRequestException("Resume doesn't belong to this user"); 
+        resume.setFileName(name);
 
+    }
     @Transactional
     public void deleteResume(Long resumeId, Long userId) {
         Resume targetResume = resumeRepository.findById(resumeId)

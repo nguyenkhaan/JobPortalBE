@@ -8,6 +8,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +58,7 @@ public class EmployerProfile {
 
     // trạng thái hoạt động , dùng để admin khóa mở tài khoản:
     @Builder.Default
-    private Boolean active = false;
+    private Boolean active = true; //Change to true to verify that an employer account still be activated 
 
     // Trạng thái duyệt: Dùng cho luồng đăng ký ban đầu của nhà tuyển dụng
     @Enumerated(EnumType.STRING)
@@ -88,6 +89,10 @@ public class EmployerProfile {
     @Column(name = "vision", columnDefinition = "TEXT")
     private String vision;
 
+    @Column(name = "benefits", columnDefinition = "TEXT")
+    @Builder.Default
+    private String benefits = "";
+
     @Column(name = "organization_type")
     @Enumerated(EnumType.STRING)
     OrganizationType organizationType;
@@ -96,16 +101,16 @@ public class EmployerProfile {
     @Builder.Default
     private String facebookUrl = "";
 
-    @Column(name = "youtube_url")
+    @Column(name = "twitterUrl")
     @Builder.Default
-    private String youtubeUrl = "";
+    private String twitterUrl = "";
 
     @Column(name = "linkedln_url")
     @Builder.Default
     private  String linkedlnUrl = "";
 
     @Column(name = "founded")
-    private String founded;
+    private LocalDate founded;
 
     @Column(name = "team_size")
     private String teamSize;

@@ -1,6 +1,7 @@
 package Cloudian.JobPortal.modules.employer;
 
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
+import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.audit.AuditService;
@@ -8,7 +9,10 @@ import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
 import Cloudian.JobPortal.modules.employer.dto.CreateEmployerProfileRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileUpdateRequest;
+import Cloudian.JobPortal.modules.employer.dto.EmployerStatisticResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerSubscriptionResponse;
+import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
+import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.payment.PlanRepository;
@@ -16,11 +20,16 @@ import Cloudian.JobPortal.modules.payment.SubscriptionRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -39,6 +48,10 @@ public class EmployerService {
     SubscriptionRepository subscriptionRepository;
     @Autowired
     JobSeekerRepository jobSeekerRepository;
+    @Autowired
+    private JobPostRepository jobPostRepository;
+    @Autowired
+    private JobApplicationRepository jobApplicationRepository;
 
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
@@ -61,7 +74,7 @@ public class EmployerService {
                 .approvalStatus(profile.getApprovalStatus())
                 .rejectionReason(profile.getRejectionReason())
                 .organizationType(profile.getOrganizationType())
-                .youtubeUrl(profile.getYoutubeUrl())
+                .twitterUrl(profile.getTwitterUrl())
                 .facebookUrl(profile.getFacebookUrl())
                 .linkedlnUrl(profile.getLinkedlnUrl())
                 .createdAt(profile.getCreatedAt())
@@ -79,6 +92,39 @@ public class EmployerService {
                 .expiresAt(sub != null ? sub.getExpiresAt() : null)
                 .canceled(sub != null ? sub.getIsCanceled() : false)
                 .build();
+    }
+
+    @Transactional
+    public Page<EmployerProfileResponse> getEmployersForAdmin(String search, ApprovalStatus status, int limit, int offset) {
+        if (limit <= 0 || limit > 100) {
+            throw new BadRequestException("Limit must be between 1 and 100");
+        }
+        if (offset < 0) {
+            throw new BadRequestException("Offset cannot be less than 0");
+        }
+
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        Specification<EmployerProfile> spec = (root, query, cb) -> {
+            var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
+
+            if (search != null && !search.isBlank()) {
+                String value = "%" + search.trim().toLowerCase() + "%";
+                predicates.add(
+                        cb.or(
+                                cb.like(cb.lower(root.get("companyName")), value),
+                                cb.like(cb.lower(root.get("email")), value)
+                        )
+                );
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("approvalStatus"), status));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        return employerRepository.findAll(spec, pageable).map(this::mappingToEmployerResponse);
     }
 
     public EmployerProfileResponse createEmployer(CreateEmployerProfileRequest data, Long userId)
@@ -106,7 +152,7 @@ public class EmployerService {
         }
         EmployerProfile newEmployerProfile = EmployerProfile.builder()
                 .owner(user)
-                .active(false)
+                .active(true)
                 .email(data.getEmail())
                 .companyName(data.getCompanyName())
                 .companyWebsite(data.getCompanyWebsite())
@@ -115,7 +161,7 @@ public class EmployerService {
                 .phone(data.getPhone())
                 .logo(logoName.isEmpty() ? null : logoName)
                 .banner(bannerName.isEmpty() ? null : bannerName)
-                .youtubeUrl(data.getYoutubeUrl() != null ? data.getYoutubeUrl() : "")
+                .twitterUrl(data.getTwitterUrl() != null ? data.getTwitterUrl() : "")
                 .facebookUrl(data.getFacebookUrl() != null ? data.getFacebookUrl() : "")
                 .linkedlnUrl(data.getLinkedlnUrl() != null ? data.getLinkedlnUrl() : "")
                 .industry(data.getIndustry())
@@ -161,6 +207,13 @@ public class EmployerService {
         userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("user not found"));
         EmployerProfile profile = employerRepository.findByOwnerId(userId)
                 .orElseThrow(() -> new BadRequestException("profile has not been initialized"));
+        return mappingToEmployerResponse(profile);
+    }
+
+    @Transactional
+    public EmployerProfileResponse getEmployerProfileByIdForAdmin(Long employerId) {
+        EmployerProfile profile = employerRepository.findById(employerId)
+                .orElseThrow(() -> new NotFoundException("Employer profile not found"));
         return mappingToEmployerResponse(profile);
     }
 
@@ -212,8 +265,8 @@ public class EmployerService {
         if (req.getTeamSize() != null) {
             profile.setTeamSize(req.getTeamSize());
         }
-        if (req.getYoutubeUrl() != null) {
-            profile.setYoutubeUrl(req.getYoutubeUrl());
+        if (req.getTwitterUrl() != null) {
+            profile.setTwitterUrl(req.getTwitterUrl());
         }
         if (req.getFacebookUrl() != null) {
             profile.setFacebookUrl(req.getFacebookUrl());
@@ -259,5 +312,57 @@ public class EmployerService {
                 .build());
 
         return mappingToEmployerResponse(profile);
+    }
+
+    @Transactional
+    public EmployerProfileResponse updateApprovalStatus(
+            Long employerId,
+            ApprovalStatus status,
+            String rejectionReason,
+            Long adminUserId
+    ) {
+        if (status == null) {
+            throw new BadRequestException("Approval status is required");
+        }
+
+        EmployerProfile profile = employerRepository.findById(employerId)
+                .orElseThrow(() -> new NotFoundException("Employer profile not found"));
+
+        profile.setApprovalStatus(status);
+        // profile.setActive(status == ApprovalStatus.APPROVED);
+        profile.setRejectionReason(status == ApprovalStatus.REJECTED ? rejectionReason : null);
+        employerRepository.save(profile);
+
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("companyName", profile.getCompanyName());
+        auditData.put("approvalStatus", status.name());
+        auditData.put("rejectionReason", profile.getRejectionReason());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(adminUserId)
+                .recordId(profile.getId())
+                .entityName(EntityName.EmploymentProfile)
+                .data(auditData)
+                .build());
+
+        return mappingToEmployerResponse(profile);
+    }
+    @Transactional
+    public EmployerStatisticResponse getEmployerStatistics(Long userId) {
+        EmployerProfile employer = employerRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new BadRequestException("Profile has not been initialized"));
+
+        long totalJobs = jobPostRepository.countByEmployerId(employer.getId());
+
+        List<Long> jobPostIds = jobPostRepository.findIdsByEmployerId(employer.getId());
+        long totalApplicants = 0;
+        if (!jobPostIds.isEmpty()) {
+            totalApplicants = jobApplicationRepository.countByJobPostIds(jobPostIds);
+        }
+
+        return EmployerStatisticResponse.builder()
+                .totalJobs(totalJobs)
+                .totalApplicants(totalApplicants)
+                .build();
     }
 }

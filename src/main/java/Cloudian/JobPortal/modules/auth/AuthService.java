@@ -5,6 +5,8 @@ import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.auth.dto.*;
+import Cloudian.JobPortal.modules.email.EmailService;
+import Cloudian.JobPortal.modules.email.EmailTemplate;
 import Cloudian.JobPortal.modules.employer.EmployerRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.role.UserRoleRepository;
@@ -15,8 +17,10 @@ import Cloudian.JobPortal.modules.user.dto.UserResponse;
 import Cloudian.JobPortal.security.JwtService;
 import Cloudian.JobPortal.security.TokenBody;
 import Cloudian.JobPortal.utilis.SHA256Hashing;
+import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +29,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,10 +50,12 @@ public class AuthService
     private JobSeekerRepository jobSeekerRepository;
     @Autowired
     private EmployerRepository employerRepository;
-
-
+    @Autowired 
+    private EmailService emailService; 
+    @Value("${app.frontend.url}") 
+    private String frontendUrl; 
     @Transactional
-    public AuthRegisterResponse register(AuthRegisterRequest data)
+    public AuthRegisterResponse register(AuthRegisterRequest data) throws MessagingException
     {
         User user = userRepository.findByEmail(data.getEmail()).orElse(null);
         if (user != null && user.getActive())
@@ -102,9 +109,20 @@ public class AuthService
                 .userId(user.getId())
                 .build();
         newToken.setToken(hashedToken);
+        //sending email 
+        String verificationUrl = frontendUrl + "/verify?token=" + token; 
+        Map<String, Object> variables = Map.of(
+            "verificationUrl" , verificationUrl
+        ); 
+        emailService.sendEmail(
+            user.getEmail(), 
+            "[MYJOB] Verification Account", 
+            EmailTemplate.VERIFY_REGISTER.getPath(), 
+            variables
+        ); 
         tokenRepository.save(newToken);
         return new AuthRegisterResponse(
-                new UserResponse(user.getId() , user.getEmail() , user.getCreatedAt() , user.getActive())
+                new UserResponse(user.getId() , user.getEmail() , null, user.getCreatedAt() , user.getActive() , null, null)
                 ,token
         );
         //Neu user la null -> Tien hanh tap user moi

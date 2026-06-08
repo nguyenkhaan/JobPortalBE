@@ -1,5 +1,5 @@
 // Running seeder (stop any app already on 8080 first, or use another port):
-//   .\gradlew bootRun --args="--seeder --server.port=8081"
+//   .\gradlew bootRun --args="--seeder --server.port=8080"
 package Cloudian.JobPortal.configs;
 
 import Cloudian.JobPortal.models.*;
@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import Cloudian.JobPortal.modules.payment.PlanRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -200,6 +201,8 @@ public class DataSeeder implements ApplicationRunner {
                     .address(addresses[i])
                     .email(owner.getEmail())
                     .description("Sample employer profile for " + companies[i])
+                    .approvalStatus(ApprovalStatus.APPROVED)
+                    .founded(LocalDate.of(2006, 1, 19))
                     .phone("090000000" + (i + 1))
                     .active(true)
                     .build());
@@ -241,10 +244,12 @@ public class DataSeeder implements ApplicationRunner {
     }
 
     private List<Resume> seedResumes(List<JobSeekerProfile> seekers) {
+        String BASE_RESUME_NAME = "Resume #"; 
         List<Resume> resumes = new ArrayList<>();
         for (int i = 0; i < SEED_COUNT; i++) {
             resumes.add(Resume.builder()
                     .jobSeeker(seekers.get(i))
+                    .fileName(BASE_RESUME_NAME + (i+1))
                     .fileUrl("https://storage.jobportal.test/resumes/resume-" + (i + 1) + ".pdf")
                     .isDefault(true)
                     .build());
@@ -302,7 +307,9 @@ public class DataSeeder implements ApplicationRunner {
                 now.plusDays(9), now.plusDays(7), now.minusDays(6),
                 now.plusDays(4)
         };
-
+        String[] locations = {
+                "Khanh Hoa", "Ca Mau", "Ninh Thuan", "Binh Duong", "Kien Giang", "Thai Binh", "Ha Noi", "Ho Chi Minh", "Ninh Binh"
+        }; 
         Boolean[] featuredArray = { true, false, false, false, false, false, false, false, false, false };
         Boolean[] highlightedArray = { false, false, true, false, false, false, false, false, false, false };
 
@@ -320,6 +327,7 @@ public class DataSeeder implements ApplicationRunner {
                     .status(statuses[idx])
                     .educationLevel(educationLevels[idx])
                     .experience(idx)
+                    .location(locations[i])
                     .jobLevel(jobLevels[idx])
                     .expiresAt(expiresAt[idx])
                     .tags(tags[idx])

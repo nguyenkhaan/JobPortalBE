@@ -33,7 +33,7 @@ public class JobApplication {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;
-    @Column(nullable = true , name = "cover_letter")
+    @Column(nullable = true , name = "cover_letter" , columnDefinition = "TEXT")
     private String coverLetter;
     @Enumerated(EnumType.STRING)
     @Builder.Default

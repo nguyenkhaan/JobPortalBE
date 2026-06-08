@@ -1,10 +1,14 @@
 package Cloudian.JobPortal.modules.jobpost;
 
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
+import Cloudian.JobPortal.modules.base.dto.ApiResponse;
+import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostDetailResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
 import Cloudian.JobPortal.security.UserDetailsImpl;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,7 +19,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -38,19 +41,30 @@ public class JobPostController {
                 .anyMatch("ROLE_ADMIN"::equals);
     }
 
+    private boolean hasRole(Authentication authentication, String role) {
+        if (authentication == null) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(("ROLE_" + role)::equals);
+    }
+
     @GetMapping
-    public ResponseEntity<List<JobPostResponse>> getAllJobPost(
+    public ResponseEntity<ApiResponse<PageResponse<JobPostResponse>>> getAllJobPost(
             @ModelAttribute JobPostFilterRequest request,
             @RequestParam(required = false, defaultValue = "1") Integer offset,
             @RequestParam(required = false, defaultValue = "20") Integer limit
+            //Bo di employer, di chuyen ham lay tat ca jobpost cua 1 employer sang ebn API employer 
     ) {
-        List<JobPostResponse> response = jobPostService.getAllJobPost(request, limit, offset);
-        return ResponseEntity.ok(response);
+        org.springframework.data.domain.Page<JobPostResponse> response = jobPostService.getAllJobPost(request, limit, offset);
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(response)));
     }
+    // /jobpost/employer -> Lay tat ca jobpost cua 1 employer nao do, theo id (???)
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobPostResponse> getJobPostById(@PathVariable Long id) {
-        JobPostResponse response = jobPostService.getJobPostById(id);
+    public ResponseEntity<JobPostDetailResponse> getJobPostById(@PathVariable Long id) {
+        JobPostDetailResponse response = jobPostService.getJobPostById(id);
         return ResponseEntity.ok(response);
     }
 
@@ -89,5 +103,19 @@ public class JobPostController {
         body.put("status", true);
         body.put("message", "Job post deleted successfully");
         return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/{id}/highlight")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> highlightJobPost(
+            @PathVariable Long id,
+            HttpServletRequest request
+    ) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            throw new UnauthorizedException("User not found");
+        }
+        Map<String, Object> result = jobPostService.highlightJobPost(id, userId);
+        return ResponseEntity.ok(ApiResponse.ok((String) result.get("message"), result));
     }
 }

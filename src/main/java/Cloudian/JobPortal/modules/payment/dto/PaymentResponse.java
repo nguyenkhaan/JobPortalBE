@@ -23,6 +23,8 @@ public class PaymentResponse {
     private PaymentStatus status;
     private String note;
     private LocalDateTime createdAt;
+    private String payerEmail;
+    private String employerName;
 
     private String checkoutUrl;
     private String qrCode;
@@ -40,6 +42,14 @@ public class PaymentResponse {
                 .status(payment.getStatus())
                 .note(payment.getNote())
                 .createdAt(payment.getCreatedAt())
+                .payerEmail(payment.getUser() != null ? payment.getUser().getEmail() : null)
+                .employerName(
+                        payment.getUser() != null
+                                && payment.getUser().getEmployerProfileList() != null
+                                && !payment.getUser().getEmployerProfileList().isEmpty()
+                                ? payment.getUser().getEmployerProfileList().get(0).getCompanyName()
+                                : null
+                )
                 .checkoutUrl(checkoutUrl)
                 .qrCode(qrCode)
                 .bin(bin)
