@@ -22,8 +22,8 @@ public class JobPostDetailResponse {
     private String phone;
     private String email;
     private String expireDate;
-    private List<String> description;
-    private List<String> responsibilities;
+    private String description;
+    private String requirements;
     private JobOverview overview;
     private CompanyProfile companyProfile;
 

@@ -65,7 +65,7 @@ public class CreateJobPostDto {
 
     private String jobRole;
 
-    private String responsibilities;
+    private String requirements;
 
     @Min(value = 1, message = "Vacancies must be >= 1")
     private Integer vacancies;

@@ -34,7 +34,7 @@ public class JobPostResponse {
     private Boolean isFeatured;
     private Boolean isHighlighted;
     private String jobRole;
-    private String responsibilities;
+    private String requirements;
     private Integer vacancies;
     private SalaryType salaryType;
     private Long applicationCount;

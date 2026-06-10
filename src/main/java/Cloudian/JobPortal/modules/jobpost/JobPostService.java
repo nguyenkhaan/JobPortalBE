@@ -248,7 +248,7 @@ public class JobPostService {
                 .isFeatured(data.getIsFeatured() != null ? data.getIsFeatured() : false)
                 .isHighlighted(data.getIsHighlighted() != null ? data.getIsHighlighted() : false)
                 .jobRole(data.getJobRole())
-                .responsibilities(data.getResponsibilities())
+                .requirements(data.getRequirements())
                 .vacancies(data.getVacancies() != null ? data.getVacancies() : 1)
                 .salaryType(data.getSalaryType() != null ? data.getSalaryType() : SalaryType.MONTHLY)
                 .build();
@@ -328,8 +328,8 @@ public class JobPostService {
         if (data.getJobRole() != null) {
             jobPost.setJobRole(data.getJobRole());
         }
-        if (data.getResponsibilities() != null) {
-            jobPost.setResponsibilities(data.getResponsibilities());
+        if (data.getRequirements() != null) {
+            jobPost.setRequirements(data.getRequirements());
         }
         if (data.getVacancies() != null) {
             jobPost.setVacancies(data.getVacancies());
@@ -514,7 +514,7 @@ public class JobPostService {
                 .isFeatured(jobPost.getIsFeatured())
                 .isHighlighted(jobPost.getIsHighlighted())
                 .jobRole(jobPost.getJobRole())
-                .responsibilities(jobPost.getResponsibilities())
+                .requirements(jobPost.getRequirements())
                 .vacancies(jobPost.getVacancies())
                 .salaryType(jobPost.getSalaryType())
                 .applicationCount(jobApplicationRepository.countByJobPost_Id(jobPost.getId()))
@@ -579,8 +579,8 @@ public class JobPostService {
                 .phone(employer != null ? employer.getPhone() : null)
                 .email(employer != null ? employer.getEmail() : null)
                 .expireDate(jobPost.getExpiresAt() != null ? jobPost.getExpiresAt().toLocalDate().toString() : null)
-                .description(splitTextToList(jobPost.getDescription()))
-                .responsibilities(splitTextToList(jobPost.getResponsibilities()))
+                .description(jobPost.getDescription())
+                .requirements(jobPost.getRequirements())
                 .overview(overview)
                 .companyProfile(companyProfile)
                 .build();
@@ -662,13 +662,6 @@ public class JobPostService {
             long years = days / 365;
             return years + " năm trước";
         }
-    }
-
-    private List<String> splitTextToList(String text) {
-        if (text == null || text.isBlank()) {
-            return List.of();
-        }
-        return List.of(text.split("\\n\\n"));
     }
 
     private String getEmploymentTypeLabel(EmploymentType type) {
