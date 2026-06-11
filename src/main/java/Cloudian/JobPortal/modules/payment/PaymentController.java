@@ -106,7 +106,7 @@ public class PaymentController {
     @GetMapping("/me/invoices")
     @PreAuthorize("hasRole('EMPLOYER')")
     public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<org.springframework.data.domain.Page<Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse>>> getEmployerInvoices(
-            @RequestParam(defaultValue = "6") int limit, 
+            @RequestParam(defaultValue = "6") int limit,
             @RequestParam(defaultValue = "0") int offset,
             Authentication authentication
     ) {
