@@ -27,6 +27,8 @@ public class PaymentService {
     private final EmployerRepository employerRepository;
     private final PlanRepository planRepository;
     private final SubscriptionService subscriptionService;
+    private final SubscriptionRepository subscriptionRepository;
+    private final Cloudian.JobPortal.modules.jobpost.JobPostRepository jobPostRepository;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
@@ -154,5 +156,64 @@ public class PaymentService {
 
         return paymentRepository.findAll(spec, pageable)
                 .map(PaymentResponse::from);
+    }
+    public Cloudian.JobPortal.modules.payment.dto.EmployerBillingOverviewResponse getBillingOverview(Long userId) {
+        var employer = employerRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new Cloudian.JobPortal.exceptions.custom.NotFoundException("Employer profile not found"));
+
+        var sub = subscriptionRepository.findByEmployerId(employer.getId())
+                .orElseThrow(() -> new Cloudian.JobPortal.exceptions.custom.BadRequestException("No active subscription found for this business"));
+
+        var plan = sub.getPlan();
+
+        java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
+        java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy", java.util.Locale.ENGLISH);
+
+        String formattedAmount = plan != null ? df.format(plan.getPrice()) + " VND" : "0 VND";
+        String formattedDueDate = sub.getExpiresAt() != null ? sub.getExpiresAt().format(dateFormatter) : "N/A";
+        String formattedStartedDate = sub.getStartedAt() != null ? sub.getStartedAt().format(dateFormatter) : "N/A";
+
+        java.time.YearMonth currentMonth = java.time.YearMonth.now();
+        java.time.LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
+        java.time.LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+
+        int postCountThisMonth = jobPostRepository.countByEmployerIdAndCreatedAtBetween(employer.getId(), startOfMonth, endOfMonth);
+        int maxPosts = plan != null ? plan.getMaxJobPostsPerMonth() : 0;
+        int remainingPosts = Math.max(0, maxPosts - postCountThisMonth);
+
+        long activeJobsCount = jobPostRepository.countActiveJobsByOwnerId(userId);
+
+        return Cloudian.JobPortal.modules.payment.dto.EmployerBillingOverviewResponse.builder()
+                .planName(plan != null ? plan.getName() : "Free Plan")
+                .description(sub.getIsCanceled()
+                        ? "Your plan has been canceled and will be downgraded to Free at the end of the current billing cycle."
+                        : "Your subscription is active. Enjoy premium hiring tools and maximum candidate reach.")
+                .isCanceled(sub.getIsCanceled())
+                .amount(formattedAmount)
+                .dueDate(formattedDueDate)
+                .packageStarted(formattedStartedDate)
+                .maxJobPosts(maxPosts)
+                .activeJobsCount((int) activeJobsCount)
+                .remainingJobPosts(remainingPosts)
+                .build();
+    }
+
+    public org.springframework.data.domain.Page<Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse> getEmployerInvoices(Long userId, int limit, int offset) {
+        if (limit <= 0) limit = 10;
+        int page = offset / limit;
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, limit);
+
+        org.springframework.data.domain.Page<Cloudian.JobPortal.models.Payment> paymentsPage =
+                paymentRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+
+        java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
+        java.time.format.DateTimeFormatter dateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm", java.util.Locale.ENGLISH);
+
+        return paymentsPage.map(payment -> Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse.builder()
+                .id("#" + payment.getId())
+                .date(payment.getCreatedAt() != null ? payment.getCreatedAt().format(dateTimeFormatter) : "N/A")
+                .plan(payment.getPlanName())
+                .amount(df.format(payment.getCost()) + " VND")
+                .build());
     }
 }

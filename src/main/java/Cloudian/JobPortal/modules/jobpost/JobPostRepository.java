@@ -33,4 +33,7 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpec
             "WHERE ja.jobPost.id IN :jobPostIds " +
             "GROUP BY ja.jobPost.id")
     List<Object[]> countApplicationsByJobPostIds(@Param("jobPostIds") List<Long> jobPostIds);
+
+    @Query("SELECT COUNT(jp) FROM JobPost jp WHERE jp.employer.owner.id = :ownerId AND (jp.status = Cloudian.JobPortal.models.JobPostStatus.ACTIVE OR jp.status = Cloudian.JobPortal.models.JobPostStatus.OPEN)")
+    long countActiveJobsByOwnerId(@Param("ownerId") Long ownerId);
 }

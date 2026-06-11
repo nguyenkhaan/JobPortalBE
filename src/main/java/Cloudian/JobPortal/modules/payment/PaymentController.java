@@ -88,4 +88,35 @@ public class PaymentController {
                     .body(Map.of("error", 1, "message", "Invalid webhook signature: " + e.getMessage()));
         }
     }
+    @GetMapping("/me/billing-overview")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<Cloudian.JobPortal.modules.payment.dto.EmployerBillingOverviewResponse>> getBillingOverview(
+            Authentication authentication
+    ) {
+        Long userId = getUserIdFromAuth(authentication);
+        Cloudian.JobPortal.modules.payment.dto.EmployerBillingOverviewResponse overview =
+                paymentService.getBillingOverview(userId);
+
+        return ResponseEntity.ok(Cloudian.JobPortal.modules.base.dto.ApiResponse.ok(
+                "Fetch employer billing overview successfully",
+                overview
+        ));
+    }
+
+    @GetMapping("/me/invoices")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<org.springframework.data.domain.Page<Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse>>> getEmployerInvoices(
+            @RequestParam(defaultValue = "6") int limit, 
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication
+    ) {
+        Long userId = getUserIdFromAuth(authentication);
+        org.springframework.data.domain.Page<Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse> invoices =
+                paymentService.getEmployerInvoices(userId, limit, offset);
+
+        return ResponseEntity.ok(Cloudian.JobPortal.modules.base.dto.ApiResponse.ok(
+                "Fetch employer invoices successfully",
+                invoices
+        ));
+    }
 }
