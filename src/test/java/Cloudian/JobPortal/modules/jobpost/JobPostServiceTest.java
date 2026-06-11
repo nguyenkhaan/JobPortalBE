@@ -80,7 +80,7 @@ class JobPostServiceTest {
                 .employer(mockEmployer)
                 .title("Java Developer")
                 .description("Desc\n\nParagraph 2\n\nParagraph 3")
-                .responsibilities("Task 1\n\nTask 2")
+                .requirements("Task 1\n\nTask 2")
                 .employmentType(EmploymentType.FULL_TIME)
                 .status(JobPostStatus.OPEN)
                 .educationLevel(EducationLevel.BACHELOR)
@@ -327,42 +327,6 @@ class JobPostServiceTest {
     }
 
     // ==================== Helper methods via toDetailResponse ====================
-
-    @Test
-    void getJobPostById_DescriptionSplitByDoubleNewline() {
-        when(jobPostRepository.findByIdWithEmployer(100L)).thenReturn(Optional.of(mockJobPost));
-        when(minioService.getFileUrl(any())).thenReturn("logo.png");
-
-        JobPostDetailResponse response = jobPostService.getJobPostById(100L);
-
-        assertThat(response.getDescription()).hasSize(3);
-        assertThat(response.getDescription().get(0)).isEqualTo("Desc");
-        assertThat(response.getDescription().get(1)).isEqualTo("Paragraph 2");
-        assertThat(response.getDescription().get(2)).isEqualTo("Paragraph 3");
-    }
-
-    @Test
-    void getJobPostById_ResponsibilitiesSplitByDoubleNewline() {
-        when(jobPostRepository.findByIdWithEmployer(100L)).thenReturn(Optional.of(mockJobPost));
-        when(minioService.getFileUrl(any())).thenReturn("logo.png");
-
-        JobPostDetailResponse response = jobPostService.getJobPostById(100L);
-
-        assertThat(response.getResponsibilities()).hasSize(2);
-        assertThat(response.getResponsibilities().get(0)).isEqualTo("Task 1");
-        assertThat(response.getResponsibilities().get(1)).isEqualTo("Task 2");
-    }
-
-    @Test
-    void getJobPostById_NullDescription_ReturnsEmptyList() {
-        mockJobPost.setDescription(null);
-        when(jobPostRepository.findByIdWithEmployer(100L)).thenReturn(Optional.of(mockJobPost));
-        when(minioService.getFileUrl(any())).thenReturn("logo.png");
-
-        JobPostDetailResponse response = jobPostService.getJobPostById(100L);
-        assertThat(response.getDescription()).isEmpty();
-        mockJobPost.setDescription("Desc\n\nParagraph 2\n\nParagraph 3");
-    }
 
     @Test
     void getJobPostById_OverviewMapping() {

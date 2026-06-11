@@ -115,8 +115,8 @@ public class JobPost {
     @Column(name = "job_role")
     private String jobRole;
 
-    @Column(name = "responsibilities", columnDefinition = "TEXT")
-    private String responsibilities;
+    @Column(name = "requirements", columnDefinition = "TEXT")
+    private String requirements;
 
     @Column(name = "vacancies", nullable = false)
     @Builder.Default

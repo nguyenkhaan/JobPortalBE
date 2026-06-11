@@ -248,7 +248,7 @@ public class JobPostService {
                 .isFeatured(data.getIsFeatured() != null ? data.getIsFeatured() : false)
                 .isHighlighted(data.getIsHighlighted() != null ? data.getIsHighlighted() : false)
                 .jobRole(data.getJobRole())
-                .responsibilities(data.getResponsibilities())
+                .requirements(data.getRequirements())
                 .vacancies(data.getVacancies() != null ? data.getVacancies() : 1)
                 .salaryType(data.getSalaryType() != null ? data.getSalaryType() : SalaryType.MONTHLY)
                 .build();
@@ -328,8 +328,8 @@ public class JobPostService {
         if (data.getJobRole() != null) {
             jobPost.setJobRole(data.getJobRole());
         }
-        if (data.getResponsibilities() != null) {
-            jobPost.setResponsibilities(data.getResponsibilities());
+        if (data.getRequirements() != null) {
+            jobPost.setRequirements(data.getRequirements());
         }
         if (data.getVacancies() != null) {
             jobPost.setVacancies(data.getVacancies());
@@ -376,6 +376,74 @@ public class JobPostService {
     private EmployerProfile requireEmployerProfile(Long userId) {
         return employerRepository.findByOwnerId(userId)
                 .orElseThrow(() -> new NotFoundException("User does not have an employer profile"));
+    }
+
+    @jakarta.transaction.Transactional
+    public org.springframework.data.domain.Page<Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse> getEmployerDashboardJobs(Long userId, int limit, int offset) {
+        Pageable pageable = buildPageable(limit, offset);
+        org.springframework.data.domain.Page<JobPost> postsPage = jobPostRepository.findByEmployer_Owner_Id(userId, pageable);
+
+        List<JobPost> posts = postsPage.getContent();
+        List<Long> postIds = posts.stream().map(JobPost::getId).toList();
+
+        Map<Long, Long> appCountsMap = new HashMap<>();
+        if (!postIds.isEmpty()) {
+            List<Object[]> rawCounts = jobPostRepository.countApplicationsByJobPostIds(postIds);
+            for (Object[] row : rawCounts) {
+                Long jobId = (Long) row[0];
+                Long count = (Long) row[1];
+                appCountsMap.put(jobId, count);
+            }
+        }
+
+        return postsPage.map(jobPost -> {
+            String feStatus = "Closed";
+            if (jobPost.getStatus() == JobPostStatus.ACTIVE || jobPost.getStatus() == JobPostStatus.OPEN) {
+                feStatus = "Active";
+            } else if (jobPost.getStatus() == JobPostStatus.EXPIRED) {
+                feStatus = "Expired";
+            } else if (jobPost.getStatus() == JobPostStatus.CLOSED) {
+                feStatus = "Closed";
+            } else if (jobPost.getStatus() != null) {
+                feStatus = jobPost.getStatus().label;
+            }
+
+            return Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse.builder()
+                    .id(jobPost.getId())
+                    .title(jobPost.getTitle())
+                    .type(getEmploymentTypeLabel(jobPost.getEmploymentType()))
+                    .remaining(calcDaysRemaining(jobPost.getExpiresAt()))
+                    .status(feStatus)
+                    .applications(appCountsMap.getOrDefault(jobPost.getId(), 0L))
+                    .build();
+        });
+    }
+
+    @jakarta.transaction.Transactional
+    public JobPostResponse updateJobPostStatus(Long id, Long userId, JobPostStatus newStatus) {
+        JobPost jobPost = requireJobPost(id);
+
+        // Bảo mật IDOR: Kiểm tra xem Job này có thuộc về chính Employer đang đăng nhập không
+        if (!jobPost.getEmployer().getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("You do not have permission to modify this job post");
+        }
+
+        jobPost.setStatus(newStatus);
+        jobPost = jobPostRepository.save(jobPost);
+
+        // Ghi lại lịch sử thao tác hệ thống (Audit Log)
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("title", jobPost.getTitle());
+        auditData.put("newStatus", newStatus.name());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(userId)
+                .recordId(jobPost.getId())
+                .entityName(EntityName.JobPost)
+                .data(auditData)
+                .build());
+
+        return toResponse(jobPost);
     }
 
     private JobPost requireJobPost(Long id) {
@@ -514,7 +582,7 @@ public class JobPostService {
                 .isFeatured(jobPost.getIsFeatured())
                 .isHighlighted(jobPost.getIsHighlighted())
                 .jobRole(jobPost.getJobRole())
-                .responsibilities(jobPost.getResponsibilities())
+                .requirements(jobPost.getRequirements())
                 .vacancies(jobPost.getVacancies())
                 .salaryType(jobPost.getSalaryType())
                 .applicationCount(jobApplicationRepository.countByJobPost_Id(jobPost.getId()))
@@ -579,8 +647,8 @@ public class JobPostService {
                 .phone(employer != null ? employer.getPhone() : null)
                 .email(employer != null ? employer.getEmail() : null)
                 .expireDate(jobPost.getExpiresAt() != null ? jobPost.getExpiresAt().toLocalDate().toString() : null)
-                .description(splitTextToList(jobPost.getDescription()))
-                .responsibilities(splitTextToList(jobPost.getResponsibilities()))
+                .description(jobPost.getDescription())
+                .requirements(jobPost.getRequirements())
                 .overview(overview)
                 .companyProfile(companyProfile)
                 .build();
@@ -662,13 +730,6 @@ public class JobPostService {
             long years = days / 365;
             return years + " năm trước";
         }
-    }
-
-    private List<String> splitTextToList(String text) {
-        if (text == null || text.isBlank()) {
-            return List.of();
-        }
-        return List.of(text.split("\\n\\n"));
     }
 
     private String getEmploymentTypeLabel(EmploymentType type) {
