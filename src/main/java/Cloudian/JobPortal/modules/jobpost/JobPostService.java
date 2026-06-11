@@ -378,6 +378,74 @@ public class JobPostService {
                 .orElseThrow(() -> new NotFoundException("User does not have an employer profile"));
     }
 
+    @jakarta.transaction.Transactional
+    public org.springframework.data.domain.Page<Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse> getEmployerDashboardJobs(Long userId, int limit, int offset) {
+        Pageable pageable = buildPageable(limit, offset);
+        org.springframework.data.domain.Page<JobPost> postsPage = jobPostRepository.findByEmployer_Owner_Id(userId, pageable);
+
+        List<JobPost> posts = postsPage.getContent();
+        List<Long> postIds = posts.stream().map(JobPost::getId).toList();
+
+        Map<Long, Long> appCountsMap = new HashMap<>();
+        if (!postIds.isEmpty()) {
+            List<Object[]> rawCounts = jobPostRepository.countApplicationsByJobPostIds(postIds);
+            for (Object[] row : rawCounts) {
+                Long jobId = (Long) row[0];
+                Long count = (Long) row[1];
+                appCountsMap.put(jobId, count);
+            }
+        }
+
+        return postsPage.map(jobPost -> {
+            String feStatus = "Closed";
+            if (jobPost.getStatus() == JobPostStatus.ACTIVE || jobPost.getStatus() == JobPostStatus.OPEN) {
+                feStatus = "Active";
+            } else if (jobPost.getStatus() == JobPostStatus.EXPIRED) {
+                feStatus = "Expired";
+            } else if (jobPost.getStatus() == JobPostStatus.CLOSED) {
+                feStatus = "Closed";
+            } else if (jobPost.getStatus() != null) {
+                feStatus = jobPost.getStatus().label;
+            }
+
+            return Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse.builder()
+                    .id(jobPost.getId())
+                    .title(jobPost.getTitle())
+                    .type(getEmploymentTypeLabel(jobPost.getEmploymentType()))
+                    .remaining(calcDaysRemaining(jobPost.getExpiresAt()))
+                    .status(feStatus)
+                    .applications(appCountsMap.getOrDefault(jobPost.getId(), 0L))
+                    .build();
+        });
+    }
+
+    @jakarta.transaction.Transactional
+    public JobPostResponse updateJobPostStatus(Long id, Long userId, JobPostStatus newStatus) {
+        JobPost jobPost = requireJobPost(id);
+
+        // Bảo mật IDOR: Kiểm tra xem Job này có thuộc về chính Employer đang đăng nhập không
+        if (!jobPost.getEmployer().getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("You do not have permission to modify this job post");
+        }
+
+        jobPost.setStatus(newStatus);
+        jobPost = jobPostRepository.save(jobPost);
+
+        // Ghi lại lịch sử thao tác hệ thống (Audit Log)
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("title", jobPost.getTitle());
+        auditData.put("newStatus", newStatus.name());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(userId)
+                .recordId(jobPost.getId())
+                .entityName(EntityName.JobPost)
+                .data(auditData)
+                .build());
+
+        return toResponse(jobPost);
+    }
+
     private JobPost requireJobPost(Long id) {
         return jobPostRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Job post not found"));

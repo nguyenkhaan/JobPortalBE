@@ -118,4 +118,40 @@ public class JobPostController {
         Map<String, Object> result = jobPostService.highlightJobPost(id, userId);
         return ResponseEntity.ok(ApiResponse.ok((String) result.get("message"), result));
     }
+
+    //  ENDPOINT 1: LẤY DANH SÁCH BÀI ĐĂNG DÀNH RIÊNG CHO EMPLOYER DASHBOARD
+    @GetMapping("/me/dashboard")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<org.springframework.data.domain.Page<Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse>>> getEmployerDashboardJobs(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        long userId = getUserIdFromAuth(authentication);
+        org.springframework.data.domain.Page<Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse> dashboardJobs =
+                jobPostService.getEmployerDashboardJobs(userId, limit, offset);
+
+        return ResponseEntity.ok(Cloudian.JobPortal.modules.base.dto.ApiResponse.ok(
+                "Fetch employer dashboard job posts successfully",
+                dashboardJobs
+        ));
+    }
+
+    //  ENDPOINT 2: CẬP NHẬT TRẠNG THÁI NHANH CHO BÀI ĐĂNG (Ví dụ: Mark as expired, Close)
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse>> updateJobPostStatus(
+            @PathVariable Long id,
+            @RequestParam Cloudian.JobPortal.models.JobPostStatus status,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        long userId = getUserIdFromAuth(authentication);
+        Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse updatedJob =
+                jobPostService.updateJobPostStatus(id, userId, status);
+
+        return ResponseEntity.ok(Cloudian.JobPortal.modules.base.dto.ApiResponse.ok(
+                "Job post status updated successfully to " + status.name(),
+                updatedJob
+        ));
+    }
 }
