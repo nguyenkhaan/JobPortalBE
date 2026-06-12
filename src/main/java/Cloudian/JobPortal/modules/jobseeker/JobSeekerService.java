@@ -121,7 +121,7 @@ public class JobSeekerService {
     }
 
     @Transactional(readOnly = true)
-    public Page<JobSeekerResponse> discoverProfiles(String search, int limit, int offset) {
+    public Page<JobSeekerResponse> discoverProfiles(String search, String keyword, String location, String skills, Integer experienceYears, String educationLevel, String jobLevel, int limit, int offset) {
         if (limit < 1 || limit > 100) {
             throw new BadRequestException("Invalid limit");
         }
@@ -130,15 +130,55 @@ public class JobSeekerService {
         }
         Pageable pageable = PageRequest.of(offset / limit, limit);
         Specification<JobSeekerProfile> spec = (root, query, cb) -> {
-            if (search == null || search.isBlank()) {
-                return cb.conjunction();
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+
+            // Support the legacy 'search' param or the new 'keyword' param
+            String searchKeyword = (keyword != null && !keyword.isBlank()) ? keyword : search;
+            if (searchKeyword != null && !searchKeyword.isBlank()) {
+                String value = "%" + searchKeyword.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("fullName")), value),
+                        cb.like(cb.lower(root.get("professionalTitle")), value)
+                ));
             }
-            String value = "%" + search.trim().toLowerCase() + "%";
-            return cb.or(
-                    cb.like(cb.lower(root.get("fullName")), value),
-                    cb.like(cb.lower(root.get("professionalTitle")), value),
-                    cb.like(cb.lower(root.get("address")), value)
-            );
+
+            if (location != null && !location.isBlank()) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("address")),
+                        "%" + location.trim().toLowerCase() + "%"
+                ));
+            }
+
+            if (skills != null && !skills.isBlank()) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("experienceSummary")),
+                        "%" + skills.trim().toLowerCase() + "%"
+                ));
+            }
+
+            if (experienceYears != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("id"), 0L)); // dummy - filter as text in experienceSummary
+                predicates.add(cb.like(
+                        cb.lower(root.get("experienceSummary")),
+                        "%" + experienceYears + "%"
+                ));
+            }
+
+            if (educationLevel != null && !educationLevel.isBlank()) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("educationSummary")),
+                        "%" + educationLevel.trim().toLowerCase() + "%"
+                ));
+            }
+
+            if (jobLevel != null && !jobLevel.isBlank()) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("professionalTitle")),
+                        "%" + jobLevel.trim().toLowerCase() + "%"
+                ));
+            }
+
+            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
         return jobSeekerRepository.findAll(spec, pageable).map(this::mapToResponse);
     }

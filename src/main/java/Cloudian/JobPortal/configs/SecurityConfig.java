@@ -76,6 +76,7 @@ public class SecurityConfig {
                                 .requestMatchers("/docs/**", "/docs").permitAll()
                                 .requestMatchers(HttpMethod.GET , "/jobpost", "/jobpost/**").permitAll()
                                 .requestMatchers(HttpMethod.GET , "/employers", "/employers/**").permitAll()
+                                .requestMatchers("/industries", "/industries/**").permitAll()
                                 .requestMatchers("/scalar/**").permitAll()
                                 .requestMatchers("/openapi.json", "/v3/api-docs/**").permitAll()
                                 .requestMatchers("/auth/verify").permitAll()
