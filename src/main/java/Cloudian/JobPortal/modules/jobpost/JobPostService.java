@@ -419,6 +419,13 @@ public class JobPostService {
         });
     }
 
+    @Transactional
+    public org.springframework.data.domain.Page<JobPostResponse> getPublicJobsByEmployerId(Long employerId, int limit, int offset) {
+        Pageable pageable = buildPageable(limit, offset);
+        return jobPostRepository.findPublicJobsByEmployerId(employerId, pageable)
+                .map(this::toResponse);
+    }
+
     @jakarta.transaction.Transactional
     public JobPostResponse updateJobPostStatus(Long id, Long userId, JobPostStatus newStatus) {
         JobPost jobPost = requireJobPost(id);

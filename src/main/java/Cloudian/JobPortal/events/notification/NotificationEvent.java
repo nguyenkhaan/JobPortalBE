@@ -23,4 +23,7 @@ public class NotificationEvent {
     private String targetUrl = "";
     @Builder.Default
     private List<Channel> channels = new ArrayList<>();
+
+    @Builder.Default
+    private String icon = "";
 }

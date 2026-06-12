@@ -46,6 +46,9 @@ public class Notification {
     @Column(name = "target_url")
     private String targetUrl;
 
+    @Column(name = "icon")
+    private String icon;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

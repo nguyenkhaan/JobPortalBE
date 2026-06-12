@@ -8,6 +8,8 @@ import Cloudian.JobPortal.modules.employer.dto.EmployerDetailResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerFilterRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerResponse;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
+import Cloudian.JobPortal.modules.jobpost.JobPostService;
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;

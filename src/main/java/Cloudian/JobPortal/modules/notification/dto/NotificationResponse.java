@@ -18,6 +18,7 @@ public class NotificationResponse {
     private String message;
     private Boolean isRead;
     private String targetUrl;
+    private String icon;
     private LocalDateTime createdAt;
 
     public static NotificationResponse from(Notification notification) {
@@ -27,6 +28,7 @@ public class NotificationResponse {
                 .message(notification.getMessage())
                 .isRead(notification.getIsRead())
                 .targetUrl(notification.getTargetUrl())
+                .icon(notification.getIcon())
                 .createdAt(notification.getCreatedAt())
                 .build();
     }

@@ -51,10 +51,16 @@ public class JobSeekerController {
     @GetMapping("/discover")
     public ResponseEntity<ApiResponse<PageResponse<JobSeekerResponse>>> discoverProfiles(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String skills,
+            @RequestParam(required = false) Integer experienceYears,
+            @RequestParam(required = false) String educationLevel,
+            @RequestParam(required = false) String jobLevel,
             @RequestParam(defaultValue = "20") Integer limit,
             @RequestParam(defaultValue = "0") Integer offset
     ) {
-        Page<JobSeekerResponse> response = jobSeekerService.discoverProfiles(search, limit, offset);
+        Page<JobSeekerResponse> response = jobSeekerService.discoverProfiles(search, keyword, location, skills, experienceYears, educationLevel, jobLevel, limit, offset);
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(response)));
     }
     @PreAuthorize("hasRole('SEEKER')")

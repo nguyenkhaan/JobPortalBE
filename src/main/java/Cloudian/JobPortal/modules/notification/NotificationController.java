@@ -97,5 +97,24 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.ok("All notifications marked as read", null));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteNotification(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Long userId = getUserIdFromAuth(authentication);
+        notificationService.deleteNotification(id, userId);
+        return ResponseEntity.ok(ApiResponse.ok("Notification deleted successfully", null));
+    }
+
+    @DeleteMapping("/delete-all")
+    public ResponseEntity<ApiResponse<Void>> deleteAllNotifications(
+            Authentication authentication
+    ) {
+        Long userId = getUserIdFromAuth(authentication);
+        notificationService.deleteAllNotifications(userId);
+        return ResponseEntity.ok(ApiResponse.ok("All notifications deleted successfully", null));
+    }
+
     //firebase (POST), (GET_ALL - ADMIN ONLY) , (Call 2 duong link API cung 1 luc ?? -> Call in application -> Admin se
 }
