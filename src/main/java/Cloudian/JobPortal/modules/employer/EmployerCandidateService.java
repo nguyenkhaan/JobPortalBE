@@ -9,6 +9,7 @@ import Cloudian.JobPortal.models.JobPost;
 import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.employer.dto.CandidateDetailResponse;
 import Cloudian.JobPortal.modules.employer.dto.CandidateListResponse;
+import Cloudian.JobPortal.modules.employer.dto.FindCandidateRequest;
 import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
@@ -69,6 +70,44 @@ public class EmployerCandidateService {
         int page = offset / limit;
         Pageable pageable = PageRequest.of(page, limit);
         Page<JobApplication> applicationPage = jobApplicationRepository.findByJobPostId(jobId, pageable);
+
+        Page<CandidateListResponse> responsePage = applicationPage.map(ja -> {
+            String resumeUrl = ja.getResume() != null && ja.getResume().getFileUrl() != null
+                    ? minioService.getFileUrl(ja.getResume().getFileUrl())
+                    : null;
+            return CandidateListResponse.builder()
+                    .id(ja.getId())
+                    .fullName(ja.getJobSeeker() != null ? ja.getJobSeeker().getFullName() : null)
+                    .professionalTitle(ja.getJobSeeker() != null ? ja.getJobSeeker().getProfessionalTitle() : null)
+                    .phone(ja.getJobSeeker() != null ? ja.getJobSeeker().getPhone() : null)
+                    .email(ja.getJobSeeker() != null && ja.getJobSeeker().getUser() != null
+                            ? ja.getJobSeeker().getUser().getEmail() : null)
+                    .status(ja.getStatus())
+                    .appliedAt(ja.getAppliedAt())
+                    .resumeUrl(resumeUrl)
+                    .build();
+        });
+
+        return PageResponse.from(responsePage);
+    }
+
+    @Transactional
+    public PageResponse<CandidateListResponse> findCandidatesByJobPost(Long userId, Long jobId, FindCandidateRequest request) {
+        int limit = request.getLimit();
+        if (limit <= 0 || limit > 100) {
+            limit = 20;
+        }
+        int page = Math.max(request.getPage(), 0);
+
+        EmployerProfile employer = requireEmployerProfile(userId);
+
+        JobPost jobPost = jobPostRepository.findByIdWithEmployer(jobId)
+                .orElseThrow(() -> new NotFoundException("Job post not found"));
+        assertJobOwnership(jobPost, employer.getId());
+
+        Pageable pageable = PageRequest.of(page, limit);
+        Page<JobApplication> applicationPage = jobApplicationRepository.searchByJobPostIdWithFilters(
+                jobId, request.getKeyword(), request.getStatus(), pageable);
 
         Page<CandidateListResponse> responsePage = applicationPage.map(ja -> {
             String resumeUrl = ja.getResume() != null && ja.getResume().getFileUrl() != null

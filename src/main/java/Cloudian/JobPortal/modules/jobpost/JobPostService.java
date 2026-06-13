@@ -51,20 +51,30 @@ public class JobPostService {
     private final JobApplicationRepository jobApplicationRepository;
 
     private void validatePostingRights(Long employerId) {
-        EmployerSubscription sub = subscriptionRepository.findByEmployerId(employerId)
-                .orElseThrow(() -> new BadRequestException("No information about the business's service package was found"));
+        java.util.Optional<EmployerSubscription> optSub =
+                subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(employerId, "ACTIVE");
 
-        if (sub.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Your package has expired on " + sub.getExpiresAt().toLocalDate() + ". Please renew to continue posting.");
+        EmployerSubscription activeSub = optSub.orElseThrow(() ->
+                new BadRequestException("No active subscription found for this business"));
+
+        if (activeSub.getPlan() == null) {
+            throw new BadRequestException("No plan assigned to your active subscription");
         }
 
-        java.time.YearMonth currentMonth = java.time.YearMonth.now();
-        LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
-        LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+        if (activeSub.getExpiresAt() != null && activeSub.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Your package has expired. Please renew to continue posting.");
+        }
 
-        int postCountThisMonth = jobPostRepository.countByEmployerIdAndCreatedAtBetween(employerId, startOfMonth, endOfMonth);
-        if (postCountThisMonth >= sub.getPlan().getMaxJobPostsPerMonth()) {
-            throw new BadRequestException("You have reached your maximum limit of " + sub.getPlan().getMaxJobPostsPerMonth() + " posts this month. Please upgrade your package to post more.");
+        // HẠM MỤC 3b: Count posts within subscription period (startedAt → expiresAt) instead of calendar month
+        LocalDateTime rangeStart = activeSub.getStartedAt() != null ? activeSub.getStartedAt() : LocalDateTime.now().minusMonths(1);
+        LocalDateTime rangeEnd = activeSub.getExpiresAt() != null ? activeSub.getExpiresAt() : LocalDateTime.now();
+
+        int postCountInRange = jobPostRepository.countByEmployerIdAndCreatedAtBetween(employerId, rangeStart, rangeEnd);
+        int maxPosts = activeSub.getPlan().getMaxJobPostsPerMonth();
+
+        if (postCountInRange >= maxPosts) {
+            throw new BadRequestException("You have reached your maximum limit of " + maxPosts
+                    + " posts for this subscription period. Please upgrade your package to post more.");
         }
     }
 
@@ -175,7 +185,6 @@ public class JobPostService {
             }
 
             if (filter.getSalaryRange() != null && !filter.getSalaryRange().trim().isEmpty()) {
-                // Support ranges like "0-5m", "5-10m", "10-20m", "20m+"
                 String range = filter.getSalaryRange().trim().toLowerCase().replace(" ", "");
                 try {
                     if (range.endsWith("+")) {
@@ -231,6 +240,8 @@ public class JobPostService {
         validatePostingRights(employer.getId());
         validateSalaries(data.getSalaryMin(), data.getSalaryMax());
 
+        List<String> safeTags = data.getTags() != null ? new ArrayList<>(data.getTags()) : new ArrayList<>();
+
         JobPost jobPost = JobPost.builder()
                 .employer(employer)
                 .title(data.getTitle())
@@ -243,12 +254,12 @@ public class JobPostService {
                 .employmentType(data.getEmploymentType())
                 .salaryMin(data.getSalaryMin())
                 .salaryMax(data.getSalaryMax())
-                .tags(data.getTags()) //Default will set to ""
+                .tags(safeTags)
                 .expiresAt(data.getExpiresAt())   //Default will set to null
                 .isFeatured(data.getIsFeatured() != null ? data.getIsFeatured() : false)
                 .isHighlighted(data.getIsHighlighted() != null ? data.getIsHighlighted() : false)
                 .jobRole(data.getJobRole())
-                .responsibilities(data.getResponsibilities())
+                .requirements(data.getRequirements())
                 .vacancies(data.getVacancies() != null ? data.getVacancies() : 1)
                 .salaryType(data.getSalaryType() != null ? data.getSalaryType() : SalaryType.MONTHLY)
                 .build();
@@ -317,7 +328,7 @@ public class JobPostService {
         }
         if (data.getTags() != null)
         {
-            jobPost.setTags(data.getTags());
+            jobPost.setTags(new ArrayList<>(data.getTags()));
         }
         if (data.getIsFeatured() != null) {
             jobPost.setIsFeatured(data.getIsFeatured());
@@ -328,8 +339,8 @@ public class JobPostService {
         if (data.getJobRole() != null) {
             jobPost.setJobRole(data.getJobRole());
         }
-        if (data.getResponsibilities() != null) {
-            jobPost.setResponsibilities(data.getResponsibilities());
+        if (data.getRequirements() != null) {
+            jobPost.setRequirements(data.getRequirements());
         }
         if (data.getVacancies() != null) {
             jobPost.setVacancies(data.getVacancies());
@@ -376,6 +387,81 @@ public class JobPostService {
     private EmployerProfile requireEmployerProfile(Long userId) {
         return employerRepository.findByOwnerId(userId)
                 .orElseThrow(() -> new NotFoundException("User does not have an employer profile"));
+    }
+
+    @jakarta.transaction.Transactional
+    public org.springframework.data.domain.Page<Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse> getEmployerDashboardJobs(Long userId, int limit, int offset) {
+        Pageable pageable = buildPageable(limit, offset);
+        org.springframework.data.domain.Page<JobPost> postsPage = jobPostRepository.findByEmployer_Owner_Id(userId, pageable);
+
+        List<JobPost> posts = postsPage.getContent();
+        List<Long> postIds = posts.stream().map(JobPost::getId).toList();
+
+        Map<Long, Long> appCountsMap = new HashMap<>();
+        if (!postIds.isEmpty()) {
+            List<Object[]> rawCounts = jobPostRepository.countApplicationsByJobPostIds(postIds);
+            for (Object[] row : rawCounts) {
+                Long jobId = (Long) row[0];
+                Long count = (Long) row[1];
+                appCountsMap.put(jobId, count);
+            }
+        }
+
+        return postsPage.map(jobPost -> {
+            String feStatus = "Closed";
+            if (jobPost.getStatus() == JobPostStatus.ACTIVE || jobPost.getStatus() == JobPostStatus.OPEN) {
+                feStatus = "Active";
+            } else if (jobPost.getStatus() == JobPostStatus.EXPIRED) {
+                feStatus = "Expired";
+            } else if (jobPost.getStatus() == JobPostStatus.CLOSED) {
+                feStatus = "Closed";
+            } else if (jobPost.getStatus() != null) {
+                feStatus = jobPost.getStatus().label;
+            }
+
+            return Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse.builder()
+                    .id(jobPost.getId())
+                    .title(jobPost.getTitle())
+                    .type(getEmploymentTypeLabel(jobPost.getEmploymentType()))
+                    .remaining(calcDaysRemaining(jobPost.getExpiresAt()))
+                    .status(feStatus)
+                    .applications(appCountsMap.getOrDefault(jobPost.getId(), 0L))
+                    .build();
+        });
+    }
+
+    @Transactional
+    public org.springframework.data.domain.Page<JobPostResponse> getPublicJobsByEmployerId(Long employerId, int limit, int offset) {
+        Pageable pageable = buildPageable(limit, offset);
+        return jobPostRepository.findPublicJobsByEmployerId(employerId, pageable)
+                .map(this::toResponse);
+    }
+
+    @jakarta.transaction.Transactional
+    public JobPostResponse updateJobPostStatus(Long id, Long userId, JobPostStatus newStatus) {
+        JobPost jobPost = requireJobPost(id);
+
+        // Bảo mật IDOR: Kiểm tra xem Job này có thuộc về chính Employer đang đăng nhập không
+        if (!jobPost.getEmployer().getOwner().getId().equals(userId)) {
+            throw new ForbiddenException("You do not have permission to modify this job post");
+        }
+
+        jobPost.setStatus(newStatus);
+        jobPost = jobPostRepository.save(jobPost);
+
+        // Ghi lại lịch sử thao tác hệ thống (Audit Log)
+        Map<String, Object> auditData = new HashMap<>();
+        auditData.put("title", jobPost.getTitle());
+        auditData.put("newStatus", newStatus.name());
+        auditService.createAuditLog(CreateAuditDto.builder()
+                .actionType(ActionType.UPDATE)
+                .userId(userId)
+                .recordId(jobPost.getId())
+                .entityName(EntityName.JobPost)
+                .data(auditData)
+                .build());
+
+        return toResponse(jobPost);
     }
 
     private JobPost requireJobPost(Long id) {
@@ -432,16 +518,17 @@ public class JobPostService {
         }
 
         // Check subscription exists and is not expired
-        EmployerSubscription sub = subscriptionRepository.findByEmployerId(employer.getId())
-                .orElseThrow(() -> new BadRequestException("No information about the business's service package was found"));
+        EmployerSubscription sub = subscriptionRepository
+                .findTopByEmployerIdAndSubStatusOrderByIdDesc(employer.getId(), "ACTIVE")
+                .orElseThrow(() -> new BadRequestException("No active subscription found for this business"));
 
         if (sub.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("Your package has expired. Please renew to continue using highlight feature.");
         }
 
-        // Block Free plan — only paid plans can highlight
-        if (sub.getPlan() == null || sub.getPlan().getPrice() <= 0) {
-            throw new ForbiddenException("You are on the Free plan. Please upgrade to a paid plan to use the highlight feature.");
+        // Check allowHighlight permission from plan
+        if (sub.getPlan() == null || !Boolean.TRUE.equals(sub.getPlan().getAllowHighlight())) {
+            throw new ForbiddenException("Your current plan does not support the highlight feature. Please upgrade to a plan that includes highlight.");
         }
 
         // Cooldown check: at least 4 hours between highlights
@@ -510,11 +597,11 @@ public class JobPostService {
                 .salaryMax(jobPost.getSalaryMax())
                 .createdAt(jobPost.getCreatedAt())
                 .expiresAt(jobPost.getExpiresAt())
-                .tags(jobPost.getTags())
+                .tags(jobPost.getTags() != null ? jobPost.getTags() : new ArrayList<>())
                 .isFeatured(jobPost.getIsFeatured())
                 .isHighlighted(jobPost.getIsHighlighted())
                 .jobRole(jobPost.getJobRole())
-                .responsibilities(jobPost.getResponsibilities())
+                .requirements(jobPost.getRequirements())
                 .vacancies(jobPost.getVacancies())
                 .salaryType(jobPost.getSalaryType())
                 .applicationCount(jobApplicationRepository.countByJobPost_Id(jobPost.getId()))
@@ -579,8 +666,9 @@ public class JobPostService {
                 .phone(employer != null ? employer.getPhone() : null)
                 .email(employer != null ? employer.getEmail() : null)
                 .expireDate(jobPost.getExpiresAt() != null ? jobPost.getExpiresAt().toLocalDate().toString() : null)
-                .description(splitTextToList(jobPost.getDescription()))
-                .responsibilities(splitTextToList(jobPost.getResponsibilities()))
+                .description(jobPost.getDescription())
+                .requirements(jobPost.getRequirements())
+                .tags(jobPost.getTags() != null ? jobPost.getTags() : new ArrayList<>())
                 .overview(overview)
                 .companyProfile(companyProfile)
                 .build();
@@ -662,13 +750,6 @@ public class JobPostService {
             long years = days / 365;
             return years + " năm trước";
         }
-    }
-
-    private List<String> splitTextToList(String text) {
-        if (text == null || text.isBlank()) {
-            return List.of();
-        }
-        return List.of(text.split("\\n\\n"));
     }
 
     private String getEmploymentTypeLabel(EmploymentType type) {

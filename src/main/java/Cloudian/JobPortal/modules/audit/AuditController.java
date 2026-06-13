@@ -5,6 +5,8 @@ import Cloudian.JobPortal.models.EntityName;
 import Cloudian.JobPortal.modules.audit.dto.AuditLogResponse;
 import Cloudian.JobPortal.modules.base.dto.ApiResponse;
 import Cloudian.JobPortal.modules.base.dto.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -18,11 +20,13 @@ import java.time.LocalDate;
 
 @RestController
 @RequestMapping("audit")
+@Tag(name = "Audit Logs", description = "Admin-only APIs for viewing system audit logs (user actions, changes)")
 public class AuditController {
     @Autowired
     AuditService auditService;
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")   //admin guardssss
+    @Operation(summary = "Get all audit logs", description = "Returns a paginated list of audit logs with optional search, action type, entity name, and date range filters. Admin only.")
     public ResponseEntity<ApiResponse<PageResponse<AuditLogResponse>>> getAllAuditLogs(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) ActionType actionType,

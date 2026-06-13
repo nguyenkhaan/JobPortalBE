@@ -301,6 +301,7 @@ public class AuthService
 
         if (roles.contains(Role.ADMIN)) {
             hasProfile = true;
+
         } else if (roles.contains(Role.SEEKER)) {
             hasProfile = jobSeekerRepository.findByUserId(user.getId()).isPresent();
         } else if (roles.contains(Role.EMPLOYER)) {

@@ -21,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -80,7 +79,7 @@ class JobPostServiceTest {
                 .employer(mockEmployer)
                 .title("Java Developer")
                 .description("Desc\n\nParagraph 2\n\nParagraph 3")
-                .responsibilities("Task 1\n\nTask 2")
+                .requirements("Task 1\n\nTask 2")
                 .employmentType(EmploymentType.FULL_TIME)
                 .status(JobPostStatus.OPEN)
                 .educationLevel(EducationLevel.BACHELOR)
@@ -89,7 +88,7 @@ class JobPostServiceTest {
                 .salaryMin(new BigDecimal("15000000"))
                 .salaryMax(new BigDecimal("25000000"))
                 .salaryType(SalaryType.MONTHLY)
-                .tags("java,spring")
+                .tags(List.of("java", "spring"))
                 .isFeatured(false)
                 .isHighlighted(false)
                 .vacancies(2)
@@ -97,10 +96,12 @@ class JobPostServiceTest {
                 .expiresAt(LocalDateTime.now().plusDays(10))
                 .build();
 
-        Plan plan = Plan.builder().maxJobPostsPerMonth(5).build();
+        Plan plan = Plan.builder().maxJobPostsPerMonth(5).allowHighlight(true).build();
         mockSubscription = EmployerSubscription.builder()
                 .id(1L)
                 .employer(mockEmployer)
+                .subStatus("ACTIVE")
+                .startedAt(LocalDateTime.now().minusDays(30))
                 .expiresAt(LocalDateTime.now().plusDays(30))
                 .plan(plan)
                 .build();
@@ -115,7 +116,7 @@ class JobPostServiceTest {
                 .status(JobPostStatus.OPEN)
                 .experience(2)
                 .employmentType(EmploymentType.FULL_TIME)
-                .tags("java")
+                .tags(List.of("java"))
                 .build();
     }
 
@@ -124,20 +125,22 @@ class JobPostServiceTest {
     @Test
     void createJobPost_SubscriptionNotFound_ThrowsBadRequest() {
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.empty());
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.empty());
 
         BadRequestException ex = assertThrows(BadRequestException.class,
                 () -> jobPostService.createJobPost(1L, createDto));
-        assertTrue(ex.getMessage().contains("No information about the business"));
+        assertTrue(ex.getMessage().contains("No active subscription"));
     }
 
     @Test
     void createJobPost_SubscriptionExpired_ThrowsBadRequest() {
         EmployerSubscription expiredSub = EmployerSubscription.builder()
+                .subStatus("ACTIVE")
                 .expiresAt(LocalDateTime.now().minusDays(1))
+                .plan(Plan.builder().maxJobPostsPerMonth(5).build())
                 .build();
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(expiredSub));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(expiredSub));
 
         BadRequestException ex = assertThrows(BadRequestException.class,
                 () -> jobPostService.createJobPost(1L, createDto));
@@ -148,11 +151,13 @@ class JobPostServiceTest {
     void createJobPost_QuotaExceeded_ThrowsBadRequest() {
         Plan freePlan = Plan.builder().maxJobPostsPerMonth(2).build();
         EmployerSubscription sub = EmployerSubscription.builder()
+                .subStatus("ACTIVE")
+                .startedAt(LocalDateTime.now().minusDays(30))
                 .expiresAt(LocalDateTime.now().plusDays(10))
                 .plan(freePlan)
                 .build();
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(sub));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(sub));
         when(jobPostRepository.countByEmployerIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(2);
 
         BadRequestException ex = assertThrows(BadRequestException.class,
@@ -165,7 +170,7 @@ class JobPostServiceTest {
     @Test
     void createJobPost_SalaryMinNull_ThrowsBadRequest() {
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(mockSubscription));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(mockSubscription));
         when(jobPostRepository.countByEmployerIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(0);
 
         CreateJobPostDto dto = CreateJobPostDto.builder()
@@ -176,7 +181,7 @@ class JobPostServiceTest {
                 .status(JobPostStatus.OPEN)
                 .experience(2)
                 .employmentType(EmploymentType.FULL_TIME)
-                .tags("test")
+                .tags(List.of("test"))
                 .build();
 
         BadRequestException ex = assertThrows(BadRequestException.class,
@@ -187,7 +192,7 @@ class JobPostServiceTest {
     @Test
     void createJobPost_SalaryMinGreaterThanMax_ThrowsBadRequest() {
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(mockSubscription));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(mockSubscription));
         when(jobPostRepository.countByEmployerIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(0);
 
         CreateJobPostDto dto = CreateJobPostDto.builder()
@@ -199,7 +204,7 @@ class JobPostServiceTest {
                 .status(JobPostStatus.OPEN)
                 .experience(2)
                 .employmentType(EmploymentType.FULL_TIME)
-                .tags("test")
+                .tags(List.of("test"))
                 .build();
 
         BadRequestException ex = assertThrows(BadRequestException.class,
@@ -220,7 +225,7 @@ class JobPostServiceTest {
     @Test
     void createJobPost_Success_ReturnsResponse() {
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(mockSubscription));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(mockSubscription));
         when(jobPostRepository.countByEmployerIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(0);
         when(jobPostRepository.save(any(JobPost.class))).thenReturn(mockJobPost);
         when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
@@ -329,42 +334,6 @@ class JobPostServiceTest {
     // ==================== Helper methods via toDetailResponse ====================
 
     @Test
-    void getJobPostById_DescriptionSplitByDoubleNewline() {
-        when(jobPostRepository.findByIdWithEmployer(100L)).thenReturn(Optional.of(mockJobPost));
-        when(minioService.getFileUrl(any())).thenReturn("logo.png");
-
-        JobPostDetailResponse response = jobPostService.getJobPostById(100L);
-
-        assertThat(response.getDescription()).hasSize(3);
-        assertThat(response.getDescription().get(0)).isEqualTo("Desc");
-        assertThat(response.getDescription().get(1)).isEqualTo("Paragraph 2");
-        assertThat(response.getDescription().get(2)).isEqualTo("Paragraph 3");
-    }
-
-    @Test
-    void getJobPostById_ResponsibilitiesSplitByDoubleNewline() {
-        when(jobPostRepository.findByIdWithEmployer(100L)).thenReturn(Optional.of(mockJobPost));
-        when(minioService.getFileUrl(any())).thenReturn("logo.png");
-
-        JobPostDetailResponse response = jobPostService.getJobPostById(100L);
-
-        assertThat(response.getResponsibilities()).hasSize(2);
-        assertThat(response.getResponsibilities().get(0)).isEqualTo("Task 1");
-        assertThat(response.getResponsibilities().get(1)).isEqualTo("Task 2");
-    }
-
-    @Test
-    void getJobPostById_NullDescription_ReturnsEmptyList() {
-        mockJobPost.setDescription(null);
-        when(jobPostRepository.findByIdWithEmployer(100L)).thenReturn(Optional.of(mockJobPost));
-        when(minioService.getFileUrl(any())).thenReturn("logo.png");
-
-        JobPostDetailResponse response = jobPostService.getJobPostById(100L);
-        assertThat(response.getDescription()).isEmpty();
-        mockJobPost.setDescription("Desc\n\nParagraph 2\n\nParagraph 3");
-    }
-
-    @Test
     void getJobPostById_OverviewMapping() {
         when(jobPostRepository.findByIdWithEmployer(100L)).thenReturn(Optional.of(mockJobPost));
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
@@ -449,10 +418,7 @@ class JobPostServiceTest {
     void highlightJobPost_Success() {
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
         when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(mockSubscription));
-
-        Plan paidPlan = Plan.builder().maxJobPostsPerMonth(5).price(100000.0).build();
-        mockSubscription.setPlan(paidPlan);
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(mockSubscription));
 
         Map<String, Object> result = jobPostService.highlightJobPost(100L, 1L);
 
@@ -474,11 +440,13 @@ class JobPostServiceTest {
     @Test
     void highlightJobPost_SubscriptionExpired_ThrowsBadRequest() {
         EmployerSubscription expiredSub = EmployerSubscription.builder()
+                .subStatus("ACTIVE")
                 .expiresAt(LocalDateTime.now().minusDays(1))
+                .plan(Plan.builder().allowHighlight(true).build())
                 .build();
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
         when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(expiredSub));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(expiredSub));
 
         BadRequestException ex = assertThrows(BadRequestException.class,
                 () -> jobPostService.highlightJobPost(100L, 1L));
@@ -487,18 +455,19 @@ class JobPostServiceTest {
 
     @Test
     void highlightJobPost_FreePlan_ThrowsForbidden() {
-        Plan freePlan = Plan.builder().maxJobPostsPerMonth(2).price(0.0).build();
+        Plan freePlan = Plan.builder().maxJobPostsPerMonth(2).price(0.0).allowHighlight(false).build();
         EmployerSubscription sub = EmployerSubscription.builder()
+                .subStatus("ACTIVE")
                 .expiresAt(LocalDateTime.now().plusDays(10))
                 .plan(freePlan)
                 .build();
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
         when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(sub));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(sub));
 
         ForbiddenException ex = assertThrows(ForbiddenException.class,
                 () -> jobPostService.highlightJobPost(100L, 1L));
-        assertTrue(ex.getMessage().contains("Free plan"));
+        assertTrue(ex.getMessage().contains("does not support"));
     }
 
     @Test
@@ -506,13 +475,7 @@ class JobPostServiceTest {
         mockJobPost.setPushedAt(LocalDateTime.now().minusHours(2));
         when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
         when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-
-        Plan paidPlan = Plan.builder().maxJobPostsPerMonth(5).price(100000.0).build();
-        EmployerSubscription sub = EmployerSubscription.builder()
-                .expiresAt(LocalDateTime.now().plusDays(10))
-                .plan(paidPlan)
-                .build();
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(sub));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(mockSubscription));
 
         BadRequestException ex = assertThrows(BadRequestException.class,
                 () -> jobPostService.highlightJobPost(100L, 1L));

@@ -29,4 +29,12 @@ public class Plan {
 
     @Column(nullable = false)
     private Integer maxJobPostsPerMonth;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer maxResumeAccess = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean allowHighlight = false;
 }

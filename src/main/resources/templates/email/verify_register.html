@@ -2,62 +2,73 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Email Verification</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>Verify Your Email - MyJob</title>
+    <style>
+        body{margin:0;padding:0;background:#e0f2fe;font-family:Arial,Helvetica,sans-serif;-webkit-text-size-adjust:100%}
+        table{border-collapse:collapse}
+        img{display:block;border:0;outline:none}
+        a{text-decoration:none}
+        .container{max-width:600px}
+        .btn{background:#2563eb;color:#fff;border-radius:8px;padding:14px 32px;display:inline-block;font-weight:bold;border:1px solid #2563eb;box-shadow:0 4px 10px rgba(37,99,235,0.2)}
+        @media (hover:hover){
+            .btn:hover{background:#1d4ed8!important;border-color:#1d4ed8!important;box-shadow:0 6px 14px rgba(37,99,235,0.3)!important}
+        }
+        @media only screen and (max-width:600px){
+            .container{width:100%!important}
+            .pad{padding-left:20px!important;padding-right:20px!important}
+            .mobile-button{width:100%!important}
+            .mobile-button a{display:block!important;text-align:center}
+        }
+    </style>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-            <td align="center" style="padding:40px 20px;">
-                <table width="600" cellpadding="0" cellspacing="0"
-                       style="background:#ffffff;border-radius:12px;padding:40px;">
-                    <tr>
-                        <td align="center">
-                            <h1 style="margin:0;color:#111827;">Welcome to MyJob</h1>
-                        </td>
-                    </tr>
+<body>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">
+    Verify your email to activate your MyJob account.
+</div>
 
-                    <tr>
-                        <td style="padding-top:24px;color:#4b5563;font-size:16px;line-height:1.6;">
-                            Thank you for registering an account.
-                            Please verify your email address by clicking the button below.
-                        </td>
-                    </tr>
+<table role="presentation" width="100%" bgcolor="#e0f2fe" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="padding:40px 20px;">
 
-                    <tr>
-                        <td align="center" style="padding:32px 0;">
-                            <a th:href="${verificationUrl}"
-                               style="
-                                    background:#2563eb;
-                                    color:#ffffff;
-                                    text-decoration:none;
-                                    padding:14px 28px;
-                                    border-radius:8px;
-                                    font-weight:600;
-                                    display:inline-block;
-                               ">
-                                Verify Email
-                            </a>
-                        </td>
-                    </tr>
+        <table role="presentation" width="600" class="container" bgcolor="#ffffff" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #bae6fd;border-radius:24px;box-shadow:0 10px 25px -5px rgba(37,99,235,0.1);">
 
-                    <tr>
-                        <td style="color:#6b7280;font-size:14px;line-height:1.6;">
-                            If the button above does not work, copy and paste the following URL into your browser:
-                            <br><br>
-                            <a th:href="${verificationUrl}"
-                               th:text="${verificationUrl}">
-                            </a>
-                        </td>
-                    </tr>
+            <tr><td class="pad" style="padding:32px 40px 24px; background-color: #f0f9ff; border-top-left-radius: 22px; border-top-right-radius: 22px; border-bottom: 1px solid #e0f2fe;">
+                <table role="presentation"><tr>
+                    <td style="vertical-align:middle;"><img src="https://i.postimg.cc/bNKSs4Cx/Job-Logo.png" width="36" height="36" alt="MyJob"></td>
+                    <td style="padding-left:12px;font-size:26px;font-weight:800;color:#2563eb;vertical-align:middle;line-height:26px;letter-spacing:-0.5px;">MyJob</td>
+                </tr></table>
+            </td></tr>
 
-                    <tr>
-                        <td style="padding-top:32px;color:#9ca3af;font-size:13px;">
-                            © MyJob. All rights reserved.
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
+            <tr><td align="center" class="pad" style="padding:40px 40px 20px">
+                <h2 style="margin:0 0 16px;color:#0f172a;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Verify your email address</h2>
+                <p style="margin:0;color:#475569;line-height:26px;font-size:16px">
+                    Welcome aboard! Thank you for registering. Verify your email to unlock full access to MyJob.
+                </p>
+            </td></tr>
+
+            <tr><td align="center" style="padding:16px 40px 48px; border-bottom:1px solid #f1f5f9">
+                <div>
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="mobile-button">
+                        <tr>
+                            <td bgcolor="#2563eb" align="center" style="border-radius:8px;">
+                                <a href="#" th:href="${verificationUrl}" target="_blank" class="btn">Verify Email</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </td></tr>
+
+            <tr><td align="center" bgcolor="#f8fafc" style="padding:24px 30px;border-bottom-left-radius:22px;border-bottom-right-radius:22px;">
+                <p style="margin:0;color:#94a3b8;font-size:13px">© 2026 MyJob. All rights reserved.</p>
+                <p style="margin:10px 0 0;color:#cbd5e1;font-size:12px;line-height:20px">
+                    If you didn't create a MyJob account, you can safely ignore this email.
+                </p>
+            </td></tr>
+        </table>
+
+    </td></tr>
+</table>
 </body>
 </html>
