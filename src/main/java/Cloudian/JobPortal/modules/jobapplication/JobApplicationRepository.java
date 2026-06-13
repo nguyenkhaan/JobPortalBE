@@ -50,4 +50,17 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
 
     @Query("SELECT ja FROM JobApplication ja LEFT JOIN FETCH ja.jobPost jp LEFT JOIN FETCH jp.employer WHERE ja.jobSeeker.user.id = :userId ORDER BY ja.appliedAt DESC")
     List<JobApplication> findTop5ByUserIdWithJobPost(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT DISTINCT ja FROM JobApplication ja " +
+           "LEFT JOIN FETCH ja.jobSeeker js " +
+           "LEFT JOIN FETCH ja.resume r " +
+           "WHERE ja.jobPost.id = :jobPostId " +
+           "AND (:keyword IS NULL OR LOWER(js.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(js.professionalTitle) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:status IS NULL OR ja.status = :status)")
+    Page<JobApplication> searchByJobPostIdWithFilters(
+            @Param("jobPostId") Long jobPostId,
+            @Param("keyword") String keyword,
+            @Param("status") JobApplicationStatus status,
+            Pageable pageable);
 }

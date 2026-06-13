@@ -96,9 +96,14 @@ public class JobPost {
     @Column(nullable = false , name = "expires_at")
     private LocalDateTime expiresAt = null;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "job_post_tags",
+            joinColumns = @JoinColumn(name = "job_post_id")
+    )
+    @Column(name = "tag_name", nullable = false)
     @Builder.Default
-    @Column(nullable = false , name = "tags")
-    private String tags = "";
+    private List<String> tags = new java.util.ArrayList<>();
 
     @Column(name = "is_featured", nullable = false)
     @Builder.Default
@@ -106,17 +111,17 @@ public class JobPost {
 
     @Column(name = "is_highlighted", nullable = false)
     @Builder.Default
-    private Boolean isHighlighted = false;  //Những JobPost nào được đánh dấu highlighted thì sẽ được đẩy, đề xuất lên đầu (sắp xếp theo highlited true trước)
+    private Boolean isHighlighted = false;
 
     @Column(name = "pushed_at")
     @Builder.Default
-    private LocalDateTime pushedAt = null;  //Thời gian lần cuối được đẩy bài
+    private LocalDateTime pushedAt = null;
 
     @Column(name = "job_role")
     private String jobRole;
 
-    @Column(name = "responsibilities", columnDefinition = "TEXT")
-    private String responsibilities;
+    @Column(name = "requirements", columnDefinition = "TEXT")
+    private String requirements;
 
     @Column(name = "vacancies", nullable = false)
     @Builder.Default

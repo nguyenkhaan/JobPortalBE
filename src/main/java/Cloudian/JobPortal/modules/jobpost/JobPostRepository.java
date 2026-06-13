@@ -28,4 +28,16 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpec
 
     @Query("SELECT jp.employer.id AS employerId, COUNT(jp) AS openCount FROM JobPost jp WHERE jp.employer.id IN :employerIds AND jp.status = 'OPEN' GROUP BY jp.employer.id")
     List<Object[]> countOpenJobsByEmployerIds(@Param("employerIds") List<Long> employerIds);
+
+    @Query("SELECT ja.jobPost.id AS jobPostId, COUNT(ja) AS appCount " +
+            "FROM JobApplication ja " +
+            "WHERE ja.jobPost.id IN :jobPostIds " +
+            "GROUP BY ja.jobPost.id")
+    List<Object[]> countApplicationsByJobPostIds(@Param("jobPostIds") List<Long> jobPostIds);
+
+    @Query("SELECT COUNT(jp) FROM JobPost jp WHERE jp.employer.owner.id = :ownerId AND (jp.status = Cloudian.JobPortal.models.JobPostStatus.ACTIVE OR jp.status = Cloudian.JobPortal.models.JobPostStatus.OPEN)")
+    long countActiveJobsByOwnerId(@Param("ownerId") Long ownerId);
+
+    @Query("SELECT jp FROM JobPost jp LEFT JOIN FETCH jp.employer WHERE jp.employer.id = :employerId AND (jp.status = 'OPEN' OR jp.status = 'ACTIVE') ORDER BY jp.createdAt DESC")
+    org.springframework.data.domain.Page<JobPost> findPublicJobsByEmployerId(@Param("employerId") Long employerId, org.springframework.data.domain.Pageable pageable);
 }

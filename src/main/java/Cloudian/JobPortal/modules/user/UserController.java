@@ -4,6 +4,8 @@ import Cloudian.JobPortal.models.Role;
 import Cloudian.JobPortal.modules.base.dto.ApiResponse;
 import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.user.dto.UserResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -15,12 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("user")
+@Tag(name = "Users (Admin)", description = "Admin-only APIs for managing system users (list, search, filter)")
 public class UserController {
     @Autowired
     public UserService userService;
 
     @GetMapping()
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get all users (admin)", description = "Returns a paginated list of users with optional search, role, and active status filters. Admin only.")
     public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getAllUser(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Role role,

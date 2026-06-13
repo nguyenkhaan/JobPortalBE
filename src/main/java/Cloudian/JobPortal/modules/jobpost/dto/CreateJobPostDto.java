@@ -57,7 +57,7 @@ public class CreateJobPostDto {
     private LocalDateTime expiresAt;
 
     @NotNull(message = "Tags cannot be null")
-    private String tags;
+    private java.util.List<String> tags;
 
     private Boolean isFeatured;
 
@@ -65,7 +65,7 @@ public class CreateJobPostDto {
 
     private String jobRole;
 
-    private String responsibilities;
+    private String requirements;
 
     @Min(value = 1, message = "Vacancies must be >= 1")
     private Integer vacancies;

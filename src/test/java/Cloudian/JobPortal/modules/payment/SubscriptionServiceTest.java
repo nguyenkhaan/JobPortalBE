@@ -13,10 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,6 +24,9 @@ class SubscriptionServiceTest {
 
     @Mock
     private SubscriptionRepository subscriptionRepository;
+
+    @Mock
+    private PlanRepository planRepository;
 
     @InjectMocks
     private SubscriptionService subscriptionService;
@@ -36,103 +39,90 @@ class SubscriptionServiceTest {
     }
 
     @Test
-    void processPlanUpgrade_ShouldCalculateProrationCorrectly_WhenUpgradingToHigherPlan() {
-        // --- 1. CHUẨN BỊ DỮ LIỆU GIẢ LẬP (ARRANGE) ---
+    void rotateSubscriptions_ShouldActivateTopWaitingSub_WhenCurrentActiveExpired() {
         LocalDateTime now = LocalDateTime.now();
 
-        // Gói cũ (Premium): Giá 300k, 1 tháng (30 ngày), Priority 1
-        Plan oldPlan = Plan.builder()
-                .id(1L)
-                .name("Premium")
-                .price(300000.0)
-                .duration(1)
-                .priority(1)
-                .build();
+        Plan premiumPlan = Plan.builder().id(1L).name("Premium").price(300.0).priority(3).duration(1).build();
+        Plan standardPlan = Plan.builder().id(2L).name("Standard").price(200.0).priority(2).duration(1).build();
 
-        // Giả lập trạng thái: Gói cũ còn đúng 15 ngày nữa là hết hạn
-        EmployerSubscription existingSub = EmployerSubscription.builder()
-                .employer(mockEmployer)
-                .plan(oldPlan)
-                .startedAt(now.minusDays(15))
-                .expiresAt(now.plusDays(15))
-                .build();
+        EmployerSubscription activeSub = EmployerSubscription.builder()
+                .id(1L).employer(mockEmployer).plan(premiumPlan)
+                .subStatus("ACTIVE")
+                .startedAt(now.minusDays(30)).expiresAt(now.minusDays(1))
+                .remainingSeconds(0L).build();
 
-        // Gói mới (VIP): Giá 600k, 1 tháng (30 ngày), Priority 2 (Cao hơn)
-        Plan newPlan = Plan.builder()
-                .id(2L)
-                .name("VIP")
-                .price(600000.0)
-                .duration(1)
-                .priority(2)
-                .build();
+        EmployerSubscription waitingSub = EmployerSubscription.builder()
+                .id(2L).employer(mockEmployer).plan(standardPlan)
+                .subStatus("WAITING")
+                .remainingSeconds((long) 30 * 24 * 3600).build();
 
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(existingSub));
+        when(subscriptionRepository.findByEmployerIdAndSubStatusInOrderByPriorityDescRemainingAsc(
+                eq(1L), eq(List.of("ACTIVE", "WAITING"))))
+                .thenReturn(List.of(activeSub, waitingSub))
+                .thenReturn(List.of(activeSub, waitingSub)); // second call after freeze
 
-        // --- 2. THỰC THI HÀM CẦN TEST (ACT) ---
-        subscriptionService.processPlanUpgrade(mockEmployer, newPlan);
+        subscriptionService.rotateSubscriptions(1L);
 
-        // --- 3. KIỂM CHỨNG KẾT QUẢ (ASSERT) ---
-        // Bắt lại đối tượng được truyền vào hàm save() của repository
-        ArgumentCaptor<EmployerSubscription> subCaptor = ArgumentCaptor.forClass(EmployerSubscription.class);
-        verify(subscriptionRepository, times(1)).save(subCaptor.capture());
+        // Verify the waiting sub became ACTIVE
+        ArgumentCaptor<EmployerSubscription> captor = ArgumentCaptor.forClass(EmployerSubscription.class);
+        verify(subscriptionRepository, atLeastOnce()).save(captor.capture());
 
-        EmployerSubscription savedSub = subCaptor.getValue();
+        EmployerSubscription saved = captor.getAllValues().stream()
+                .filter(s -> "ACTIVE".equals(s.getSubStatus()) && s.getPlan().getName().equals("Standard"))
+                .findFirst().orElse(null);
 
-        // Kiểm tra logic toán học:
-        // Tiền dư = 15 ngày * (300k / 30) = 150k
-        // Giá ngày gói mới = 600k / 30 = 20k
-        // Số ngày quy đổi = 150k / 20k = 8 ngày (vì làm tròn)
-        // Ngày hết hạn mới = now + 1 tháng (30 ngày) của gói mới + 8 ngày bù tiền = now + 38 ngày
-
-        long expectedExtraDays = 8;
-        long totalExpectedDaysFromNow = (newPlan.getDuration() * 30L) + expectedExtraDays; // 30 + 8 = 38
-
-        long actualDaysAdded = ChronoUnit.DAYS.between(now, savedSub.getExpiresAt());
-
-        assertEquals("VIP", savedSub.getPlan().getName(), "Phải được cập nhật sang gói mới");
-
-        // Cho phép sai số 1 ngày do thời gian chạy code tính toán milli-seconds
-        assertTrue(Math.abs(actualDaysAdded - totalExpectedDaysFromNow) <= 1,
-                "Thời hạn gia hạn (bao gồm tiền bù) phải xấp xỉ 38 ngày. Thực tế: " + actualDaysAdded);
+        assertNotNull(saved, "Should have an ACTIVE subscription after rotation");
+        assertEquals("ACTIVE", saved.getSubStatus());
+        assertNotNull(saved.getStartedAt());
+        assertNotNull(saved.getExpiresAt());
     }
 
     @Test
-    void processPlanUpgrade_ShouldExtendDays_WhenBuyingLowerPlan() {
-        // --- 1. CHUẨN BỊ DỮ LIỆU ---
-        LocalDateTime now = LocalDateTime.now();
+    void assignFreePlan_ShouldCreateFreeSubscription_WhenNoneExists() {
+        Plan freePlan = Plan.builder().name("Free").price(0.0).priority(0).maxJobPostsPerMonth(0).build();
 
-        Plan oldPlanVIP = Plan.builder()
-                .name("VIP").priority(2)
-                .duration(1).maxJobPostsPerMonth(10) // 10 bài/tháng
-                .build();
+        when(planRepository.findByName("Free")).thenReturn(Optional.of(freePlan));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE"))
+                .thenReturn(Optional.empty());
 
-        EmployerSubscription existingSub = EmployerSubscription.builder()
-                .employer(mockEmployer).plan(oldPlanVIP)
-                .expiresAt(now.plusDays(10)) // Còn 10 ngày gói VIP
-                .build();
+        subscriptionService.assignFreePlan(1L);
 
-        Plan newPlanPremium = Plan.builder()
-                .name("Premium").priority(1) // Mua gói thấp hơn
-                .duration(1).maxJobPostsPerMonth(5) // 5 bài/tháng
-                .build();
+        ArgumentCaptor<EmployerSubscription> captor = ArgumentCaptor.forClass(EmployerSubscription.class);
+        verify(subscriptionRepository).save(captor.capture());
 
-        when(subscriptionRepository.findByEmployerId(1L)).thenReturn(Optional.of(existingSub));
+        EmployerSubscription saved = captor.getValue();
+        assertEquals("ACTIVE", saved.getSubStatus());
+        assertEquals("Free", saved.getPlan().getName());
+        assertNotNull(saved.getStartedAt());
+        assertNotNull(saved.getExpiresAt());
+    }
 
-        // --- 2. THỰC THI ---
-        subscriptionService.processPlanUpgrade(mockEmployer, newPlanPremium);
+    @Test
+    void countWaitingSubscriptions_ShouldReturnCorrectCount() {
+        when(subscriptionRepository.countByEmployerIdAndSubStatus(1L, "WAITING")).thenReturn(2L);
 
-        // --- 3. KIỂM CHỨNG ---
-        ArgumentCaptor<EmployerSubscription> subCaptor = ArgumentCaptor.forClass(EmployerSubscription.class);
-        verify(subscriptionRepository).save(subCaptor.capture());
-        EmployerSubscription savedSub = subCaptor.getValue();
+        long count = subscriptionService.countWaitingSubscriptions(1L);
+        assertEquals(2L, count);
+    }
 
-        // Toán học: Mua 5 bài * 1 tháng = 5 bài mua thêm.
-        // Quy ra ngày của gói VIP (10 bài/tháng): (5 / 10) * 30 ngày = 15 ngày.
-        // Hết hạn = 10 ngày (cũ) + 15 ngày (mới quy đổi) = 25 ngày từ hôm nay.
-        long actualDaysLeft = ChronoUnit.DAYS.between(now, savedSub.getExpiresAt());
+    @Test
+    void getActivePlan_ShouldReturnPlan_WhenExists() {
+        Plan plan = Plan.builder().name("Standard").build();
+        EmployerSubscription sub = EmployerSubscription.builder().plan(plan).build();
 
-        assertEquals("VIP", savedSub.getPlan().getName(), "Phải giữ nguyên tên gói cao nhất");
-        assertTrue(Math.abs(actualDaysLeft - 25) <= 1,
-                "Phải được cộng dồn 15 ngày quy đổi vào 10 ngày gốc thành 25. Thực tế: " + actualDaysLeft);
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE"))
+                .thenReturn(Optional.of(sub));
+
+        Plan result = subscriptionService.getActivePlan(1L);
+        assertNotNull(result);
+        assertEquals("Standard", result.getName());
+    }
+
+    @Test
+    void getActivePlan_ShouldReturnNull_WhenNoneExists() {
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE"))
+                .thenReturn(Optional.empty());
+
+        assertNull(subscriptionService.getActivePlan(1L));
     }
 }

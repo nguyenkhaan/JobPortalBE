@@ -11,74 +11,74 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-@Schema(description = "Phản hồi hồ sơ nhà tuyển dụng")
+@Schema(description = "Employer profile response")
 public class EmployerProfileResponse {
-    @Schema(description = "ID hồ sơ nhà tuyển dụng")
+    @Schema(description = "Employer profile ID")
     private Long id;
 
-    @Schema(description = "URL logo công ty")
+    @Schema(description = "Company logo URL")
     private String logo;
 
-    @Schema(description = "URL banner công ty")
+    @Schema(description = "Company banner URL")
     private String banner;
 
-    @Schema(description = "URL giấy phép kinh doanh")
+    @Schema(description = "Business license URL")
     private String businessLicense;
 
-    @Schema(description = "Tên công ty", example = "Cloudian Tech")
+    @Schema(description = "Company name", example = "Cloudian Tech")
     private String companyName;
 
-    @Schema(description = "Website công ty", example = "https://cloudian.tech")
+    @Schema(description = "Company website", example = "https://cloudian.tech")
     private String companyWebsite;
 
-    @Schema(description = "Địa chỉ công ty", example = "123 Nguyễn Huệ, Q.1, TP.HCM")
+    @Schema(description = "Company address", example = "123 Nguyễn Huệ, Q.1, TP.HCM")
     private String address;
 
-    @Schema(description = "Email liên hệ", example = "contact@cloudian.tech")
+    @Schema(description = "Contact email", example = "contact@cloudian.tech")
     private String email;
 
-    @Schema(description = "Số điện thoại", example = "0901234567")
+    @Schema(description = "Phone number", example = "0901234567")
     private String phone;
 
-    @Schema(description = "Mô tả công ty")
+    @Schema(description = "Company description")
     private String description;
 
-    @Schema(description = "Ngành nghề")
+    @Schema(description = "Industry")
     private String industry;
 
-    @Schema(description = "Link Facebook")
+    @Schema(description = "Facebook URL")
     private String facebookUrl;
 
-    @Schema(description = "Link YouTube")
+    @Schema(description = "Twitter URL")
     private String twitterUrl;
 
-    @Schema(description = "Link LinkedIn")
+    @Schema(description = "LinkedIn URL")
     private String linkedlnUrl;
 
-    @Schema(description = "Loại hình tổ chức")
+    @Schema(description = "Organization type")
     private OrganizationType organizationType;
 
-    @Schema(description = "Tầm nhìn công ty")
+    @Schema(description = "Company vision")
     private String vision;
 
-    @Schema(description = "Năm thành lập")
+    @Schema(description = "Year founded")
     private LocalDate founded;
 
-    @Schema(description = "Quy mô đội ngũ")
+    @Schema(description = "Team size")
     private String teamSize;
 
-    @Schema(description = "Trạng thái hoạt động")
+    @Schema(description = "Active status")
     private Boolean active;
 
-    @Schema(description = "Trạng thái phê duyệt")
+    @Schema(description = "Approval status")
     private ApprovalStatus approvalStatus;
 
-    @Schema(description = "Lý do từ chối (nếu có)")
+    @Schema(description = "Rejection reason (if any)")
     private String rejectionReason;
 
-    @Schema(description = "Thời gian tạo")
+    @Schema(description = "Creation time")
     private LocalDateTime createdAt;
 
-    @Schema(description = "Thời gian cập nhật")
+    @Schema(description = "Update time")
     private LocalDateTime updatedAt;
 }

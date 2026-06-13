@@ -257,7 +257,7 @@ class JobSeekerServiceTest {
         when(jobSeekerRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(PageRequest.class)))
                 .thenReturn(profilePage);
 
-        Page<JobSeekerResponse> result = jobSeekerService.discoverProfiles("Java", 20, 0);
+        Page<JobSeekerResponse> result = jobSeekerService.discoverProfiles("Java", null, null, null, null, null, null, 20, 0);
 
         assertThat(result).isNotEmpty();
         assertThat(result.getContent().get(0).getFullName()).isEqualTo("Nguyen Van A");
@@ -269,7 +269,7 @@ class JobSeekerServiceTest {
         when(jobSeekerRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(PageRequest.class)))
                 .thenReturn(profilePage);
 
-        Page<JobSeekerResponse> result = jobSeekerService.discoverProfiles(null, 20, 0);
+        Page<JobSeekerResponse> result = jobSeekerService.discoverProfiles(null, null, null, null, null, null, null, 20, 0);
 
         assertThat(result).isNotEmpty();
     }
@@ -277,14 +277,14 @@ class JobSeekerServiceTest {
     @Test
     void discoverProfiles_InvalidLimit_ThrowsBadRequest() {
         BadRequestException ex = assertThrows(BadRequestException.class,
-                () -> jobSeekerService.discoverProfiles("test", 0, 0));
+                () -> jobSeekerService.discoverProfiles("test", null, null, null, null, null, null, 0, 0));
         assertTrue(ex.getMessage().contains("Invalid limit"));
     }
 
     @Test
     void discoverProfiles_InvalidOffset_ThrowsBadRequest() {
         BadRequestException ex = assertThrows(BadRequestException.class,
-                () -> jobSeekerService.discoverProfiles("test", 10, -1));
+                () -> jobSeekerService.discoverProfiles("test", null, null, null, null, null, null, 10, -1));
         assertTrue(ex.getMessage().contains("Invalid offset"));
     }
 

@@ -106,6 +106,22 @@ public class NotificationService {
         });
     }
     @Transactional
+    public void deleteNotification(Long id, Long userId) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Notification not found"));
+        // IDOR check: ensure the notification belongs to the current user
+        if (!notification.getUser().getId().equals(userId)) {
+            throw new Cloudian.JobPortal.exceptions.custom.ForbiddenException("You do not have permission to delete this notification");
+        }
+        notificationRepository.delete(notification);
+    }
+
+    @Transactional
+    public void deleteAllNotifications(Long userId) {
+        notificationRepository.softDeleteByUserId(userId, java.time.LocalDateTime.now());
+    }
+
+    @Transactional
     public Notification createNotification(NotificationEvent notificationEvent)
     {
         User user = userRepository.findById(
@@ -113,11 +129,23 @@ public class NotificationService {
         ).orElseThrow(
                 () -> new NotFoundException("User not found")
         );
+        // Auto-assign icon based on notification type
+        String icon = notificationEvent.getIcon();
+        if ((icon == null || icon.isBlank()) && notificationEvent.getType() != null) {
+            icon = switch (notificationEvent.getType()) {
+                case CANDIDATE_APPLY -> "users";
+                case EMPLOYER_ACCOUNT_APPROVE -> "check-circle";
+                case ADMIN_RECEIVE_PAYMENT_PLAN -> "credit-card";
+                default -> "bell";
+            };
+        }
+
         Notification notification = Notification.builder()
                 .title(notificationEvent.getTitle())
                 .message(notificationEvent.getMessage())
                 .targetUrl(notificationEvent.getTargetUrl())
-                . user(user)
+                .icon(icon)
+                .user(user)
                 .build();
         notificationRepository.save(notification);
         NotificationChannel notificationChannelInApp = null;

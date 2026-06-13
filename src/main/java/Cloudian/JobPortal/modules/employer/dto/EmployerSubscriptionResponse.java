@@ -8,20 +8,20 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-@Schema(description = "Phản hồi gói dịch vụ nhà tuyển dụng")
+@Schema(description = "Employer subscription plan response")
 public class EmployerSubscriptionResponse {
-    @Schema(description = "Tên gói dịch vụ hiện tại", example = "Free")
+    @Schema(description = "Current plan name", example = "Free")
     private String currentPlan;
 
-    @Schema(description = "Giá gói dịch vụ", example = "0.0")
+    @Schema(description = "Plan price", example = "0.0")
     private Double amount;
 
-    @Schema(description = "Thời gian bắt đầu gói")
+    @Schema(description = "Plan start time")
     private LocalDateTime startedAt;
 
-    @Schema(description = "Thời gian hết hạn gói")
+    @Schema(description = "Plan expiration time")
     private LocalDateTime expiresAt;
 
-    @Schema(description = "Trạng thái hủy gói")
+    @Schema(description = "Plan cancellation status")
     private Boolean canceled;
 }
