@@ -219,6 +219,13 @@ public class JobPostService {
     }
 
     @Transactional
+    public List<JobPostResponse> getOpenJobsByEmployerId(Long employerId) {
+        return jobPostRepository.findByEmployerIdAndStatus(employerId, JobPostStatus.OPEN).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional
     public JobPostDetailResponse getJobPostById(Long id) {
         JobPost jobPost = jobPostRepository.findByIdWithEmployer(id)
                 .orElseThrow(() -> new NotFoundException("Job post not found"));

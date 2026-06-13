@@ -5,10 +5,14 @@ import Cloudian.JobPortal.modules.base.dto.PageResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerDetailResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerFilterRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerResponse;
+import Cloudian.JobPortal.modules.jobpost.JobPostService;
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/employers")
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class PublicEmployerController {
 
     private final PublicEmployerService publicEmployerService;
+    private final JobPostService jobPostService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<EmployerResponse>>> getAllEmployers(
@@ -31,5 +36,11 @@ public class PublicEmployerController {
     public ResponseEntity<EmployerDetailResponse> getEmployerDetail(@PathVariable Long id) {
         EmployerDetailResponse detail = publicEmployerService.getEmployerDetail(id);
         return ResponseEntity.ok(detail);
+    }
+
+    @GetMapping("/{id}/jobs")
+    public ResponseEntity<ApiResponse<List<JobPostResponse>>> getEmployerJobs(@PathVariable Long id) {
+        List<JobPostResponse> jobs = jobPostService.getOpenJobsByEmployerId(id);
+        return ResponseEntity.ok(ApiResponse.ok(jobs));
     }
 }

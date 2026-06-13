@@ -21,4 +21,6 @@ public class AuthMeResponse {
 
     private Boolean hasProfile;
     private ApprovalStatus employerApprovalStatus;
+    private String avatar;
+    private String name;
 }

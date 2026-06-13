@@ -298,17 +298,25 @@ public class AuthService
 
         boolean hasProfile = false;
         ApprovalStatus approvalStatus = null;
+        String avatar = null;
+        String name = null;
 
         if (roles.contains(Role.ADMIN)) {
             hasProfile = true;
-
         } else if (roles.contains(Role.SEEKER)) {
-            hasProfile = jobSeekerRepository.findByUserId(user.getId()).isPresent();
+            var seekerOpt = jobSeekerRepository.findByUserId(user.getId());
+            if (seekerOpt.isPresent()) {
+                hasProfile = true;
+                avatar = seekerOpt.get().getAvatar();
+                name = seekerOpt.get().getFullName();
+            }
         } else if (roles.contains(Role.EMPLOYER)) {
             var employerOpt = employerRepository.findByOwnerId(user.getId());
             if (employerOpt.isPresent()) {
                 hasProfile = true;
                 approvalStatus = employerOpt.get().getApprovalStatus();
+                avatar = employerOpt.get().getLogo();
+                name = employerOpt.get().getCompanyName();
             }
         }
 
@@ -317,6 +325,8 @@ public class AuthService
                 .roles(roles)
                 .hasProfile(hasProfile)
                 .employerApprovalStatus(approvalStatus)
+                .avatar(avatar)
+                .name(name)
                 .build();
     }
 }
