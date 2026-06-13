@@ -40,4 +40,21 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpec
 
     @Query("SELECT jp FROM JobPost jp LEFT JOIN FETCH jp.employer WHERE jp.employer.id = :employerId AND (jp.status = 'OPEN' OR jp.status = 'ACTIVE') ORDER BY jp.createdAt DESC")
     org.springframework.data.domain.Page<JobPost> findPublicJobsByEmployerId(@Param("employerId") Long employerId, org.springframework.data.domain.Pageable pageable);
+
+    @Query("""
+            SELECT jp
+            FROM JobPost jp
+            JOIN jp.employer e
+            WHERE jp.createdAt >= :cutoff
+              AND jp.status = Cloudian.JobPortal.models.JobPostStatus.OPEN
+              AND e.approvalStatus = Cloudian.JobPortal.models.ApprovalStatus.APPROVED
+              AND e.active = true
+              AND (jp.expiresAt IS NULL OR jp.expiresAt >= :now)
+            ORDER BY jp.createdAt DESC
+            """)
+    Page<JobPost> findRecentJobsForSeeker(
+            @Param("cutoff") LocalDateTime cutoff,
+            @Param("now") LocalDateTime now,
+            Pageable pageable
+    );
 }

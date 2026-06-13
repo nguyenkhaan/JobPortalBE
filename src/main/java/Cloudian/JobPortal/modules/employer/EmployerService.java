@@ -1,5 +1,6 @@
 package Cloudian.JobPortal.modules.employer;
 
+import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
@@ -15,6 +16,7 @@ import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
+import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.payment.PlanRepository;
 import Cloudian.JobPortal.modules.payment.SubscriptionRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
@@ -54,6 +56,8 @@ public class EmployerService {
     private JobApplicationRepository jobApplicationRepository;
     @Autowired
     private Cloudian.JobPortal.modules.payment.SubscriptionService subscriptionService;
+    @Autowired
+    private NotificationDispatchService notificationDispatchService;
 
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
@@ -187,6 +191,14 @@ public class EmployerService {
                 .entityName(EntityName.EmploymentProfile)
                 .data(auditData)
                 .build());
+
+        notificationDispatchService.notifyAdmins(
+                NotificationType.EMPLOYER_PROFILE_SUBMITTED,
+                "New employer profile submitted",
+                "A new employer profile from " + newEmployerProfile.getCompanyName() + " is waiting for review.",
+                "/admin/employers",
+                "building-2"
+        );
 
         return mappingToEmployerResponse(newEmployerProfile);
     }
@@ -337,6 +349,33 @@ public class EmployerService {
                 .entityName(EntityName.EmploymentProfile)
                 .data(auditData)
                 .build());
+
+        Long ownerId = profile.getOwner() != null ? profile.getOwner().getId() : null;
+        if (ownerId != null) {
+            if (status == ApprovalStatus.APPROVED) {
+                notificationDispatchService.notifyUser(
+                        ownerId,
+                        NotificationType.EMPLOYER_PROFILE_APPROVED,
+                        "Employer profile approved",
+                        "Your employer profile has been approved by the admin.",
+                        "/employer",
+                        "check-circle"
+                );
+            } else if (status == ApprovalStatus.REJECTED) {
+                String message = "Your employer profile has been rejected by the admin. Please review the feedback and update your profile.";
+                if (profile.getRejectionReason() != null && !profile.getRejectionReason().isBlank()) {
+                    message += " Reason: " + profile.getRejectionReason();
+                }
+                notificationDispatchService.notifyUser(
+                        ownerId,
+                        NotificationType.EMPLOYER_PROFILE_REJECTED,
+                        "Employer profile rejected",
+                        message,
+                        "/employer",
+                        "circle-x"
+                );
+            }
+        }
 
         return mappingToEmployerResponse(profile);
     }

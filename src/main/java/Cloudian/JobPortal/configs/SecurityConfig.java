@@ -61,6 +61,7 @@ public class SecurityConfig {
                                 .requestMatchers("/h2-console/**").permitAll()
                                 .requestMatchers("/plans/**").permitAll()
                                 .requestMatchers("/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/jobpost/recent").hasRole("SEEKER")
                                 .requestMatchers(HttpMethod.GET , "/jobpost").permitAll() 
                                 .requestMatchers(HttpMethod.GET , "/jobpost/**").permitAll() 
                                 .requestMatchers(HttpMethod.GET , "/employer").permitAll() 

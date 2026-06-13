@@ -7,6 +7,7 @@ import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.dto.*;
 import Cloudian.JobPortal.modules.minio.MinioService;
+import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,7 @@ class JobSeekerServiceTest {
     @Mock private JobPostRepository jobPostRepository;
     @Mock private JobAlertRepository jobAlertRepository;
     @Mock private PasswordEncoder passwordEncoder;
+    @Mock private NotificationDispatchService notificationDispatchService;
 
     @InjectMocks
     private JobSeekerService jobSeekerService;
@@ -429,6 +431,7 @@ class JobSeekerServiceTest {
 
     @Test
     void applyJob_Success_ReturnsResult() {
+        mockEmployer.setOwner(User.builder().id(2L).build());
         when(jobSeekerRepository.findByUserId(1L)).thenReturn(Optional.of(mockProfile));
         when(jobPostRepository.findById(200L)).thenReturn(Optional.of(mockJobPost));
         when(jobApplicationRepository.findByJobSeeker_User_Id(eq(1L), any(PageRequest.class)))
@@ -440,6 +443,14 @@ class JobSeekerServiceTest {
         assertThat(result.get("status")).isEqualTo("PENDING");
         assertThat(result.get("message")).isEqualTo("Application submitted successfully");
         verify(jobApplicationRepository, times(1)).save(any(JobApplication.class));
+        verify(notificationDispatchService).notifyUser(
+                eq(2L),
+                eq(Cloudian.JobPortal.events.notification.NotificationType.CANDIDATE_APPLY),
+                eq("New job application received"),
+                eq("Nguyen Van A applied for your job post Java Developer."),
+                eq("/employer/job-posts/200/candidates"),
+                eq("users")
+        );
     }
 
     @Test
