@@ -52,6 +52,8 @@ public class EmployerService {
     private JobPostRepository jobPostRepository;
     @Autowired
     private JobApplicationRepository jobApplicationRepository;
+    @Autowired
+    private Cloudian.JobPortal.modules.payment.SubscriptionService subscriptionService;
 
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
@@ -173,20 +175,8 @@ public class EmployerService {
 
         employerRepository.save(newEmployerProfile);
 
-        Plan freePlan = planRepository.findByName("Free")
-                .orElseThrow(() -> new BadRequestException("Default 'Free' is unavailable"));
-
-        EmployerSubscription subscription = EmployerSubscription.builder()
-                .employer(newEmployerProfile)
-                .plan(freePlan)
-                .startedAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusMonths(freePlan.getDuration()))
-                .isCanceled(false)
-                .build();
-
-        subscriptionRepository.save(subscription);
-
-        newEmployerProfile.setSubscription(subscription);
+        // Assign Free plan as default subscription
+        subscriptionService.assignFreePlan(newEmployerProfile.getId());
 
         Map<String, Object> auditData = new HashMap<>();
         auditData.put("companyName", newEmployerProfile.getCompanyName());
@@ -222,7 +212,10 @@ public class EmployerService {
         userRepository.findById(userId).orElseThrow(() -> new UnauthorizedException("user not found"));
         EmployerProfile profile = employerRepository.findByOwnerId(userId)
                 .orElseThrow(() -> new BadRequestException("profile has not been initialized"));
-        return mappingToSubscriptionResponse(profile.getSubscription());
+        Cloudian.JobPortal.models.EmployerSubscription activeSub = subscriptionRepository
+                .findTopByEmployerIdAndSubStatusOrderByIdDesc(profile.getId(), "ACTIVE")
+                .orElse(null);
+        return mappingToSubscriptionResponse(activeSub);
     }
 
     @Transactional

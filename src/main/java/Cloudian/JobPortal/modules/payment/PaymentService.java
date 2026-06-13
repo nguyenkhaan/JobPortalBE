@@ -1,44 +1,185 @@
 package Cloudian.JobPortal.modules.payment;
 
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.employer.EmployerRepository;
+import Cloudian.JobPortal.modules.notification.NotificationService;
 import Cloudian.JobPortal.modules.payment.dto.CreatePaymentDto;
 import Cloudian.JobPortal.modules.payment.dto.PaymentResponse;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import vn.payos.PayOS;
-import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
-    private final PayOS payOS;
-
     private final EmployerRepository employerRepository;
     private final PlanRepository planRepository;
     private final SubscriptionService subscriptionService;
     private final SubscriptionRepository subscriptionRepository;
     private final Cloudian.JobPortal.modules.jobpost.JobPostRepository jobPostRepository;
+    private final NotificationService notificationService;
 
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
+    private static final int MAX_WAITING_SUBS = 3;
+
+    /**
+     * HẠM MỤC 2: POST /api/payments/checkout?planId=...
+     */
+    @Transactional
+    public Map<String, Object> checkout(Long userId, Long planId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        EmployerProfile employer = employerRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new BadRequestException("Employer profile not found"));
+        Plan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new NotFoundException("Plan not found"));
+
+        // Check waiting queue limit (max 3)
+        long waitingCount = subscriptionService.countWaitingSubscriptions(employer.getId());
+        if (waitingCount >= MAX_WAITING_SUBS) {
+            throw new BadRequestException("You have reached the maximum limit of " + MAX_WAITING_SUBS
+                    + " pending subscriptions. Please wait for admin approval.");
+        }
+
+        // Create PENDING payment invoice
+        Payment payment = Payment.builder()
+                .user(user)
+                .planName(plan.getName())
+                .cost(plan.getPrice())
+                .status(PaymentStatus.PENDING)
+                .method(PaymentMethod.BANK_TRANSFER)
+                .transactionRef("TXN-" + System.currentTimeMillis() + "-" + userId)
+                .note("Payment for " + plan.getName() + " plan")
+                .build();
+        payment = paymentRepository.save(payment);
+
+        // Generate mock VietQR URL
+        String qrCodeUrl = "https://img.vietqr.io/image/vcb-123456789-compact.png"
+                + "?amount=" + plan.getPrice().longValue()
+                + "&addInfo=PAY_" + payment.getId()
+                + "&accountName=ADMIN_PORTAL";
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("paymentId", payment.getId());
+        result.put("planName", plan.getName());
+        result.put("amount", plan.getPrice());
+        result.put("qrCodeUrl", qrCodeUrl);
+        result.put("status", payment.getStatus().name());
+        return result;
+    }
+
+    /**
+     * HẠM MỤC 2: POST /api/payments/confirm/{paymentId}
+     */
+    @Transactional
+    public Map<String, Object> confirmPayment(Long userId, Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new NotFoundException("Payment not found"));
+
+        if (!payment.getUser().getId().equals(userId)) {
+            throw new BadRequestException("This payment does not belong to you");
+        }
+
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new BadRequestException("Payment already processed");
+        }
+
+        // Keep PENDING - submitted for admin approval
+        paymentRepository.save(payment);
+
+        // Send notification to all ADMIN users via NotificationEvent
+        EmployerProfile employer = employerRepository.findByOwnerId(userId)
+                .orElse(null);
+        String companyName = employer != null ? employer.getCompanyName() : "Unknown";
+
+        List<User> allUsers = userRepository.findAll();
+        for (User u : allUsers) {
+            boolean isAdmin = u.getUserRoleList().stream()
+                    .anyMatch(ur -> ur.getRole() == Role.ADMIN);
+            if (isAdmin) {
+                notificationService.createNotification(NotificationEvent.builder()
+                        .userId(u.getId())
+                        .title("Yêu cầu duyệt thanh toán")
+                        .message("Nhà tuyển dụng " + companyName + " đã gửi yêu cầu duyệt thanh toán cho gói " + payment.getPlanName())
+                        .type(NotificationType.ADMIN_RECEIVE_PAYMENT_PLAN)
+                        .icon("credit-card")
+                        .channels(List.of(Channel.IN_APP))
+                        .build());
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("paymentId", payment.getId());
+        result.put("status", payment.getStatus().name());
+        result.put("message", "Payment confirmation submitted. Waiting for admin approval.");
+        return result;
+    }
+
+    /**
+     * HẠM MỤC 2: POST /api/admin/payments/approve/{paymentId}
+     */
+    @Transactional
+    public Map<String, Object> approvePayment(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new NotFoundException("Payment not found"));
+
+        if (payment.getStatus() == PaymentStatus.COMPLETED) {
+            throw new BadRequestException("Payment already approved");
+        }
+
+        // Mark payment as COMPLETED
+        payment.setStatus(PaymentStatus.COMPLETED);
+        paymentRepository.save(payment);
+
+        // Find employer + plan
+        EmployerProfile employer = employerRepository.findByOwnerId(payment.getUser().getId())
+                .orElseThrow(() -> new BadRequestException("Employer profile not found"));
+        Plan plan = planRepository.findByName(payment.getPlanName())
+                .orElseThrow(() -> new BadRequestException("Plan '" + payment.getPlanName() + "' not found"));
+
+        // Create WAITING subscription
+        subscriptionService.createWaitingSubscription(employer, plan);
+
+        // Run rotate algorithm
+        subscriptionService.rotateSubscriptions(employer.getId());
+
+        // Notify employer via NotificationEvent
+        notificationService.createNotification(NotificationEvent.builder()
+                .userId(payment.getUser().getId())
+                .title("Thanh toán thành công")
+                .message("Yêu cầu thanh toán gói " + payment.getPlanName() + " của bạn đã được Admin phê duyệt thành công!")
+                .type(NotificationType.ADMIN_RECEIVE_PAYMENT_PLAN)
+                .icon("check-circle")
+                .channels(List.of(Channel.IN_APP))
+                .build());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("paymentId", payment.getId());
+        result.put("status", "COMPLETED");
+        result.put("message", "Payment approved and subscription activated successfully");
+        return result;
+    }
 
     @Transactional
     public PaymentResponse createPayment(Long userId, CreatePaymentDto dto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-
-        // save draft
         Payment payment = Payment.builder()
                 .planName(dto.getPlanName())
                 .cost(dto.getCost())
@@ -47,63 +188,15 @@ public class PaymentService {
                 .user(user)
                 .build();
         paymentRepository.save(payment);
-
-        try {
-            CreatePaymentLinkRequest paymentRequest = CreatePaymentLinkRequest.builder()
-                    .orderCode(payment.getId())
-                    .amount(dto.getCost().longValue())
-                    .description("by " + dto.getPlanName().toUpperCase())
-                    .cancelUrl(frontendUrl + "/payment/cancel")
-                    .returnUrl(frontendUrl + "/payment/success")
-                    .build();
-
-            var checkoutData = payOS.paymentRequests().create(paymentRequest);
-
-            payment.setTransactionRef(checkoutData.getPaymentLinkId());
-            paymentRepository.save(payment);
-
-            return PaymentResponse.from(
-                    payment,
-                    checkoutData.getCheckoutUrl(),
-                    checkoutData.getQrCode(),
-                    checkoutData.getBin(),
-                    checkoutData.getAccountNumber(),
-                    checkoutData.getAccountName()
-            );
-
-        } catch (Exception e) {
-            throw new RuntimeException(" PayOS: " + e.getMessage());
-        }
+        return PaymentResponse.from(payment);
     }
 
-    @Transactional
-    public void completePayment(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new NotFoundException("Payment invoice does not exist"));
-
-        if (payment.getStatus() == PaymentStatus.COMPLETED) {
-            return;
-        }
-        payment.setStatus(PaymentStatus.COMPLETED);
-        paymentRepository.save(payment);
-
-        EmployerProfile employer = employerRepository.findByOwnerId(payment.getUser().getId())
-                .orElseThrow(() -> new BadRequestException("Employer profile not found for this user"));
-
-        Plan purchasedPlan = planRepository.findByName(payment.getPlanName())
-                .orElseThrow(() -> new BadRequestException("Plan configuration '" + payment.getPlanName() + "' not found"));
-
-        subscriptionService.processPlanUpgrade(employer, purchasedPlan);
-    }
-
-    @Transactional
     public List<PaymentResponse> getUserPayments(Long userId) {
         return paymentRepository.findByUserId(userId).stream()
                 .map(PaymentResponse::from)
                 .toList();
     }
 
-    @Transactional
     public PaymentResponse getPaymentByTransactionRef(String transactionRef) {
         Payment payment = paymentRepository.findByTransactionRef(transactionRef)
                 .orElseThrow(() -> new NotFoundException("Payment not found"));
@@ -114,68 +207,47 @@ public class PaymentService {
     public PaymentResponse updatePaymentStatus(Long paymentId, PaymentStatus status) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new NotFoundException("Payment not found"));
-
         payment.setStatus(status);
         paymentRepository.save(payment);
         return PaymentResponse.from(payment);
     }
 
-    @Transactional
-    public org.springframework.data.domain.Page<PaymentResponse> getAllPaymentsForAdmin(
-            int page,
-            int size,
-            String search,
-            PaymentStatus status
-    ) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
-                page,
-                size,
-                org.springframework.data.domain.Sort.by("createdAt").descending()
-        );
-
+    public Page<PaymentResponse> getAllPaymentsForAdmin(int page, int size, String search, PaymentStatus status) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Specification<Payment> spec = (root, query, cb) -> {
-            java.util.List<jakarta.persistence.criteria.Predicate> predicates = new java.util.ArrayList<>();
-
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
             if (search != null && !search.isBlank()) {
                 String value = "%" + search.trim().toLowerCase() + "%";
-                predicates.add(
-                        cb.or(
-                                cb.like(cb.lower(root.get("transactionRef")), value),
-                                cb.like(cb.lower(root.get("planName")), value),
-                                cb.like(cb.lower(root.get("user").get("email")), value)
-                        )
-                );
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("transactionRef")), value),
+                        cb.like(cb.lower(root.get("planName")), value),
+                        cb.like(cb.lower(root.get("user").get("email")), value)
+                ));
             }
-
             if (status != null) {
                 predicates.add(cb.equal(root.get("status"), status));
             }
-
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
-
-        return paymentRepository.findAll(spec, pageable)
-                .map(PaymentResponse::from);
+        return paymentRepository.findAll(spec, pageable).map(PaymentResponse::from);
     }
+
     public Cloudian.JobPortal.modules.payment.dto.EmployerBillingOverviewResponse getBillingOverview(Long userId) {
         var employer = employerRepository.findByOwnerId(userId)
-                .orElseThrow(() -> new Cloudian.JobPortal.exceptions.custom.NotFoundException("Employer profile not found"));
-
-        var sub = subscriptionRepository.findByEmployerId(employer.getId())
-                .orElseThrow(() -> new Cloudian.JobPortal.exceptions.custom.BadRequestException("No active subscription found for this business"));
-
-        var plan = sub.getPlan();
+                .orElseThrow(() -> new NotFoundException("Employer profile not found"));
+        var sub = subscriptionService.getActiveSubscription(employer.getId());
+        var plan = sub != null ? sub.getPlan() : null;
 
         java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
-        java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy", java.util.Locale.ENGLISH);
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.ENGLISH);
 
         String formattedAmount = plan != null ? df.format(plan.getPrice()) + " VND" : "0 VND";
-        String formattedDueDate = sub.getExpiresAt() != null ? sub.getExpiresAt().format(dateFormatter) : "N/A";
-        String formattedStartedDate = sub.getStartedAt() != null ? sub.getStartedAt().format(dateFormatter) : "N/A";
+        String formattedDueDate = sub != null && sub.getExpiresAt() != null ? sub.getExpiresAt().format(dateFormatter) : "N/A";
+        String formattedStartedDate = sub != null && sub.getStartedAt() != null ? sub.getStartedAt().format(dateFormatter) : "N/A";
 
         java.time.YearMonth currentMonth = java.time.YearMonth.now();
-        java.time.LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
-        java.time.LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+        LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
 
         int postCountThisMonth = jobPostRepository.countByEmployerIdAndCreatedAtBetween(employer.getId(), startOfMonth, endOfMonth);
         int maxPosts = plan != null ? plan.getMaxJobPostsPerMonth() : 0;
@@ -185,10 +257,10 @@ public class PaymentService {
 
         return Cloudian.JobPortal.modules.payment.dto.EmployerBillingOverviewResponse.builder()
                 .planName(plan != null ? plan.getName() : "Free Plan")
-                .description(sub.getIsCanceled()
+                .description(sub != null && sub.getIsCanceled() != null && sub.getIsCanceled()
                         ? "Your plan has been canceled and will be downgraded to Free at the end of the current billing cycle."
                         : "Your subscription is active. Enjoy premium hiring tools and maximum candidate reach.")
-                .isCanceled(sub.getIsCanceled())
+                .isCanceled(sub != null && sub.getIsCanceled() != null && sub.getIsCanceled())
                 .amount(formattedAmount)
                 .dueDate(formattedDueDate)
                 .packageStarted(formattedStartedDate)
@@ -198,16 +270,15 @@ public class PaymentService {
                 .build();
     }
 
-    public org.springframework.data.domain.Page<Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse> getEmployerInvoices(Long userId, int limit, int offset) {
+    public Page<Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse> getEmployerInvoices(Long userId, int limit, int offset) {
         if (limit <= 0) limit = 10;
         int page = offset / limit;
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, limit);
+        PageRequest pageable = PageRequest.of(page, limit);
 
-        org.springframework.data.domain.Page<Cloudian.JobPortal.models.Payment> paymentsPage =
-                paymentRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
+        Page<Payment> paymentsPage = paymentRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
 
         java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
-        java.time.format.DateTimeFormatter dateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm", java.util.Locale.ENGLISH);
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm", Locale.ENGLISH);
 
         return paymentsPage.map(payment -> Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse.builder()
                 .id("#" + payment.getId())
@@ -215,5 +286,37 @@ public class PaymentService {
                 .plan(payment.getPlanName())
                 .amount(df.format(payment.getCost()) + " VND")
                 .build());
+    }
+
+    /**
+     * Employer invoices with date filter (startDate, endDate)
+     */
+    public Page<Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse> getEmployerInvoicesWithDateFilter(
+            Long userId, LocalDate startDate, LocalDate endDate, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : null;
+        LocalDateTime end = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
+        Page<Payment> paymentsPage = paymentRepository.findInvoicesByUserIdWithDateFilter(userId, start, end, pageable);
+        java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm", Locale.ENGLISH);
+        return paymentsPage.map(payment -> Cloudian.JobPortal.modules.payment.dto.EmployerInvoiceResponse.builder()
+                .id("#" + payment.getId())
+                .date(payment.getCreatedAt() != null ? payment.getCreatedAt().format(fmt) : "N/A")
+                .plan(payment.getPlanName())
+                .status(payment.getStatus() != null ? payment.getStatus().name() : "N/A")
+                .amount(df.format(payment.getCost()) + " VND")
+                .build());
+    }
+
+    /**
+     * Admin payments list with search, status, and date filter
+     */
+    public Page<PaymentResponse> getAllPaymentsForAdminWithFilters(
+            String search, PaymentStatus status, LocalDate startDate, LocalDate endDate, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        LocalDateTime start = startDate != null ? startDate.atStartOfDay() : null;
+        LocalDateTime end = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
+        return paymentRepository.findAllWithFilters(search, status, start, end, pageable)
+                .map(PaymentResponse::from);
     }
 }

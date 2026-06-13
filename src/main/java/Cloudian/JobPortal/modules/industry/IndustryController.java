@@ -7,6 +7,8 @@ import Cloudian.JobPortal.modules.industry.dto.CreateIndustryDto;
 import Cloudian.JobPortal.modules.industry.dto.IndustryResponse;
 import Cloudian.JobPortal.modules.industry.dto.UpdateIndustry;
 import Cloudian.JobPortal.security.UserDetailsImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.List;
 //Note: !! Nho bo sung them role requiredRole("admin") truoc khi ra production
 @RestController
 @RequestMapping("industry")
+@Tag(name = "Industry (Admin)", description = "Admin-only APIs for managing industry categories (CRUD)")
 public class IndustryController {
     @Autowired
     IndustryService industryService;
@@ -32,6 +35,7 @@ public class IndustryController {
     }
     @GetMapping()   //?name=?limit=?offset=
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get all industries (admin)", description = "Returns a paginated list of industries with optional name search. Admin only.")
     public ResponseEntity<ApiResponse<PageResponse<IndustryResponse>>> getAllIndustry(
             @RequestParam(required = false) String name,
             @RequestParam(defaultValue = "0") int offset,
@@ -43,6 +47,7 @@ public class IndustryController {
     }
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
+    @Operation(summary = "Get industry by ID (admin)", description = "Returns industry details by ID. Admin only.")
     public ResponseEntity<?> getIndustryById(
             @PathVariable Long id
     )
@@ -52,6 +57,7 @@ public class IndustryController {
     }
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
+    @Operation(summary = "Create an industry (admin)", description = "Creates a new industry category. Admin only.")
     public ResponseEntity<?> createIndustry(
             @RequestBody()CreateIndustryDto data,
             Authentication authentication
@@ -63,6 +69,7 @@ public class IndustryController {
     }
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
+    @Operation(summary = "Update an industry (admin)", description = "Updates an existing industry category by ID. Admin only.")
     public ResponseEntity<?> updateIndustry(
             @PathVariable Long id,
             @RequestBody()UpdateIndustry data,
@@ -75,6 +82,7 @@ public class IndustryController {
     }
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete an industry (admin)", description = "Soft-deletes an industry category by ID. Admin only.")
     public ResponseEntity<?> deleteIndustry(
         @PathVariable Long id,
         Authentication authentication

@@ -166,10 +166,14 @@ public class DataSeeder implements ApplicationRunner {
         List<Industry> industries = new ArrayList<>();
         industries.add(Industry.builder().name("Information Technology").build());
         industries.add(Industry.builder().name("Finance & Banking").build());
-        industries.add(Industry.builder().name("Healthcare").build());
-        industries.add(Industry.builder().name("Education").build());
+        industries.add(Industry.builder().name("Healthcare & Medical").build());
+        industries.add(Industry.builder().name("Education & Training").build());
         industries.add(Industry.builder().name("Retail & E-Commerce").build());
-        industries.add(Industry.builder().name("Manufacturing").build());
+        industries.add(Industry.builder().name("Manufacturing & Engineering").build());
+        industries.add(Industry.builder().name("Marketing & Advertising").build());
+        industries.add(Industry.builder().name("Design & Creative").build());
+        industries.add(Industry.builder().name("Logistics & Supply Chain").build());
+        industries.add(Industry.builder().name("Human Resources (HR)").build());
         return industries;
     }
 
@@ -404,8 +408,8 @@ public class DataSeeder implements ApplicationRunner {
 
         PaymentMethod[] methods = PaymentMethod.values();
         PaymentStatus[] statuses = PaymentStatus.values();
-        String[] plans = {"Basic Plan", "Standard Plan", "Premium Plan"};
-        Double[] costs = {49.0, 149.0, 299.0};
+        String[] plans = {"Standard", "Premium"};
+        Double[] costs = {300000.0, 600000.0};
         int limit = Math.min(users.size(), SEED_COUNT);
         for (int i = 0; i < limit; i++) {
             int planIndex = random.nextInt(plans.length);
@@ -470,23 +474,39 @@ public class DataSeeder implements ApplicationRunner {
                 .price(0.0)
                 .priority(0)
                 .duration(1)
-                .maxJobPostsPerMonth(2)
+                .maxJobPostsPerMonth(0)
+                .maxResumeAccess(0)
+                .allowHighlight(false)
                 .build());
 
         plans.add(Plan.builder()
-                .name("VIP")
-                .price(300000.0)
+                .name("Basic")
+                .price(100.0)
                 .priority(1)
                 .duration(1)
+                .maxJobPostsPerMonth(5)
+                .maxResumeAccess(100)
+                .allowHighlight(false)
+                .build());
+
+        plans.add(Plan.builder()
+                .name("Standard")
+                .price(200.0)
+                .priority(2)
+                .duration(1)
                 .maxJobPostsPerMonth(10)
+                .maxResumeAccess(200)
+                .allowHighlight(true)
                 .build());
 
         plans.add(Plan.builder()
                 .name("Premium")
-                .price(600000.0)
-                .priority(2)
+                .price(300.0)
+                .priority(3)
                 .duration(1)
-                .maxJobPostsPerMonth(30)
+                .maxJobPostsPerMonth(20)
+                .maxResumeAccess(300)
+                .allowHighlight(true)
                 .build());
 
         return plans;

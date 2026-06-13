@@ -7,6 +7,8 @@ import Cloudian.JobPortal.modules.jobapplication.dto.CreateJobApplicationDto;
 import Cloudian.JobPortal.modules.jobapplication.dto.JobApplicationDetailResponse;
 import Cloudian.JobPortal.modules.jobapplication.dto.JobApplicationResponse;
 import Cloudian.JobPortal.modules.jobapplication.dto.UpdateJobApplicationDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("job-application")
+@Tag(name = "Job Applications", description = "APIs for managing job applications (create, update status, view details)")
 public class JobApplicationController extends BaseController {
     @Autowired
     JobApplicationService jobApplicationService;
@@ -31,6 +34,7 @@ public class JobApplicationController extends BaseController {
 
     @PostMapping
     @PreAuthorize("hasRole('SEEKER')")
+    @Operation(summary = "Create a job application", description = "Submits a job application. Requires SEEKER role.")
     public ResponseEntity<ApiResponse<JobApplicationResponse>> createJobApplication(
             @RequestBody @Valid CreateJobApplicationDto data,
             Authentication authentication
@@ -41,6 +45,7 @@ public class JobApplicationController extends BaseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("Created job application successfully", response));
     }
     @GetMapping
+    @Operation(summary = "Get all job applications", description = "Returns paginated job applications. Returns different results based on role: admin sees all, employer sees their jobs, seeker sees own applications.")
     public ResponseEntity<ApiResponse<PageResponse<JobApplicationResponse>>> getAllJobApplication(
             Authentication authentication,
             @RequestParam(required = false, defaultValue = "20") Integer limit,
@@ -62,6 +67,7 @@ public class JobApplicationController extends BaseController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('SEEKER') or hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @Operation(summary = "Update job application", description = "Updates a job application. Admin can update any application, employer can update their own, seeker can withdraw.")
     public ResponseEntity<ApiResponse<JobApplicationResponse>> updateJobApplication(
             @PathVariable Long id,
             @RequestBody @Valid UpdateJobApplicationDto data,
@@ -81,6 +87,7 @@ public class JobApplicationController extends BaseController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('SEEKER') or hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @Operation(summary = "Get job application detail", description = "Returns detailed job application info. Access level depends on role (admin, employer, or seeker).")
     public ResponseEntity<ApiResponse<JobApplicationDetailResponse>> getJobApplicationDetailAdmin(
             @PathVariable Long id,
             Authentication authentication
@@ -99,6 +106,7 @@ public class JobApplicationController extends BaseController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SEEKER') or hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @Operation(summary = "Delete job application", description = "Soft-deletes a job application. Access level depends on role (admin, employer, or seeker).")
     public ResponseEntity<Void> deleteJobApplicationAdmin(@PathVariable Long id, Authentication authentication) {
         Long userId = getUserIdFromAuth(authentication);
         if (hasRole(authentication, "ADMIN")) {

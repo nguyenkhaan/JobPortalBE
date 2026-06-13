@@ -16,6 +16,6 @@ public interface EmployerRepository extends JpaRepository<EmployerProfile , Long
     long countByApprovalStatus(ApprovalStatus approvalStatus);
     List<EmployerProfile> findTop5ByApprovalStatusOrderByCreatedAtDesc(ApprovalStatus approvalStatus);
 
-    @Query("SELECT ep FROM EmployerProfile ep LEFT JOIN FETCH ep.subscription WHERE ep.id = :id")
-    Optional<EmployerProfile> findByIdWithDetails(@Param("id") Long id);
+    @Query("SELECT ep FROM EmployerProfile ep WHERE ep.id = :id")
+    java.util.Optional<EmployerProfile> findByIdWithDetails(@Param("id") Long id);
 }

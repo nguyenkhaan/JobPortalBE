@@ -51,20 +51,30 @@ public class JobPostService {
     private final JobApplicationRepository jobApplicationRepository;
 
     private void validatePostingRights(Long employerId) {
-        EmployerSubscription sub = subscriptionRepository.findByEmployerId(employerId)
-                .orElseThrow(() -> new BadRequestException("No information about the business's service package was found"));
+        java.util.Optional<EmployerSubscription> optSub =
+                subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(employerId, "ACTIVE");
 
-        if (sub.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Your package has expired on " + sub.getExpiresAt().toLocalDate() + ". Please renew to continue posting.");
+        EmployerSubscription activeSub = optSub.orElseThrow(() ->
+                new BadRequestException("No active subscription found for this business"));
+
+        if (activeSub.getPlan() == null) {
+            throw new BadRequestException("No plan assigned to your active subscription");
         }
 
-        java.time.YearMonth currentMonth = java.time.YearMonth.now();
-        LocalDateTime startOfMonth = currentMonth.atDay(1).atStartOfDay();
-        LocalDateTime endOfMonth = currentMonth.atEndOfMonth().atTime(23, 59, 59);
+        if (activeSub.getExpiresAt() != null && activeSub.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Your package has expired. Please renew to continue posting.");
+        }
 
-        int postCountThisMonth = jobPostRepository.countByEmployerIdAndCreatedAtBetween(employerId, startOfMonth, endOfMonth);
-        if (postCountThisMonth >= sub.getPlan().getMaxJobPostsPerMonth()) {
-            throw new BadRequestException("You have reached your maximum limit of " + sub.getPlan().getMaxJobPostsPerMonth() + " posts this month. Please upgrade your package to post more.");
+        // HẠM MỤC 3b: Count posts within subscription period (startedAt → expiresAt) instead of calendar month
+        LocalDateTime rangeStart = activeSub.getStartedAt() != null ? activeSub.getStartedAt() : LocalDateTime.now().minusMonths(1);
+        LocalDateTime rangeEnd = activeSub.getExpiresAt() != null ? activeSub.getExpiresAt() : LocalDateTime.now();
+
+        int postCountInRange = jobPostRepository.countByEmployerIdAndCreatedAtBetween(employerId, rangeStart, rangeEnd);
+        int maxPosts = activeSub.getPlan().getMaxJobPostsPerMonth();
+
+        if (postCountInRange >= maxPosts) {
+            throw new BadRequestException("You have reached your maximum limit of " + maxPosts
+                    + " posts for this subscription period. Please upgrade your package to post more.");
         }
     }
 
@@ -508,16 +518,17 @@ public class JobPostService {
         }
 
         // Check subscription exists and is not expired
-        EmployerSubscription sub = subscriptionRepository.findByEmployerId(employer.getId())
-                .orElseThrow(() -> new BadRequestException("No information about the business's service package was found"));
+        EmployerSubscription sub = subscriptionRepository
+                .findTopByEmployerIdAndSubStatusOrderByIdDesc(employer.getId(), "ACTIVE")
+                .orElseThrow(() -> new BadRequestException("No active subscription found for this business"));
 
         if (sub.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("Your package has expired. Please renew to continue using highlight feature.");
         }
 
-        // Block Free plan — only paid plans can highlight
-        if (sub.getPlan() == null || sub.getPlan().getPrice() <= 0) {
-            throw new ForbiddenException("You are on the Free plan. Please upgrade to a paid plan to use the highlight feature.");
+        // Check allowHighlight permission from plan
+        if (sub.getPlan() == null || !Boolean.TRUE.equals(sub.getPlan().getAllowHighlight())) {
+            throw new ForbiddenException("Your current plan does not support the highlight feature. Please upgrade to a plan that includes highlight.");
         }
 
         // Cooldown check: at least 4 hours between highlights
