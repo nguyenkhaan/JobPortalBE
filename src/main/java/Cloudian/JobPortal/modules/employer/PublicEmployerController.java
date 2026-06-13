@@ -43,8 +43,8 @@ public class PublicEmployerController {
         return ResponseEntity.ok(detail);
     }
 
-    @GetMapping("/{employerId}/jobs")
-    @Operation(summary = "Get employer's job posts", description = "Returns a paginated list of public job posts published by a specific employer.")
+    @GetMapping("/{employerId}/jobs-paginated")
+    @Operation(summary = "Get employer's job posts (paginated)", description = "Returns a paginated list of public job posts published by a specific employer.")
     public ResponseEntity<ApiResponse<PageResponse<JobPostResponse>>> getJobsByEmployer(
             @PathVariable Long employerId,
             @RequestParam(required = false, defaultValue = "0") Integer offset,
