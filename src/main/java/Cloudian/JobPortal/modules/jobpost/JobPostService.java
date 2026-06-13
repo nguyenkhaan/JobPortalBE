@@ -228,6 +228,13 @@ public class JobPostService {
     }
 
     @Transactional
+    public List<JobPostResponse> getOpenJobsByEmployerId(Long employerId) {
+        return jobPostRepository.findByEmployerIdAndStatus(employerId, JobPostStatus.OPEN).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional
     public org.springframework.data.domain.Page<JobPostResponse> getRecentJobsForSeeker(int limit, int offset) {
         Pageable pageable = buildPageable(limit, offset);
         LocalDateTime now = LocalDateTime.now();
