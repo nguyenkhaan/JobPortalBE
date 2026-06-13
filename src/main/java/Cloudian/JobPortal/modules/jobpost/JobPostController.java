@@ -66,6 +66,17 @@ public class JobPostController {
     }
     // /jobpost/employer -> Lay tat ca jobpost cua 1 employer nao do, theo id (???)
 
+    @GetMapping("/recent")
+    @PreAuthorize("hasRole('SEEKER')")
+    @Operation(summary = "Get recent job posts for job seeker", description = "Returns a paginated list of job posts created within the last 7 days for authenticated job seekers.")
+    public ResponseEntity<ApiResponse<PageResponse<JobPostResponse>>> getRecentJobsForSeeker(
+            @RequestParam(required = false, defaultValue = "20") Integer limit,
+            @RequestParam(required = false, defaultValue = "0") Integer offset
+    ) {
+        org.springframework.data.domain.Page<JobPostResponse> response = jobPostService.getRecentJobsForSeeker(limit, offset);
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(response)));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Get job post by ID", description = "Returns detailed information of a specific job post by its ID.")
     public ResponseEntity<JobPostDetailResponse> getJobPostById(@PathVariable Long id) {

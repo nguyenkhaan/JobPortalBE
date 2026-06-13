@@ -228,6 +228,15 @@ public class JobPostService {
     }
 
     @Transactional
+    public org.springframework.data.domain.Page<JobPostResponse> getRecentJobsForSeeker(int limit, int offset) {
+        Pageable pageable = buildPageable(limit, offset);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime cutoff = now.minusDays(7);
+        return jobPostRepository.findRecentJobsForSeeker(cutoff, now, pageable)
+                .map(this::toResponse);
+    }
+
+    @Transactional
     public JobPostDetailResponse getJobPostById(Long id) {
         JobPost jobPost = jobPostRepository.findByIdWithEmployer(id)
                 .orElseThrow(() -> new NotFoundException("Job post not found"));

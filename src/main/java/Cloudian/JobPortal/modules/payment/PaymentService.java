@@ -1,12 +1,11 @@
 package Cloudian.JobPortal.modules.payment;
 
-import Cloudian.JobPortal.events.notification.NotificationEvent;
 import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.employer.EmployerRepository;
-import Cloudian.JobPortal.modules.notification.NotificationService;
+import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.payment.dto.CreatePaymentDto;
 import Cloudian.JobPortal.modules.payment.dto.PaymentResponse;
 import Cloudian.JobPortal.modules.user.UserRepository;
@@ -34,7 +33,7 @@ public class PaymentService {
     private final SubscriptionService subscriptionService;
     private final SubscriptionRepository subscriptionRepository;
     private final Cloudian.JobPortal.modules.jobpost.JobPostRepository jobPostRepository;
-    private final NotificationService notificationService;
+    private final NotificationDispatchService notificationDispatchService;
 
     private static final int MAX_WAITING_SUBS = 3;
 
@@ -108,21 +107,13 @@ public class PaymentService {
                 .orElse(null);
         String companyName = employer != null ? employer.getCompanyName() : "Unknown";
 
-        List<User> allUsers = userRepository.findAll();
-        for (User u : allUsers) {
-            boolean isAdmin = u.getUserRoleList().stream()
-                    .anyMatch(ur -> ur.getRole() == Role.ADMIN);
-            if (isAdmin) {
-                notificationService.createNotification(NotificationEvent.builder()
-                        .userId(u.getId())
-                        .title("Yêu cầu duyệt thanh toán")
-                        .message("Nhà tuyển dụng " + companyName + " đã gửi yêu cầu duyệt thanh toán cho gói " + payment.getPlanName())
-                        .type(NotificationType.ADMIN_RECEIVE_PAYMENT_PLAN)
-                        .icon("credit-card")
-                        .channels(List.of(Channel.IN_APP))
-                        .build());
-            }
-        }
+        notificationDispatchService.notifyAdmins(
+                NotificationType.PAYMENT_SUBMITTED,
+                "New payment submitted",
+                "Employer " + companyName + " submitted a payment for the " + payment.getPlanName() + " plan and is waiting for approval.",
+                "/admin/payments",
+                "credit-card"
+        );
 
         Map<String, Object> result = new HashMap<>();
         result.put("paymentId", payment.getId());
@@ -160,14 +151,14 @@ public class PaymentService {
         subscriptionService.rotateSubscriptions(employer.getId());
 
         // Notify employer via NotificationEvent
-        notificationService.createNotification(NotificationEvent.builder()
-                .userId(payment.getUser().getId())
-                .title("Thanh toán thành công")
-                .message("Yêu cầu thanh toán gói " + payment.getPlanName() + " của bạn đã được Admin phê duyệt thành công!")
-                .type(NotificationType.ADMIN_RECEIVE_PAYMENT_PLAN)
-                .icon("check-circle")
-                .channels(List.of(Channel.IN_APP))
-                .build());
+        notificationDispatchService.notifyUser(
+                payment.getUser().getId(),
+                NotificationType.PAYMENT_APPROVED,
+                "Payment approved",
+                "Your payment for the " + payment.getPlanName() + " plan has been approved successfully.",
+                "/payments/me/billing-overview",
+                "check-circle"
+        );
 
         Map<String, Object> result = new HashMap<>();
         result.put("paymentId", payment.getId());

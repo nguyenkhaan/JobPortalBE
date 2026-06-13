@@ -239,6 +239,22 @@ class JobPostServiceTest {
         verify(auditService, times(1)).createAuditLog(any());
     }
 
+    @Test
+    void getRecentJobsForSeeker_Success_ReturnsPaginatedResponses() {
+        when(jobPostRepository.findRecentJobsForSeeker(any(), any(), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(mockJobPost)));
+        when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
+        when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
+        when(minioService.getFileUrl("logo.png")).thenReturn("https://cdn.test/logo.png");
+
+        Page<JobPostResponse> result = jobPostService.getRecentJobsForSeeker(20, 0);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Java Developer");
+        assertThat(result.getContent().get(0).getCompanyName()).isEqualTo("Tech Corp");
+        verify(jobPostRepository).findRecentJobsForSeeker(any(), any(), any(PageRequest.class));
+    }
+
     // ==================== assertOwnerOrAdmin ====================
 
     @Test

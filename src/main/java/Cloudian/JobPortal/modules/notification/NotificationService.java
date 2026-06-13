@@ -34,20 +34,19 @@ public class NotificationService {
                         .build();
         channel = notificationChannelRepository.save(channel);
         try {
+            String fcmToken = notification.getUser().getFcmToken();
+            if (fcmToken == null || fcmToken.isBlank()) {
+                channel.setStatus(NotificationStatus.FAILED);
+                return notificationChannelRepository.save(channel);
+            }
 
-            String fcmToken =
-                    notification.getUser()
-                                    .getFcmToken();
-            if (fcmToken == null)
-                return null;
-            firebasePushService.send(
+            String response = firebasePushService.send(
                     fcmToken,
                     notification.getTitle(),
                     notification.getMessage()
             );
-            channel.setStatus(
-                    NotificationStatus.SENT
-            );
+
+            channel.setStatus("FAILED".equals(response) ? NotificationStatus.FAILED : NotificationStatus.SENT);
         } catch (Exception ex) {
             channel.setStatus(
                     NotificationStatus.FAILED
@@ -134,8 +133,11 @@ public class NotificationService {
         if ((icon == null || icon.isBlank()) && notificationEvent.getType() != null) {
             icon = switch (notificationEvent.getType()) {
                 case CANDIDATE_APPLY -> "users";
-                case EMPLOYER_ACCOUNT_APPROVE -> "check-circle";
-                case ADMIN_RECEIVE_PAYMENT_PLAN -> "credit-card";
+                case EMPLOYER_PROFILE_SUBMITTED -> "building-2";
+                case EMPLOYER_PROFILE_APPROVED, PAYMENT_APPROVED, APPLICATION_ACCEPTED,
+                     EMPLOYER_ACCOUNT_APPROVE -> "check-circle";
+                case EMPLOYER_PROFILE_REJECTED, APPLICATION_REJECTED -> "circle-x";
+                case PAYMENT_SUBMITTED, ADMIN_RECEIVE_PAYMENT_PLAN -> "credit-card";
                 default -> "bell";
             };
         }
@@ -148,16 +150,14 @@ public class NotificationService {
                 .user(user)
                 .build();
         notificationRepository.save(notification);
-        NotificationChannel notificationChannelInApp = null;
-        NotificationChannel notificationChannelDevice = null;
         if (notificationEvent.getChannels().contains(Channel.IN_APP))
         {
-            notificationChannelInApp = sendInAppNotification(notification);
+            sendInAppNotification(notification);
         }
         if (notificationEvent.getChannels().contains(Channel.DEVICE))
         {
             //Device push notification
-            notificationChannelInApp = sendDeviceNotification(notification);
+            sendDeviceNotification(notification);
         }
         return notification;
     }

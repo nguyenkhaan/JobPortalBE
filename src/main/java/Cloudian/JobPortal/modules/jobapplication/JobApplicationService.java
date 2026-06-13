@@ -1,5 +1,6 @@
 package Cloudian.JobPortal.modules.jobapplication;
 
+import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
@@ -14,6 +15,7 @@ import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
 import Cloudian.JobPortal.modules.minio.MinioService;
+import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.resume.ResumeRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,8 @@ public class JobApplicationService {
     UserRepository userRepository;
     @Autowired
     MinioService minioService;
+    @Autowired
+    NotificationDispatchService notificationDispatchService;
 
     private Pageable buildPageable(Integer limit, Integer offset) {
         if (limit == null || limit < 1 || limit > 100) {
@@ -85,6 +89,19 @@ public class JobApplicationService {
                 .status(JobApplicationStatus.PENDING)
                 .build();
         JobApplication saved = jobApplicationRepository.save(jobApplication);
+        Long employerUserId = jobPost.getEmployer() != null && jobPost.getEmployer().getOwner() != null
+                ? jobPost.getEmployer().getOwner().getId()
+                : null;
+        if (employerUserId != null) {
+            notificationDispatchService.notifyUser(
+                    employerUserId,
+                    NotificationType.CANDIDATE_APPLY,
+                    "New job application received",
+                    jobSeekerProfile.getFullName() + " applied for your job post " + jobPost.getTitle() + ".",
+                    "/employer/job-posts/" + jobPost.getId() + "/candidates",
+                    "users"
+            );
+        }
         return toJobApplicationResponse(saved);
 
           //jobSeekerProfile - JobPost --- unique khong cho cap nay unique thi phai tim kiem JobApplication dua tren may thang any
@@ -139,8 +156,37 @@ public class JobApplicationService {
         }
         JobApplication application = requireApplication(applicationId);
         assertEmployerOwnsApplication(application, userId);
+        JobApplicationStatus previousStatus = application.getStatus();
         application.setStatus(data.getStatus());
-        return toJobApplicationResponse(jobApplicationRepository.save(application));
+        JobApplication saved = jobApplicationRepository.save(application);
+
+        boolean statusChanged = previousStatus != data.getStatus();
+        Long seekerUserId = application.getJobSeeker() != null && application.getJobSeeker().getUser() != null
+                ? application.getJobSeeker().getUser().getId()
+                : null;
+        if (statusChanged && seekerUserId != null) {
+            if (data.getStatus() == JobApplicationStatus.ACCEPTED) {
+                notificationDispatchService.notifyUser(
+                        seekerUserId,
+                        NotificationType.APPLICATION_ACCEPTED,
+                        "Application accepted",
+                        "Your application for " + application.getJobPost().getTitle() + " has been accepted by the employer.",
+                        "/job-seeker/applications",
+                        "check-circle"
+                );
+            } else if (data.getStatus() == JobApplicationStatus.REJECTED) {
+                notificationDispatchService.notifyUser(
+                        seekerUserId,
+                        NotificationType.APPLICATION_REJECTED,
+                        "Application rejected",
+                        "Your application for " + application.getJobPost().getTitle() + " has been rejected by the employer.",
+                        "/job-seeker/applications",
+                        "circle-x"
+                );
+            }
+        }
+
+        return toJobApplicationResponse(saved);
     }
 
     public JobApplicationResponse updateApplicationStatusForAdmin(Long applicationId, UpdateJobApplicationDto data) {
