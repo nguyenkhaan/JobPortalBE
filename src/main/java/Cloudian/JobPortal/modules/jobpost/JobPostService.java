@@ -175,7 +175,6 @@ public class JobPostService {
             }
 
             if (filter.getSalaryRange() != null && !filter.getSalaryRange().trim().isEmpty()) {
-                // Support ranges like "0-5m", "5-10m", "10-20m", "20m+"
                 String range = filter.getSalaryRange().trim().toLowerCase().replace(" ", "");
                 try {
                     if (range.endsWith("+")) {
@@ -231,6 +230,8 @@ public class JobPostService {
         validatePostingRights(employer.getId());
         validateSalaries(data.getSalaryMin(), data.getSalaryMax());
 
+        List<String> safeTags = data.getTags() != null ? new ArrayList<>(data.getTags()) : new ArrayList<>();
+
         JobPost jobPost = JobPost.builder()
                 .employer(employer)
                 .title(data.getTitle())
@@ -243,7 +244,7 @@ public class JobPostService {
                 .employmentType(data.getEmploymentType())
                 .salaryMin(data.getSalaryMin())
                 .salaryMax(data.getSalaryMax())
-                .tags(data.getTags()) //Default will set to ""
+                .tags(safeTags)
                 .expiresAt(data.getExpiresAt())   //Default will set to null
                 .isFeatured(data.getIsFeatured() != null ? data.getIsFeatured() : false)
                 .isHighlighted(data.getIsHighlighted() != null ? data.getIsHighlighted() : false)
@@ -317,7 +318,7 @@ public class JobPostService {
         }
         if (data.getTags() != null)
         {
-            jobPost.setTags(data.getTags());
+            jobPost.setTags(new ArrayList<>(data.getTags()));
         }
         if (data.getIsFeatured() != null) {
             jobPost.setIsFeatured(data.getIsFeatured());
@@ -585,7 +586,7 @@ public class JobPostService {
                 .salaryMax(jobPost.getSalaryMax())
                 .createdAt(jobPost.getCreatedAt())
                 .expiresAt(jobPost.getExpiresAt())
-                .tags(jobPost.getTags())
+                .tags(jobPost.getTags() != null ? jobPost.getTags() : new ArrayList<>())
                 .isFeatured(jobPost.getIsFeatured())
                 .isHighlighted(jobPost.getIsHighlighted())
                 .jobRole(jobPost.getJobRole())
@@ -656,6 +657,7 @@ public class JobPostService {
                 .expireDate(jobPost.getExpiresAt() != null ? jobPost.getExpiresAt().toLocalDate().toString() : null)
                 .description(jobPost.getDescription())
                 .requirements(jobPost.getRequirements())
+                .tags(jobPost.getTags() != null ? jobPost.getTags() : new ArrayList<>())
                 .overview(overview)
                 .companyProfile(companyProfile)
                 .build();

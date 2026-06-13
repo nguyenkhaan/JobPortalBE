@@ -295,7 +295,7 @@ public class DataSeeder implements ApplicationRunner {
                 "Manage Agile sprint schedules, clear dependencies, and align cross-functional teams.",
                 "Drive growth strategies, manage digital campaigns, and optimize acquisition funnels."
         };
-        String[] tags = {
+        String[] tagsRawArray = {
                 "uiux;design", "senior;ux", "graphic;design",
                 "frontend;react", "support;tech", "interaction;prototype",
                 "backend;java", "product;design", "agile;manager", "marketing;growth"
@@ -309,7 +309,7 @@ public class DataSeeder implements ApplicationRunner {
         };
         String[] locations = {
                 "Khanh Hoa", "Ca Mau", "Ninh Thuan", "Binh Duong", "Kien Giang", "Thai Binh", "Ha Noi", "Ho Chi Minh", "Ninh Binh"
-        }; 
+        };
         Boolean[] featuredArray = { true, false, false, false, false, false, false, false, false, false };
         Boolean[] highlightedArray = { false, false, true, false, false, false, false, false, false, false };
 
@@ -317,24 +317,37 @@ public class DataSeeder implements ApplicationRunner {
         int limit = Math.min(employers.size(), SEED_COUNT);
 
         for (int i = 0; i < limit; i++) {
-            int idx = i % titles.length;
+            // Tránh lỗi tràn mảng bằng việc modulo độc lập cho từng thuộc tính có độ dài mảng khác nhau
+            int titleIdx = i % titles.length;
+            int eduIdx = i % educationLevels.length;
+            int levelIdx = i % jobLevels.length;
+            int locIdx = i % locations.length;
+
+            // 🟢 XỬ LÝ MẢNG TAGS MỚI: Cắt chuỗi từ dấu ";" sang List<String> bọc trong ArrayList mutable
+            List<String> postTags = new ArrayList<>();
+            String rawTags = tagsRawArray[titleIdx];
+            if (rawTags != null && !rawTags.isBlank()) {
+                for (String tag : rawTags.split(";")) {
+                    postTags.add(tag.trim());
+                }
+            }
 
             posts.add(JobPost.builder()
                     .employer(employers.get(i))
-                    .title(titles[idx])
-                    .description(descriptions[idx])
-                    .employmentType(types[idx])
-                    .status(statuses[idx])
-                    .educationLevel(educationLevels[idx])
-                    .experience(idx)
-                    .location(locations[i])
-                    .jobLevel(jobLevels[idx])
-                    .expiresAt(expiresAt[idx])
-                    .tags(tags[idx])
-                    .isFeatured(featuredArray[idx])
-                    .isHighlighted(highlightedArray[idx])
-                    .salaryMin(BigDecimal.valueOf(10_000_000L + (long) idx * 1_500_000L))
-                    .salaryMax(BigDecimal.valueOf(18_000_000L + (long) idx * 2_500_000L))
+                    .title(titles[titleIdx])
+                    .description(descriptions[titleIdx])
+                    .employmentType(types[titleIdx])
+                    .status(statuses[titleIdx])
+                    .educationLevel(educationLevels[eduIdx]) 
+                    .experience(titleIdx)
+                    .location(locations[locIdx])
+                    .jobLevel(jobLevels[levelIdx])
+                    .expiresAt(expiresAt[titleIdx])
+                    .tags(postTags)
+                    .isFeatured(featuredArray[titleIdx])
+                    .isHighlighted(highlightedArray[titleIdx])
+                    .salaryMin(BigDecimal.valueOf(10_000_000L + (long) titleIdx * 1_500_000L))
+                    .salaryMax(BigDecimal.valueOf(18_000_000L + (long) titleIdx * 2_500_000L))
                     .build());
         }
         return posts;

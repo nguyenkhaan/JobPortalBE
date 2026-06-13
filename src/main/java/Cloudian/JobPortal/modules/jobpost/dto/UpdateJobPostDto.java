@@ -30,7 +30,7 @@ public class UpdateJobPostDto {
     @Min(value = 0, message = "experience must be greater than or equal to 0")
     private Integer experience;
     private EmploymentType employmentType;
-    private String tags;
+    private List<String> tags;
     private LocalDateTime expiresAt;
     private Boolean isUpdateExpires;
     private Boolean isFeatured;

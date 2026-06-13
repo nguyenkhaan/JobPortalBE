@@ -24,6 +24,7 @@ public class JobPostDetailResponse {
     private String expireDate;
     private String description;
     private String requirements;
+    private List<String> tags;
     private JobOverview overview;
     private CompanyProfile companyProfile;
 
