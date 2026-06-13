@@ -13,5 +13,6 @@ public class EmployerInvoiceResponse {
     private String id;
     private String date;
     private String plan;
+    private String status;
     private String amount;
 }

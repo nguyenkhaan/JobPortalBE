@@ -15,16 +15,23 @@ public class EmployerSubscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "employer_id", unique = true)
+    @ManyToOne
+    @JoinColumn(name = "employer_id")
     private EmployerProfile employer;
 
     @ManyToOne
     @JoinColumn(name = "plan_id")
     private Plan plan;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private String subStatus = "ACTIVE"; // ACTIVE, WAITING, EXPIRED
+
     private LocalDateTime startedAt;
     private LocalDateTime expiresAt;
+
+    @Builder.Default
+    private Long remainingSeconds = 0L; // seconds remaining when frozen
 
     @Builder.Default
     private Boolean isCanceled = false;

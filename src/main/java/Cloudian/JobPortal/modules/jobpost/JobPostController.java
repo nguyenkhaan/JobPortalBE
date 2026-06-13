@@ -8,6 +8,8 @@ import Cloudian.JobPortal.modules.jobpost.dto.JobPostDetailResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
 import Cloudian.JobPortal.security.UserDetailsImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("jobpost")
 @RequiredArgsConstructor
+@Tag(name = "Job Posts", description = "APIs for managing job postings (CRUD, filtering, employer dashboard)")
 public class JobPostController {
 
     private final JobPostService jobPostService;
@@ -51,6 +54,7 @@ public class JobPostController {
     }
 
     @GetMapping
+    @Operation(summary = "Get all job posts", description = "Returns a paginated list of job posts with optional filters (keyword, location, salary, etc.).")
     public ResponseEntity<ApiResponse<PageResponse<JobPostResponse>>> getAllJobPost(
             @ModelAttribute JobPostFilterRequest request,
             @RequestParam(required = false, defaultValue = "1") Integer offset,
@@ -63,6 +67,7 @@ public class JobPostController {
     // /jobpost/employer -> Lay tat ca jobpost cua 1 employer nao do, theo id (???)
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get job post by ID", description = "Returns detailed information of a specific job post by its ID.")
     public ResponseEntity<JobPostDetailResponse> getJobPostById(@PathVariable Long id) {
         JobPostDetailResponse response = jobPostService.getJobPostById(id);
         return ResponseEntity.ok(response);
@@ -70,6 +75,7 @@ public class JobPostController {
 
     @PostMapping
     @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Create a job post", description = "Creates a new job posting for the authenticated employer.")
     public ResponseEntity<JobPostResponse> createJobPost(
             @RequestBody @Valid CreateJobPostDto data,
             Authentication authentication
@@ -81,6 +87,7 @@ public class JobPostController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @Operation(summary = "Update a job post", description = "Updates an existing job post. Only the owner employer or admin can update.")
     public ResponseEntity<JobPostResponse> updateJobPost(
             @PathVariable Long id,
             @RequestBody @Valid UpdateJobPostDto data,
@@ -93,6 +100,7 @@ public class JobPostController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @Operation(summary = "Delete a job post", description = "Soft-deletes a job post. Only the owner employer or admin can delete.")
     public ResponseEntity<Map<String, Object>> deleteJobPost(
             @PathVariable Long id,
             Authentication authentication
@@ -107,6 +115,7 @@ public class JobPostController {
 
     @PostMapping("/{id}/highlight")
     @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Highlight a job post", description = "Highlights/pins a job post to boost visibility. Requires employer role.")
     public ResponseEntity<ApiResponse<Map<String, Object>>> highlightJobPost(
             @PathVariable Long id,
             HttpServletRequest request
@@ -122,6 +131,7 @@ public class JobPostController {
     //  ENDPOINT 1: LẤY DANH SÁCH BÀI ĐĂNG DÀNH RIÊNG CHO EMPLOYER DASHBOARD
     @GetMapping("/me/dashboard")
     @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Get employer dashboard jobs", description = "Returns a paginated list of job posts for the authenticated employer's dashboard.")
     public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<org.springframework.data.domain.Page<Cloudian.JobPortal.modules.jobpost.dto.EmployerJobDashboardResponse>>> getEmployerDashboardJobs(
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(defaultValue = "0") int offset,
@@ -140,6 +150,7 @@ public class JobPostController {
     //  ENDPOINT 2: CẬP NHẬT TRẠNG THÁI NHANH CHO BÀI ĐĂNG (Ví dụ: Mark as expired, Close)
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('EMPLOYER')")
+    @Operation(summary = "Update job post status", description = "Quickly updates the status of a job post (e.g., ACTIVE, CLOSED, EXPIRED). Requires employer role.")
     public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse>> updateJobPostStatus(
             @PathVariable Long id,
             @RequestParam Cloudian.JobPortal.models.JobPostStatus status,

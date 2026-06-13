@@ -142,7 +142,7 @@ public class JobSeekerService {
                 ));
             }
 
-            if (location != null && !location.isBlank()) {
+        if (location != null && !location.isBlank()) {
                 predicates.add(cb.like(
                         cb.lower(root.get("address")),
                         "%" + location.trim().toLowerCase() + "%"
@@ -157,10 +157,17 @@ public class JobSeekerService {
             }
 
             if (experienceYears != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("id"), 0L)); // dummy - filter as text in experienceSummary
-                predicates.add(cb.like(
-                        cb.lower(root.get("experienceSummary")),
-                        "%" + experienceYears + "%"
+                if (experienceYears < 0) {
+                    throw new BadRequestException("Invalid experienceYears: must be non-negative");
+                }
+                // Search in experienceSummary text with common year patterns (e.g. "3 năm", "3 years")
+                String yearPattern = experienceYears + " năm";
+                String yearPatternEn = experienceYears + " years";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("experienceSummary")), "%" + yearPattern.toLowerCase() + "%"),
+                        cb.like(cb.lower(root.get("experienceSummary")), "%" + yearPatternEn.toLowerCase() + "%"),
+                        cb.like(cb.lower(root.get("experienceSummary")), "%" + experienceYears + "+ năm%"),
+                        cb.like(cb.lower(root.get("experienceSummary")), "%" + experienceYears + "+ years%")
                 ));
             }
 
@@ -178,7 +185,10 @@ public class JobSeekerService {
                 ));
             }
 
-            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+            // Security: Only show approved profiles to employers
+            predicates.add(cb.isTrue(root.get("approve")));
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
         return jobSeekerRepository.findAll(spec, pageable).map(this::mapToResponse);
     }

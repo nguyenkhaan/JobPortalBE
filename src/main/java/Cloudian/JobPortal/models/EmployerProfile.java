@@ -120,7 +120,8 @@ public class EmployerProfile {
     @Builder.Default
     private List<JobPost> jobPostList = new ArrayList<>();
 
-    @OneToOne(mappedBy = "employer", cascade = CascadeType.ALL)
-    private EmployerSubscription subscription;
+    @OneToMany(mappedBy = "employer", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<EmployerSubscription> subscriptions = new ArrayList<>();
 
 }

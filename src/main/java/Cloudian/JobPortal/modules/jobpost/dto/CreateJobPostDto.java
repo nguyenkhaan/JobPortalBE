@@ -57,7 +57,7 @@ public class CreateJobPostDto {
     private LocalDateTime expiresAt;
 
     @NotNull(message = "Tags cannot be null")
-    private String tags;
+    private java.util.List<String> tags;
 
     private Boolean isFeatured;
 

@@ -166,10 +166,14 @@ public class DataSeeder implements ApplicationRunner {
         List<Industry> industries = new ArrayList<>();
         industries.add(Industry.builder().name("Information Technology").build());
         industries.add(Industry.builder().name("Finance & Banking").build());
-        industries.add(Industry.builder().name("Healthcare").build());
-        industries.add(Industry.builder().name("Education").build());
+        industries.add(Industry.builder().name("Healthcare & Medical").build());
+        industries.add(Industry.builder().name("Education & Training").build());
         industries.add(Industry.builder().name("Retail & E-Commerce").build());
-        industries.add(Industry.builder().name("Manufacturing").build());
+        industries.add(Industry.builder().name("Manufacturing & Engineering").build());
+        industries.add(Industry.builder().name("Marketing & Advertising").build());
+        industries.add(Industry.builder().name("Design & Creative").build());
+        industries.add(Industry.builder().name("Logistics & Supply Chain").build());
+        industries.add(Industry.builder().name("Human Resources (HR)").build());
         return industries;
     }
 
@@ -295,7 +299,7 @@ public class DataSeeder implements ApplicationRunner {
                 "Manage Agile sprint schedules, clear dependencies, and align cross-functional teams.",
                 "Drive growth strategies, manage digital campaigns, and optimize acquisition funnels."
         };
-        String[] tags = {
+        String[] tagsRawArray = {
                 "uiux;design", "senior;ux", "graphic;design",
                 "frontend;react", "support;tech", "interaction;prototype",
                 "backend;java", "product;design", "agile;manager", "marketing;growth"
@@ -309,7 +313,7 @@ public class DataSeeder implements ApplicationRunner {
         };
         String[] locations = {
                 "Khanh Hoa", "Ca Mau", "Ninh Thuan", "Binh Duong", "Kien Giang", "Thai Binh", "Ha Noi", "Ho Chi Minh", "Ninh Binh"
-        }; 
+        };
         Boolean[] featuredArray = { true, false, false, false, false, false, false, false, false, false };
         Boolean[] highlightedArray = { false, false, true, false, false, false, false, false, false, false };
 
@@ -317,24 +321,37 @@ public class DataSeeder implements ApplicationRunner {
         int limit = Math.min(employers.size(), SEED_COUNT);
 
         for (int i = 0; i < limit; i++) {
-            int idx = i % titles.length;
+            // Tránh lỗi tràn mảng bằng việc modulo độc lập cho từng thuộc tính có độ dài mảng khác nhau
+            int titleIdx = i % titles.length;
+            int eduIdx = i % educationLevels.length;
+            int levelIdx = i % jobLevels.length;
+            int locIdx = i % locations.length;
+
+            // 🟢 XỬ LÝ MẢNG TAGS MỚI: Cắt chuỗi từ dấu ";" sang List<String> bọc trong ArrayList mutable
+            List<String> postTags = new ArrayList<>();
+            String rawTags = tagsRawArray[titleIdx];
+            if (rawTags != null && !rawTags.isBlank()) {
+                for (String tag : rawTags.split(";")) {
+                    postTags.add(tag.trim());
+                }
+            }
 
             posts.add(JobPost.builder()
                     .employer(employers.get(i))
-                    .title(titles[idx])
-                    .description(descriptions[idx])
-                    .employmentType(types[idx])
-                    .status(statuses[idx])
-                    .educationLevel(educationLevels[idx])
-                    .experience(idx)
-                    .location(locations[i])
-                    .jobLevel(jobLevels[idx])
-                    .expiresAt(expiresAt[idx])
-                    .tags(tags[idx])
-                    .isFeatured(featuredArray[idx])
-                    .isHighlighted(highlightedArray[idx])
-                    .salaryMin(BigDecimal.valueOf(10_000_000L + (long) idx * 1_500_000L))
-                    .salaryMax(BigDecimal.valueOf(18_000_000L + (long) idx * 2_500_000L))
+                    .title(titles[titleIdx])
+                    .description(descriptions[titleIdx])
+                    .employmentType(types[titleIdx])
+                    .status(statuses[titleIdx])
+                    .educationLevel(educationLevels[eduIdx]) 
+                    .experience(titleIdx)
+                    .location(locations[locIdx])
+                    .jobLevel(jobLevels[levelIdx])
+                    .expiresAt(expiresAt[titleIdx])
+                    .tags(postTags)
+                    .isFeatured(featuredArray[titleIdx])
+                    .isHighlighted(highlightedArray[titleIdx])
+                    .salaryMin(BigDecimal.valueOf(10_000_000L + (long) titleIdx * 1_500_000L))
+                    .salaryMax(BigDecimal.valueOf(18_000_000L + (long) titleIdx * 2_500_000L))
                     .build());
         }
         return posts;
@@ -391,8 +408,8 @@ public class DataSeeder implements ApplicationRunner {
 
         PaymentMethod[] methods = PaymentMethod.values();
         PaymentStatus[] statuses = PaymentStatus.values();
-        String[] plans = {"Basic Plan", "Standard Plan", "Premium Plan"};
-        Double[] costs = {49.0, 149.0, 299.0};
+        String[] plans = {"Standard", "Premium"};
+        Double[] costs = {300000.0, 600000.0};
         int limit = Math.min(users.size(), SEED_COUNT);
         for (int i = 0; i < limit; i++) {
             int planIndex = random.nextInt(plans.length);
@@ -457,23 +474,39 @@ public class DataSeeder implements ApplicationRunner {
                 .price(0.0)
                 .priority(0)
                 .duration(1)
-                .maxJobPostsPerMonth(2)
+                .maxJobPostsPerMonth(0)
+                .maxResumeAccess(0)
+                .allowHighlight(false)
                 .build());
 
         plans.add(Plan.builder()
-                .name("VIP")
-                .price(300000.0)
+                .name("Basic")
+                .price(100.0)
                 .priority(1)
                 .duration(1)
+                .maxJobPostsPerMonth(5)
+                .maxResumeAccess(100)
+                .allowHighlight(false)
+                .build());
+
+        plans.add(Plan.builder()
+                .name("Standard")
+                .price(200.0)
+                .priority(2)
+                .duration(1)
                 .maxJobPostsPerMonth(10)
+                .maxResumeAccess(200)
+                .allowHighlight(true)
                 .build());
 
         plans.add(Plan.builder()
                 .name("Premium")
-                .price(600000.0)
-                .priority(2)
+                .price(300.0)
+                .priority(3)
                 .duration(1)
-                .maxJobPostsPerMonth(30)
+                .maxJobPostsPerMonth(20)
+                .maxResumeAccess(300)
+                .allowHighlight(true)
                 .build());
 
         return plans;
