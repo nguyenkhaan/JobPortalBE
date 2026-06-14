@@ -3,11 +3,7 @@ package Cloudian.JobPortal.modules.jobpost;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.modules.base.dto.ApiResponse;
 import Cloudian.JobPortal.modules.base.dto.PageResponse;
-import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
-import Cloudian.JobPortal.modules.jobpost.dto.JobPostDetailResponse;
-import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
-import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
-import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostStatusDto;
+import Cloudian.JobPortal.modules.jobpost.dto.*;
 import Cloudian.JobPortal.security.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,7 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
-
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostEditResponse;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -143,7 +139,17 @@ public class JobPostController {
                 dashboardJobs
         ));
     }
-
+    @GetMapping("/{id}/for-edit")
+    @PreAuthorize("hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @Operation(summary = "Get job post raw data for editing", description = "Returns raw data of a job post including original enums and IDs for form filling. Owner or Admin only.")
+    public ResponseEntity<JobPostEditResponse> getJobPostForEdit(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Long userId = getUserIdFromAuth(authentication);
+        JobPostEditResponse response = jobPostService.getJobPostForEdit(id, userId, isAdmin(authentication));
+        return ResponseEntity.ok(response);
+    }
     //  ENDPOINT 2: CẬP NHẬT TRẠNG THÁI NHANH CHO BÀI ĐĂNG (Ví dụ: Mark as expired, Close)
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('EMPLOYER')")

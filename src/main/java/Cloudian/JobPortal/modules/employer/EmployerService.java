@@ -4,6 +4,8 @@ import Cloudian.JobPortal.events.notification.NotificationEvent;
 import Cloudian.JobPortal.events.notification.NotificationPublisher;
 import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
+import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
+import Cloudian.JobPortal.exceptions.custom.InternalServerException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.models.*;
@@ -14,6 +16,10 @@ import Cloudian.JobPortal.modules.employer.dto.EmployerProfileResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileUpdateRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerStatisticResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerSubscriptionResponse;
+import Cloudian.JobPortal.modules.employer.dto.InviteCandidateRequest;
+import Cloudian.JobPortal.modules.employer.dto.InviteCandidateResponse;
+import Cloudian.JobPortal.modules.email.EmailService;
+import Cloudian.JobPortal.modules.email.EmailTemplate;
 import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
@@ -24,7 +30,9 @@ import Cloudian.JobPortal.modules.payment.PlanRepository;
 import Cloudian.JobPortal.modules.payment.SubscriptionRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import jakarta.transaction.Transactional;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -65,6 +73,10 @@ public class EmployerService {
     private NotificationPublisher notificationPublisher;
     @Autowired
     private SavedCandidateRepository savedCandidateRepository;
+    @Autowired
+    private EmailService emailService;
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
@@ -92,6 +104,56 @@ public class EmployerService {
                 .linkedlnUrl(profile.getLinkedlnUrl())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
+                .build();
+    }
+
+    @Transactional
+    public InviteCandidateResponse inviteCandidate(Long userId, InviteCandidateRequest request) {
+        EmployerProfile employer = employerRepository.findByOwnerId(userId)
+                .orElseThrow(() -> new NotFoundException("Employer profile not found"));
+        JobPost jobPost = jobPostRepository.findByIdWithEmployer(request.getJobPostId())
+                .orElseThrow(() -> new NotFoundException("Job post not found"));
+        if (jobPost.getEmployer() == null || !jobPost.getEmployer().getId().equals(employer.getId())) {
+            throw new ForbiddenException("You do not have permission to invite candidates to this job");
+        }
+        if (jobPost.getStatus() != JobPostStatus.OPEN && jobPost.getStatus() != JobPostStatus.ACTIVE) {
+            throw new BadRequestException("Only active job posts can be used to invite candidates");
+        }
+
+        JobSeekerProfile candidate = jobSeekerRepository.findById(request.getJobSeekerId())
+                .orElseThrow(() -> new NotFoundException("Candidate not found"));
+        String candidateEmail = candidate.getUser() != null ? candidate.getUser().getEmail() : null;
+        if (candidateEmail == null || candidateEmail.isBlank()) {
+            throw new BadRequestException("Candidate email is not available");
+        }
+
+        String companyName = employer.getCompanyName() != null ? employer.getCompanyName() : "An employer";
+        String candidateName = candidate.getFullName() != null ? candidate.getFullName() : "Candidate";
+        String jobLocation = jobPost.getLocation() != null ? jobPost.getLocation() : "";
+        String jobUrl = frontendUrl + "/job/" + jobPost.getId();
+        Map<String, Object> variables = Map.of(
+                "candidateName", candidateName,
+                "companyName", companyName,
+                "jobTitle", jobPost.getTitle(),
+                "jobLocation", jobLocation,
+                "jobUrl", jobUrl
+        );
+
+        try {
+            emailService.sendEmail(
+                    candidateEmail,
+                    companyName + " invited you to apply for " + jobPost.getTitle(),
+                    EmailTemplate.CANDIDATE_INVITATION.getPath(),
+                    variables
+            );
+        } catch (MessagingException e) {
+            throw new InternalServerException("Failed to send invitation email");
+        }
+
+        return InviteCandidateResponse.builder()
+                .jobSeekerId(candidate.getId())
+                .jobPostId(jobPost.getId())
+                .candidateEmail(candidateEmail)
                 .build();
     }
 
