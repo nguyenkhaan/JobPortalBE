@@ -15,6 +15,7 @@ import Cloudian.JobPortal.modules.employer.dto.EmployerSubscriptionResponse;
 import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
+import Cloudian.JobPortal.modules.savedcandidate.SavedCandidateRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.payment.PlanRepository;
@@ -58,6 +59,8 @@ public class EmployerService {
     private Cloudian.JobPortal.modules.payment.SubscriptionService subscriptionService;
     @Autowired
     private NotificationDispatchService notificationDispatchService;
+    @Autowired
+    private SavedCandidateRepository savedCandidateRepository;
 
     @Transactional
     EmployerProfileResponse mappingToEmployerResponse(EmployerProfile profile)
@@ -392,9 +395,12 @@ public class EmployerService {
             totalApplicants = jobApplicationRepository.countByJobPostIds(jobPostIds);
         }
 
+        long totalSavedCandidates = savedCandidateRepository.countByEmployerId(employer.getId());
+
         return EmployerStatisticResponse.builder()
                 .totalJobs(totalJobs)
                 .totalApplicants(totalApplicants)
+                .totalSavedCandidates(totalSavedCandidates)
                 .build();
     }
 }

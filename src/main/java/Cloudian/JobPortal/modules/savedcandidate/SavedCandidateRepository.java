@@ -13,4 +13,5 @@ public interface SavedCandidateRepository extends JpaRepository<SavedCandidate, 
     Optional<SavedCandidate> findByEmployerIdAndJobSeekerId(Long employerId, Long jobSeekerId);
     boolean existsByEmployerIdAndJobSeekerId(Long employerId, Long jobSeekerId);
     void deleteByEmployerIdAndJobSeekerId(Long employerId, Long jobSeekerId);
+    long countByEmployerId(Long employerId);
 }
