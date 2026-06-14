@@ -328,7 +328,35 @@ public class PaymentService {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         LocalDateTime start = startDate != null ? startDate.atStartOfDay() : null;
         LocalDateTime end = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
-        return paymentRepository.findAllWithFilters(search, status, start, end, pageable)
+
+        Specification<Payment> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+
+            if (search != null && !search.isBlank()) {
+                String value = "%" + search.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("transactionRef").as(String.class)), value),
+                        cb.like(cb.lower(root.get("planName").as(String.class)), value),
+                        cb.like(cb.lower(root.get("user").get("email").as(String.class)), value)
+                ));
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            if (start != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), start));
+            }
+
+            if (end != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), end));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        return paymentRepository.findAll(spec, pageable)
                 .map(PaymentResponse::from);
     }
 }

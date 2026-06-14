@@ -68,6 +68,7 @@ public class UserService
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(int limit, int offset, String search, Role role, Boolean active)
     {
         if (limit <= 0 || limit > 100) {
@@ -85,7 +86,7 @@ public class UserService
 
             if (search != null && !search.isBlank()) {
                 String value = "%" + search.trim().toLowerCase() + "%";
-                predicates.add(cb.like(cb.lower(root.get("email")), value));
+                predicates.add(cb.like(cb.lower(root.get("email").as(String.class)), value));
             }
 
             if (active != null) {

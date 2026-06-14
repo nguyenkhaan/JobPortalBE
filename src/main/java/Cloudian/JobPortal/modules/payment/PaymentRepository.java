@@ -33,19 +33,4 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable);
 
-    // Admin all payments with date filter
-    @Query("SELECT p FROM Payment p WHERE " +
-           "(:search IS NULL OR LOWER(p.transactionRef) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR LOWER(p.planName) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "OR LOWER(p.user.email) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-           "AND (:status IS NULL OR p.status = :status) " +
-           "AND (:startDate IS NULL OR p.createdAt >= :startDate) " +
-           "AND (:endDate IS NULL OR p.createdAt <= :endDate) " +
-           "ORDER BY p.createdAt DESC")
-    Page<Payment> findAllWithFilters(
-            @Param("search") String search,
-            @Param("status") PaymentStatus status,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
-            Pageable pageable);
 }
