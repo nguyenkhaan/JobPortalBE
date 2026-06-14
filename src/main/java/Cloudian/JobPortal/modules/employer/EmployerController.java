@@ -10,6 +10,8 @@ import Cloudian.JobPortal.modules.employer.dto.EmployerProfileResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileUpdateRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerStatisticResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerSubscriptionResponse;
+import Cloudian.JobPortal.modules.employer.dto.InviteCandidateRequest;
+import Cloudian.JobPortal.modules.employer.dto.InviteCandidateResponse;
 import Cloudian.JobPortal.modules.jobpost.JobPostService;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.employer.dto.FindCandidateRequest;
@@ -102,6 +104,20 @@ public class EmployerController {
             throw new UnauthorizedException("user not found");
         EmployerSubscriptionResponse response = employerService.getEmployerSubscription(user.getId());
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @Operation(summary = "Invite a candidate by email", description = "Sends an email invitation for one of the authenticated employer's active job posts.")
+    @PostMapping("/candidate-invitations")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<InviteCandidateResponse>> inviteCandidate(
+            @Valid @RequestBody InviteCandidateRequest request,
+            Authentication authentication
+    ) {
+        UserDetailsImpl user = (UserDetailsImpl) authentication.getPrincipal();
+        if (user == null)
+            throw new UnauthorizedException("User not found");
+        InviteCandidateResponse response = employerService.inviteCandidate(user.getId(), request);
+        return ResponseEntity.ok(ApiResponse.ok("Invitation email sent successfully", response));
     }
 
     @Operation(summary = "Update employer profile", description = """
