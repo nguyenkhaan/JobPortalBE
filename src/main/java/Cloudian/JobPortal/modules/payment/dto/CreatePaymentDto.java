@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class CreatePaymentDto {
+    private Long planId;
+
     @NotBlank(message = "Plan name is required")
     private String planName;
     

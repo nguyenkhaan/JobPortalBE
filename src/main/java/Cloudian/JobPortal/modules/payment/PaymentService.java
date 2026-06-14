@@ -183,6 +183,7 @@ public class PaymentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
         Payment payment = Payment.builder()
+                .planId(dto.getPlanId())
                 .planName(dto.getPlanName())
                 .cost(dto.getCost())
                 .note(dto.getNote())
