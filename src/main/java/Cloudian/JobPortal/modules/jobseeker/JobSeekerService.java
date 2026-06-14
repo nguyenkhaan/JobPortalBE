@@ -124,6 +124,13 @@ public class JobSeekerService {
     }
 
     @Transactional(readOnly = true)
+    public JobSeekerResponse getJobSeekerProfileById(Long id) {
+        JobSeekerProfile profile = jobSeekerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Job seeker profile not found"));
+        return mapToResponse(profile);
+    }
+
+    @Transactional(readOnly = true)
     public Page<JobSeekerResponse> discoverProfiles(String search, String keyword, String location, String skills, Integer experienceYears, String educationLevel, String jobLevel, int limit, int offset) {
         if (limit < 1 || limit > 100) {
             throw new BadRequestException("Invalid limit");

@@ -53,6 +53,14 @@ public class JobSeekerController {
     }
 
     @PreAuthorize("hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @GetMapping("/{id}")
+    @Operation(summary = "Get job seeker profile by ID", description = "Returns the profile of a job seeker by their profile ID. Accessible by employers and admins.")
+    public ResponseEntity<ApiResponse<JobSeekerResponse>> getJobSeekerProfileById(@PathVariable Long id) {
+        JobSeekerResponse response = jobSeekerService.getJobSeekerProfileById(id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PreAuthorize("hasRole('EMPLOYER') or hasRole('ADMIN')")
     @GetMapping("/discover")
     @Operation(summary = "Discover job seeker profiles", description = "Search and filter job seeker profiles by keyword, location, skills, experience, education level, and job level.")
     public ResponseEntity<ApiResponse<PageResponse<JobSeekerResponse>>> discoverProfiles(

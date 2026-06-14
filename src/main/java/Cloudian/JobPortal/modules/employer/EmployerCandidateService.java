@@ -158,6 +158,13 @@ public class EmployerCandidateService {
                     .secondaryPhone(application.getJobSeeker().getSecondaryPhone())
                     .address(application.getJobSeeker().getAddress())
                     .phone(application.getJobSeeker().getPhone())
+                    .avatar(application.getJobSeeker().getAvatar() != null
+                            ? minioService.getFileUrl(application.getJobSeeker().getAvatar()) : null)
+                    .email(application.getJobSeeker().getUser() != null
+                            ? application.getJobSeeker().getUser().getEmail() : null)
+                    .facebookUrl(application.getJobSeeker().getFacebookUrl())
+                    .twitterUrl(application.getJobSeeker().getTwitterUrl())
+                    .linkedlnUrl(application.getJobSeeker().getLinkedlnUrl())
                     .approve(application.getJobSeeker().getApprove())
                     .build();
         }
