@@ -59,6 +59,7 @@ public class PaymentService {
         // Create PENDING payment invoice
         Payment payment = Payment.builder()
                 .user(user)
+                .planId(plan.getId())
                 .planName(plan.getName())
                 .cost(plan.getPrice())
                 .status(PaymentStatus.PENDING)
@@ -76,6 +77,7 @@ public class PaymentService {
 
         Map<String, Object> result = new HashMap<>();
         result.put("paymentId", payment.getId());
+        result.put("planId", plan.getId());
         result.put("planName", plan.getName());
         result.put("amount", plan.getPrice());
         result.put("qrCodeUrl", qrCodeUrl);
@@ -117,6 +119,8 @@ public class PaymentService {
 
         Map<String, Object> result = new HashMap<>();
         result.put("paymentId", payment.getId());
+        result.put("planId", payment.getPlanId());
+        result.put("planName", payment.getPlanName());
         result.put("status", payment.getStatus().name());
         result.put("message", "Payment confirmation submitted. Waiting for admin approval.");
         return result;
@@ -141,8 +145,15 @@ public class PaymentService {
         // Find employer + plan
         EmployerProfile employer = employerRepository.findByOwnerId(payment.getUser().getId())
                 .orElseThrow(() -> new BadRequestException("Employer profile not found"));
-        Plan plan = planRepository.findByName(payment.getPlanName())
-                .orElseThrow(() -> new BadRequestException("Plan '" + payment.getPlanName() + "' not found"));
+        Plan plan;
+        if (payment.getPlanId() != null) {
+            plan = planRepository.findById(payment.getPlanId())
+                    .orElseThrow(() -> new BadRequestException("Plan not found with id: " + payment.getPlanId()));
+        } else {
+            // Fallback for legacy payments without planId
+            plan = planRepository.findByName(payment.getPlanName())
+                    .orElseThrow(() -> new BadRequestException("Plan '" + payment.getPlanName() + "' not found"));
+        }
 
         // Create WAITING subscription
         subscriptionService.createWaitingSubscription(employer, plan);
