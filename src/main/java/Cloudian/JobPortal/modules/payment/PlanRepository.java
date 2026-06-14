@@ -6,4 +6,6 @@ import java.util.Optional;
 
 public interface PlanRepository extends JpaRepository<Plan, Long> {
     Optional<Plan> findByName(String name);
+
+    Optional<Plan> findByNameIgnoreCase(String name);
 }
