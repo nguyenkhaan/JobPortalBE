@@ -57,4 +57,17 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpec
             @Param("now") LocalDateTime now,
             Pageable pageable
     );
+
+    @Query("""
+            SELECT jp FROM JobPost jp
+            WHERE jp.employer.owner.id = :ownerId
+              AND jp.createdAt >= :since
+              AND (jp.deleteAt IS NULL)
+            ORDER BY jp.createdAt DESC
+            """)
+    Page<JobPost> findRecentByEmployerOwnerId(
+            @Param("ownerId") Long ownerId,
+            @Param("since") LocalDateTime since,
+            Pageable pageable
+    );
 }

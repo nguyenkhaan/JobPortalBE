@@ -222,8 +222,16 @@ public class JobPostService {
     }
 
     @Transactional
-    public org.springframework.data.domain.Page<JobPostResponse> getEmployerJobPosts(Long userId, int limit, int offset) {
+    public org.springframework.data.domain.Page<JobPostResponse> getAllJobPostsByEmployer(Long userId, int limit, int offset) {
         return jobPostRepository.findByEmployer_Owner_Id(userId, buildPageable(limit, offset))
+                .map(this::toResponse);
+    }
+
+    @Transactional
+    public org.springframework.data.domain.Page<JobPostResponse> getRecentJobPostsByEmployer(Long userId, int limit, int offset) {
+        Pageable pageable = buildPageable(limit, offset);
+        LocalDateTime since = LocalDateTime.now().minusDays(7);
+        return jobPostRepository.findRecentByEmployerOwnerId(userId, since, pageable)
                 .map(this::toResponse);
     }
 

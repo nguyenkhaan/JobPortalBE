@@ -10,6 +10,8 @@ import Cloudian.JobPortal.modules.employer.dto.EmployerProfileResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerProfileUpdateRequest;
 import Cloudian.JobPortal.modules.employer.dto.EmployerStatisticResponse;
 import Cloudian.JobPortal.modules.employer.dto.EmployerSubscriptionResponse;
+import Cloudian.JobPortal.modules.jobpost.JobPostService;
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.employer.dto.FindCandidateRequest;
 import Cloudian.JobPortal.security.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("employer")
@@ -35,6 +38,8 @@ public class EmployerController {
     EmployerService employerService;
     @Autowired
     EmployerCandidateService employerCandidateService;
+    @Autowired
+    JobPostService jobPostService;
 
     @Operation(summary = "Create employer profile", description = """
         Create a new employer profile for the authenticated user.
@@ -177,5 +182,41 @@ public class EmployerController {
             throw new UnauthorizedException("User not found");
         CandidateDetailResponse data = employerCandidateService.getCandidateDetail(userId, applicationId);
         return ResponseEntity.ok(ApiResponse.ok(data));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // API 1: Get all job posts of the authenticated employer (My Jobs screen)
+    // ──────────────────────────────────────────────────────────────────────
+    @Operation(summary = "Get all job posts of the employer", description = "Returns a paginated list of all job posts created by the authenticated employer. Used for the My Jobs screen on the frontend.")
+    @GetMapping("/job-posts")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<PageResponse<JobPostResponse>>> getAllJobPostsByEmployer(
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication
+    ) {
+        UserDetailsImpl user = (UserDetailsImpl) authentication.getPrincipal();
+        if (user == null)
+            throw new UnauthorizedException("User not found");
+        Page<JobPostResponse> response = jobPostService.getAllJobPostsByEmployer(user.getId(), limit, offset);
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(response)));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // API 2: Get recent job posts (last 7 days) of the authenticated employer
+    // ──────────────────────────────────────────────────────────────────────
+    @Operation(summary = "Get recent job posts of the employer", description = "Returns a paginated list of job posts created within the last 7 days by the authenticated employer only. Does not return job posts from other employers.")
+    @GetMapping("/job-posts/recent")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<PageResponse<JobPostResponse>>> getRecentJobPostsByEmployer(
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            Authentication authentication
+    ) {
+        UserDetailsImpl user = (UserDetailsImpl) authentication.getPrincipal();
+        if (user == null)
+            throw new UnauthorizedException("User not found");
+        Page<JobPostResponse> response = jobPostService.getRecentJobPostsByEmployer(user.getId(), limit, offset);
+        return ResponseEntity.ok(ApiResponse.ok(PageResponse.from(response)));
     }
 }
