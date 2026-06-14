@@ -116,6 +116,9 @@ public class JobPostService {
      */
     @Transactional
     public org.springframework.data.domain.Page<JobPostResponse> getAllJobPost(JobPostFilterRequest filter, int limit, int offset) {
+        // Validate pagination params early before any DB calls
+        buildPageable(limit, offset);
+
         LocalDateTime now = LocalDateTime.now();
 
         // 1. Build specification for filtering
