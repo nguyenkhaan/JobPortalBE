@@ -1,11 +1,12 @@
 package Cloudian.JobPortal.modules.payment;
 
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.events.notification.NotificationPublisher;
 import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.employer.EmployerRepository;
-import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.payment.dto.CreatePaymentDto;
 import Cloudian.JobPortal.modules.payment.dto.PaymentResponse;
 import Cloudian.JobPortal.modules.user.UserRepository;
@@ -33,7 +34,7 @@ public class PaymentService {
     private final SubscriptionService subscriptionService;
     private final SubscriptionRepository subscriptionRepository;
     private final Cloudian.JobPortal.modules.jobpost.JobPostRepository jobPostRepository;
-    private final NotificationDispatchService notificationDispatchService;
+    private final NotificationPublisher notificationPublisher;
 
     private static final int MAX_WAITING_SUBS = 3;
 
@@ -109,12 +110,16 @@ public class PaymentService {
                 .orElse(null);
         String companyName = employer != null ? employer.getCompanyName() : "Unknown";
 
-        notificationDispatchService.notifyAdmins(
-                NotificationType.PAYMENT_SUBMITTED,
-                "New payment submitted",
-                "Employer " + companyName + " submitted a payment for the " + payment.getPlanName() + " plan and is waiting for approval.",
-                "/admin/payments",
-                "credit-card"
+        userRepository.findDistinctByRole(Role.ADMIN).forEach(admin ->
+                notificationPublisher.publish(NotificationEvent.builder()
+                        .userId(admin.getId())
+                        .type(NotificationType.PAYMENT_SUBMITTED)
+                        .title("New payment submitted")
+                        .message("Employer " + companyName + " submitted a payment for the " + payment.getPlanName() + " plan and is waiting for approval.")
+                        .targetUrl("/admin/payments")
+                        .icon("credit-card")
+                        .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                        .build())
         );
 
         Map<String, Object> result = new HashMap<>();
@@ -162,14 +167,15 @@ public class PaymentService {
         subscriptionService.rotateSubscriptions(employer.getId());
 
         // Notify employer via NotificationEvent
-        notificationDispatchService.notifyUser(
-                payment.getUser().getId(),
-                NotificationType.PAYMENT_APPROVED,
-                "Payment approved",
-                "Your payment for the " + payment.getPlanName() + " plan has been approved successfully.",
-                "/payments/me/billing-overview",
-                "check-circle"
-        );
+        notificationPublisher.publish(NotificationEvent.builder()
+                .userId(payment.getUser().getId())
+                .type(NotificationType.PAYMENT_APPROVED)
+                .title("Payment approved")
+                .message("Your payment for the " + payment.getPlanName() + " plan has been approved successfully.")
+                .targetUrl("/payments/me/billing-overview")
+                .icon("check-circle")
+                .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                .build());
 
         Map<String, Object> result = new HashMap<>();
         result.put("paymentId", payment.getId());

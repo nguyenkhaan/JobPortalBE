@@ -1,5 +1,7 @@
 package Cloudian.JobPortal.modules.jobapplication;
 
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.events.notification.NotificationPublisher;
 import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
@@ -15,7 +17,6 @@ import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.jobseeker.dto.JobSeekerResponse;
 import Cloudian.JobPortal.modules.minio.MinioService;
-import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.resume.ResumeRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
+import java.util.List;
 
 @Service
 public class JobApplicationService {
@@ -42,7 +44,7 @@ public class JobApplicationService {
     @Autowired
     MinioService minioService;
     @Autowired
-    NotificationDispatchService notificationDispatchService;
+    NotificationPublisher notificationPublisher;
 
     private Pageable buildPageable(Integer limit, Integer offset) {
         if (limit == null || limit < 1 || limit > 100) {
@@ -93,14 +95,15 @@ public class JobApplicationService {
                 ? jobPost.getEmployer().getOwner().getId()
                 : null;
         if (employerUserId != null) {
-            notificationDispatchService.notifyUser(
-                    employerUserId,
-                    NotificationType.CANDIDATE_APPLY,
-                    "New job application received",
-                    jobSeekerProfile.getFullName() + " applied for your job post " + jobPost.getTitle() + ".",
-                    "/employer/job-posts/" + jobPost.getId() + "/candidates",
-                    "users"
-            );
+            notificationPublisher.publish(NotificationEvent.builder()
+                    .userId(employerUserId)
+                    .type(NotificationType.CANDIDATE_APPLY)
+                    .title("New job application received")
+                    .message(jobSeekerProfile.getFullName() + " applied for your job post " + jobPost.getTitle() + ".")
+                    .targetUrl("/employer/job-posts/" + jobPost.getId() + "/candidates")
+                    .icon("users")
+                    .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                    .build());
         }
         return toJobApplicationResponse(saved);
 
@@ -166,23 +169,25 @@ public class JobApplicationService {
                 : null;
         if (statusChanged && seekerUserId != null) {
             if (data.getStatus() == JobApplicationStatus.ACCEPTED) {
-                notificationDispatchService.notifyUser(
-                        seekerUserId,
-                        NotificationType.APPLICATION_ACCEPTED,
-                        "Application accepted",
-                        "Your application for " + application.getJobPost().getTitle() + " has been accepted by the employer.",
-                        "/job-seeker/applications",
-                        "check-circle"
-                );
+                notificationPublisher.publish(NotificationEvent.builder()
+                        .userId(seekerUserId)
+                        .type(NotificationType.APPLICATION_ACCEPTED)
+                        .title("Application accepted")
+                        .message("Your application for " + application.getJobPost().getTitle() + " has been accepted by the employer.")
+                        .targetUrl("/job-seeker/applications")
+                        .icon("check-circle")
+                        .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                        .build());
             } else if (data.getStatus() == JobApplicationStatus.REJECTED) {
-                notificationDispatchService.notifyUser(
-                        seekerUserId,
-                        NotificationType.APPLICATION_REJECTED,
-                        "Application rejected",
-                        "Your application for " + application.getJobPost().getTitle() + " has been rejected by the employer.",
-                        "/job-seeker/applications",
-                        "circle-x"
-                );
+                notificationPublisher.publish(NotificationEvent.builder()
+                        .userId(seekerUserId)
+                        .type(NotificationType.APPLICATION_REJECTED)
+                        .title("Application rejected")
+                        .message("Your application for " + application.getJobPost().getTitle() + " has been rejected by the employer.")
+                        .targetUrl("/job-seeker/applications")
+                        .icon("circle-x")
+                        .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                        .build());
             }
         }
 

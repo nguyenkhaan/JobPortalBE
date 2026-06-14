@@ -1,5 +1,7 @@
 package Cloudian.JobPortal.modules.jobseeker;
 
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.events.notification.NotificationPublisher;
 import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.*;
 import Cloudian.JobPortal.models.*;
@@ -9,7 +11,6 @@ import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.dto.*;
 import Cloudian.JobPortal.modules.minio.MinioService;
-import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +42,7 @@ public class JobSeekerService {
     private final MinioService minioService;
     private final JobPostRepository jobPostRepository;
     private final JobAlertRepository jobAlertRepository;
-    private final NotificationDispatchService notificationDispatchService;
+    private final NotificationPublisher notificationPublisher;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -399,14 +400,15 @@ public class JobSeekerService {
                 ? jobPost.getEmployer().getOwner().getId()
                 : null;
         if (employerUserId != null) {
-            notificationDispatchService.notifyUser(
-                    employerUserId,
-                    NotificationType.CANDIDATE_APPLY,
-                    "New job application received",
-                    profile.getFullName() + " applied for your job post " + jobPost.getTitle() + ".",
-                    "/employer/job-posts/" + jobPost.getId() + "/candidates",
-                    "users"
-            );
+            notificationPublisher.publish(NotificationEvent.builder()
+                    .userId(employerUserId)
+                    .type(NotificationType.CANDIDATE_APPLY)
+                    .title("New job application received")
+                    .message(profile.getFullName() + " applied for your job post " + jobPost.getTitle() + ".")
+                    .targetUrl("/employer/job-posts/" + jobPost.getId() + "/candidates")
+                    .icon("users")
+                    .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                    .build());
         }
 
         Map<String, Object> result = new HashMap<>();
