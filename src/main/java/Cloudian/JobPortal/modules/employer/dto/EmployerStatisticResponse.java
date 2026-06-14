@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class EmployerStatisticResponse {
     private long totalJobs;
     private long totalApplicants;
+    private long totalSavedCandidates;
 }

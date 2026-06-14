@@ -508,7 +508,7 @@ class JobPostServiceTest {
         when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
 
-        Page<JobPostResponse> result = jobPostService.getEmployerJobPosts(1L, 10, 0);
+        Page<JobPostResponse> result = jobPostService.getAllJobPostsByEmployer(1L, 10, 0);
 
         assertThat(result).isNotEmpty();
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("Java Developer");

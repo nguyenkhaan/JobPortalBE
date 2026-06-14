@@ -7,6 +7,7 @@ import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostDetailResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
+import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostStatusDto;
 import Cloudian.JobPortal.security.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -164,15 +165,15 @@ public class JobPostController {
     @Operation(summary = "Update job post status", description = "Quickly updates the status of a job post (e.g., ACTIVE, CLOSED, EXPIRED). Requires employer role.")
     public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse>> updateJobPostStatus(
             @PathVariable Long id,
-            @RequestParam Cloudian.JobPortal.models.JobPostStatus status,
+            @RequestBody @Valid UpdateJobPostStatusDto statusDto,
             org.springframework.security.core.Authentication authentication
     ) {
         long userId = getUserIdFromAuth(authentication);
         Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse updatedJob =
-                jobPostService.updateJobPostStatus(id, userId, status);
+                jobPostService.updateJobPostStatus(id, userId, statusDto.getStatus());
 
         return ResponseEntity.ok(Cloudian.JobPortal.modules.base.dto.ApiResponse.ok(
-                "Job post status updated successfully to " + status.name(),
+                "Job post status updated successfully to " + statusDto.getStatus().name(),
                 updatedJob
         ));
     }
