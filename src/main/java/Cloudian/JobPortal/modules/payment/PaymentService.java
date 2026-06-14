@@ -182,7 +182,17 @@ public class PaymentService {
     public PaymentResponse createPayment(Long userId, CreatePaymentDto dto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+
+        // Look up planId from planName (case-insensitive)
+        Long planId = null;
+        if (dto.getPlanName() != null && !dto.getPlanName().isBlank()) {
+            planId = planRepository.findByNameIgnoreCase(dto.getPlanName())
+                    .map(Plan::getId)
+                    .orElse(null);
+        }
+
         Payment payment = Payment.builder()
+                .planId(planId)
                 .planName(dto.getPlanName())
                 .cost(dto.getCost())
                 .note(dto.getNote())
