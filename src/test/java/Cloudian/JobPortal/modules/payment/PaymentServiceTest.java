@@ -53,6 +53,7 @@ class PaymentServiceTest {
         payment = Payment.builder()
                 .id(55L)
                 .user(employerUser)
+                .planId(3L)
                 .planName("Premium")
                 .status(PaymentStatus.PENDING)
                 .cost(500_000.0)
@@ -79,6 +80,7 @@ class PaymentServiceTest {
     @Test
     void approvePayment_SendsNotificationToEmployer() {
         Plan plan = Plan.builder()
+                .id(3L)
                 .name("Premium")
                 .price(500_000.0)
                 .duration(1)
@@ -88,7 +90,7 @@ class PaymentServiceTest {
 
         when(paymentRepository.findById(55L)).thenReturn(Optional.of(payment));
         when(employerRepository.findByOwnerId(7L)).thenReturn(Optional.of(employerProfile));
-        when(planRepository.findByName("Premium")).thenReturn(Optional.of(plan));
+        when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
 
         var result = paymentService.approvePayment(55L);
 
@@ -103,5 +105,42 @@ class PaymentServiceTest {
                 eq("/payments/me/billing-overview"),
                 eq("check-circle")
         );
+    }
+
+    @Test
+    void checkout_ReturnsPlanIdInResult() {
+        Plan plan = Plan.builder()
+                .id(3L)
+                .name("Premium")
+                .price(500_000.0)
+                .duration(1)
+                .priority(2)
+                .maxJobPostsPerMonth(10)
+                .build();
+
+        Payment savedPayment = Payment.builder()
+                .id(60L)
+                .user(employerUser)
+                .planId(3L)
+                .planName("Premium")
+                .status(PaymentStatus.PENDING)
+                .cost(500_000.0)
+                .transactionRef("TXN-12345-7")
+                .build();
+
+        when(userRepository.findById(7L)).thenReturn(Optional.of(employerUser));
+        when(employerRepository.findByOwnerId(7L)).thenReturn(Optional.of(employerProfile));
+        when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
+        when(subscriptionService.countWaitingSubscriptions(11L)).thenReturn(0L);
+        when(paymentRepository.save(any(Payment.class))).thenReturn(savedPayment);
+
+        var result = paymentService.checkout(7L, 3L);
+
+        assertThat(result.get("planId")).isEqualTo(3L);
+        assertThat(result.get("planName")).isEqualTo("Premium");
+        assertThat(result.get("paymentId")).isEqualTo(60L);
+        assertThat(result.get("amount")).isEqualTo(500_000.0);
+        assertThat(result.get("qrCodeUrl")).isNotNull();
+        verify(paymentRepository).save(any(Payment.class));
     }
 }

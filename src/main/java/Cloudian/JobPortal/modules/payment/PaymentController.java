@@ -69,13 +69,10 @@ public class PaymentController {
                         "message": "Checkout created successfully",
                         "data": {
                             "paymentId": 101,
+                            "planId": 3,
                             "planName": "Gói Cao Cấp",
                             "amount": 500000,
-                            "bankCode": "VCB",
-                            "bankAccountNumber": "1012345678",
-                            "bankAccountName": "CONG TY JOB PORTAL",
-                            "qrContent": "Nap 500000 VND cho goi Cao Cap - Ma GD: PAY-20260613-101",
-                            "expiresAt": "2026-06-14T03:13:36Z",
+                            "qrCodeUrl": "https://img.vietqr.io/image/vcb-123456789-compact.png?amount=500000&addInfo=PAY_101&accountName=ADMIN_PORTAL",
                             "status": "PENDING"
                         }
                     }

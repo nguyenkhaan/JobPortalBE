@@ -30,6 +30,9 @@ public class Payment {
     @Column(name = "plan_name")
     private String planName; // premium, free,...
 
+    @Column(name = "plan_id")
+    private Long planId;
+
     @Column(name = "transaction_ref", unique = true)
     private String transactionRef; // mã của công thanh toán trả về để đối soát.
 

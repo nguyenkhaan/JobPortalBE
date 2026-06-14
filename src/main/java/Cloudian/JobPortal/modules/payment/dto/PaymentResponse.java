@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 public class PaymentResponse {
     private Long id;
+    private Long planId;
     private String planName;
     private String transactionRef;
     private Double cost;
@@ -35,6 +36,7 @@ public class PaymentResponse {
     public static PaymentResponse from(Payment payment, String checkoutUrl, String qrCode, String bin, String accountNumber, String accountName) {
         return PaymentResponse.builder()
                 .id(payment.getId())
+                .planId(payment.getPlanId())
                 .planName(payment.getPlanName())
                 .transactionRef(payment.getTransactionRef())
                 .cost(payment.getCost())
