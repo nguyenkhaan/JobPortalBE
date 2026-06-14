@@ -477,6 +477,7 @@ public class DataSeeder implements ApplicationRunner {
                 .maxJobPostsPerMonth(0)
                 .maxResumeAccess(0)
                 .allowHighlight(false)
+                .featureDurationDays(0)
                 .build());
 
         plans.add(Plan.builder()
@@ -487,6 +488,7 @@ public class DataSeeder implements ApplicationRunner {
                 .maxJobPostsPerMonth(5)
                 .maxResumeAccess(100)
                 .allowHighlight(false)
+                .featureDurationDays(3)
                 .build());
 
         plans.add(Plan.builder()
@@ -497,6 +499,7 @@ public class DataSeeder implements ApplicationRunner {
                 .maxJobPostsPerMonth(10)
                 .maxResumeAccess(200)
                 .allowHighlight(true)
+                .featureDurationDays(5)
                 .build());
 
         plans.add(Plan.builder()
@@ -507,6 +510,7 @@ public class DataSeeder implements ApplicationRunner {
                 .maxJobPostsPerMonth(20)
                 .maxResumeAccess(300)
                 .allowHighlight(true)
+                .featureDurationDays(7)
                 .build());
 
         return plans;

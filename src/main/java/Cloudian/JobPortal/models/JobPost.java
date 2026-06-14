@@ -109,6 +109,7 @@ public class JobPost {
     @Builder.Default
     private Boolean isFeatured = false;
 
+    // dung cho tinh nang highlighted:
     @Column(name = "is_highlighted", nullable = false)
     @Builder.Default
     private Boolean isHighlighted = false;
@@ -116,6 +117,14 @@ public class JobPost {
     @Column(name = "pushed_at")
     @Builder.Default
     private LocalDateTime pushedAt = null;
+
+    @Column(name = "feature_activated_at")
+    @Builder.Default
+    private LocalDateTime featureActivatedAt = null;
+
+    @Column(name = "feature_expires_at")
+    @Builder.Default
+    private LocalDateTime featureExpiresAt = null;
 
     @Column(name = "job_role")
     private String jobRole;

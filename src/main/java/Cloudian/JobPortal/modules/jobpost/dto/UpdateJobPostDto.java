@@ -32,8 +32,6 @@ public class UpdateJobPostDto {
     private List<String> tags;
     private LocalDateTime expiresAt;
     private Boolean isUpdateExpires;
-    private Boolean isFeatured;
-    private Boolean isHighlighted;
     private String jobRole;
     private String requirements;
     private Integer vacancies;
