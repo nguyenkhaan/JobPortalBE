@@ -207,6 +207,9 @@ public class AuthService
                 .email(email)
                 .id(user.getId())
                 .build();
+        // Kiem tra va tien hanh luu deviceToken 
+        if (data.getFcmToken() != null) 
+            user.setFcmToken(data.getFcmToken());
         return response;
     }
     //Response: token (to reset), email,

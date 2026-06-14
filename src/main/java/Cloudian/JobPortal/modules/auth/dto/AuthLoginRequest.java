@@ -15,4 +15,6 @@ public class AuthLoginRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 5, max = 12, message = "Password must be between 5 and 12 length")
     private String password;
+    
+    private String fcmToken; 
 }
