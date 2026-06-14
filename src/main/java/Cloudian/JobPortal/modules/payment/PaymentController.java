@@ -131,9 +131,10 @@ public class PaymentController {
                         "message": "Payment confirmed",
                         "data": {
                             "paymentId": 101,
-                            "status": "CONFIRMED",
-                            "confirmedAt": "2026-06-13T15:30:00Z",
-                            "nextStep": "Waiting for admin approval"
+                            "planId": 3,
+                            "planName": "Gói Cao Cấp",
+                            "status": "PENDING",
+                            "message": "Payment confirmation submitted. Waiting for admin approval."
                         }
                     }
                     """

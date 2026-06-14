@@ -68,6 +68,8 @@ class PaymentServiceTest {
         var result = paymentService.confirmPayment(7L, 55L);
 
         assertThat(result.get("paymentId")).isEqualTo(55L);
+        assertThat(result.get("planId")).isEqualTo(3L);
+        assertThat(result.get("planName")).isEqualTo("Premium");
         verify(notificationDispatchService).notifyAdmins(
                 eq(NotificationType.PAYMENT_SUBMITTED),
                 eq("New payment submitted"),

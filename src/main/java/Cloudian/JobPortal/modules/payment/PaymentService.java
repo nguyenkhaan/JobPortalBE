@@ -119,6 +119,8 @@ public class PaymentService {
 
         Map<String, Object> result = new HashMap<>();
         result.put("paymentId", payment.getId());
+        result.put("planId", payment.getPlanId());
+        result.put("planName", payment.getPlanName());
         result.put("status", payment.getStatus().name());
         result.put("message", "Payment confirmation submitted. Waiting for admin approval.");
         return result;
