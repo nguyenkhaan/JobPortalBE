@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Job Invitation</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7fb;padding:28px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+                    <tr>
+                        <td style="padding:28px 32px 16px;">
+                            <h1 style="margin:0;color:#111827;font-size:24px;line-height:32px;">You have a job invitation</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 32px 24px;font-size:15px;line-height:24px;color:#374151;">
+                            <p style="margin:0 0 16px;">Hi <strong th:text="${candidateName}">Candidate</strong>,</p>
+                            <p style="margin:0 0 16px;">
+                                <strong th:text="${companyName}">Company</strong> invited you to apply for
+                                <strong th:text="${jobTitle}">Job title</strong>.
+                            </p>
+                            <p style="margin:0 0 24px;" th:if="${jobLocation != null and !#strings.isEmpty(jobLocation)}">
+                                Location: <span th:text="${jobLocation}">Location</span>
+                            </p>
+                            <a th:href="${jobUrl}" target="_blank" style="display:inline-block;background:#0a65cc;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 18px;border-radius:8px;">
+                                View job
+                            </a>
+                            <p style="margin:24px 0 0;color:#6b7280;font-size:13px;line-height:20px;">
+                                If the button does not work, open this link:
+                                <br />
+                                <a th:href="${jobUrl}" th:text="${jobUrl}" style="color:#0a65cc;word-break:break-all;">Job link</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
