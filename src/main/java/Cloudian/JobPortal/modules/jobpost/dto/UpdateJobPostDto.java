@@ -19,7 +19,6 @@ import java.util.List;
 public class UpdateJobPostDto {
     private String title;
     private String description;
-    @NotBlank(message = "Location cannot be blank")
     private String location;
     private List<Long> industryIds;
     private BigDecimal salaryMax;
