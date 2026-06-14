@@ -25,7 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostEditResponse;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
@@ -697,7 +697,42 @@ public class JobPostService {
                 .companyProfile(companyProfile)
                 .build();
     }
+    @Transactional
+    public JobPostEditResponse getJobPostForEdit(Long id, Long userId, boolean isAdmin) {
+        // 1. Tìm Job Post, nạp kèm thông tin Employer để check quyền nhanh
+        JobPost jobPost = jobPostRepository.findByIdWithEmployer(id)
+                .orElseThrow(() -> new NotFoundException("Job post not found"));
 
+        // 2. Kiểm tra bảo mật chống tấn công IDOR
+        assertOwnerOrAdmin(jobPost, userId, isAdmin);
+
+        // 3. Lấy danh sách ID ngành nghề từ bảng liên kết trung gian
+        List<Long> industryIds = jobIndustryRepository.findByJobPostId(jobPost.getId()).stream()
+                .map(ji -> ji.getIndustry().getId())
+                .toList();
+
+        // 4. Map dữ liệu sang cấu trúc phẳng tương thích 1-1 với UpdateJobPostDto
+        return JobPostEditResponse.builder()
+                .id(jobPost.getId())
+                .title(jobPost.getTitle())
+                .description(jobPost.getDescription())
+                .location(jobPost.getLocation())
+                .industryIds(industryIds)
+                .salaryMin(jobPost.getSalaryMin())
+                .salaryMax(jobPost.getSalaryMax())
+                .educationLevel(jobPost.getEducationLevel())
+                .jobLevel(jobPost.getJobLevel())
+                .status(jobPost.getStatus())
+                .experience(jobPost.getExperience())
+                .employmentType(jobPost.getEmploymentType())
+                .tags(jobPost.getTags() != null ? jobPost.getTags() : new java.util.ArrayList<>())
+                .expiresAt(jobPost.getExpiresAt())
+                .jobRole(jobPost.getJobRole())
+                .requirements(jobPost.getRequirements())
+                .vacancies(jobPost.getVacancies())
+                .salaryType(jobPost.getSalaryType())
+                .build();
+    }
     private String calcDaysRemaining(LocalDateTime expiresAt) {
         if (expiresAt == null) {
             return "Vô thời hạn";
