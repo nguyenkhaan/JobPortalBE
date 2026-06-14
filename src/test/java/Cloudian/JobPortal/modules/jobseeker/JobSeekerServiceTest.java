@@ -1,13 +1,15 @@
 package Cloudian.JobPortal.modules.jobseeker;
 
 import Cloudian.JobPortal.exceptions.custom.*;
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.events.notification.NotificationPublisher;
+import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.audit.AuditService;
 import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
 import Cloudian.JobPortal.modules.jobseeker.dto.*;
 import Cloudian.JobPortal.modules.minio.MinioService;
-import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +51,7 @@ class JobSeekerServiceTest {
     @Mock private JobPostRepository jobPostRepository;
     @Mock private JobAlertRepository jobAlertRepository;
     @Mock private PasswordEncoder passwordEncoder;
-    @Mock private NotificationDispatchService notificationDispatchService;
+    @Mock private NotificationPublisher notificationPublisher;
 
     @InjectMocks
     private JobSeekerService jobSeekerService;
@@ -443,14 +445,12 @@ class JobSeekerServiceTest {
         assertThat(result.get("status")).isEqualTo("PENDING");
         assertThat(result.get("message")).isEqualTo("Application submitted successfully");
         verify(jobApplicationRepository, times(1)).save(any(JobApplication.class));
-        verify(notificationDispatchService).notifyUser(
-                eq(2L),
-                eq(Cloudian.JobPortal.events.notification.NotificationType.CANDIDATE_APPLY),
-                eq("New job application received"),
-                eq("Nguyen Van A applied for your job post Java Developer."),
-                eq("/employer/job-posts/200/candidates"),
-                eq("users")
-        );
+        ArgumentCaptor<NotificationEvent> eventCaptor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(notificationPublisher).publish(eventCaptor.capture());
+        NotificationEvent event = eventCaptor.getValue();
+        assertThat(event.getUserId()).isEqualTo(2L);
+        assertThat(event.getType()).isEqualTo(NotificationType.CANDIDATE_APPLY);
+        assertThat(event.getChannels()).containsExactly(Channel.IN_APP, Channel.DEVICE);
     }
 
     @Test

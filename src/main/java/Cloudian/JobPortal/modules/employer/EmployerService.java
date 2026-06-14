@@ -1,5 +1,7 @@
 package Cloudian.JobPortal.modules.employer;
 
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.events.notification.NotificationPublisher;
 import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.exceptions.custom.NotFoundException;
@@ -59,6 +61,8 @@ public class EmployerService {
     private Cloudian.JobPortal.modules.payment.SubscriptionService subscriptionService;
     @Autowired
     private NotificationDispatchService notificationDispatchService;
+    @Autowired
+    private NotificationPublisher notificationPublisher;
     @Autowired
     private SavedCandidateRepository savedCandidateRepository;
 
@@ -195,12 +199,16 @@ public class EmployerService {
                 .data(auditData)
                 .build());
 
-        notificationDispatchService.notifyAdmins(
-                NotificationType.EMPLOYER_PROFILE_SUBMITTED,
-                "New employer profile submitted",
-                "A new employer profile from " + newEmployerProfile.getCompanyName() + " is waiting for review.",
-                "/admin/employers",
-                "building-2"
+        userRepository.findDistinctByRole(Role.ADMIN).forEach(admin ->
+                notificationPublisher.publish(NotificationEvent.builder()
+                        .userId(admin.getId())
+                        .type(NotificationType.EMPLOYER_PROFILE_SUBMITTED)
+                        .title("New employer profile submitted")
+                        .message("A new employer profile from " + newEmployerProfile.getCompanyName() + " is waiting for review.")
+                        .targetUrl("/admin/employers")
+                        .icon("building-2")
+                        .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                        .build())
         );
 
         return mappingToEmployerResponse(newEmployerProfile);
@@ -356,27 +364,29 @@ public class EmployerService {
         Long ownerId = profile.getOwner() != null ? profile.getOwner().getId() : null;
         if (ownerId != null) {
             if (status == ApprovalStatus.APPROVED) {
-                notificationDispatchService.notifyUser(
-                        ownerId,
-                        NotificationType.EMPLOYER_PROFILE_APPROVED,
-                        "Employer profile approved",
-                        "Your employer profile has been approved by the admin.",
-                        "/employer",
-                        "check-circle"
-                );
+                notificationPublisher.publish(NotificationEvent.builder()
+                        .userId(ownerId)
+                        .type(NotificationType.EMPLOYER_PROFILE_APPROVED)
+                        .title("Employer profile approved")
+                        .message("Your employer profile has been approved by the admin.")
+                        .targetUrl("/employer")
+                        .icon("check-circle")
+                        .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                        .build());
             } else if (status == ApprovalStatus.REJECTED) {
                 String message = "Your employer profile has been rejected by the admin. Please review the feedback and update your profile.";
                 if (profile.getRejectionReason() != null && !profile.getRejectionReason().isBlank()) {
                     message += " Reason: " + profile.getRejectionReason();
                 }
-                notificationDispatchService.notifyUser(
-                        ownerId,
-                        NotificationType.EMPLOYER_PROFILE_REJECTED,
-                        "Employer profile rejected",
-                        message,
-                        "/employer",
-                        "circle-x"
-                );
+                notificationPublisher.publish(NotificationEvent.builder()
+                        .userId(ownerId)
+                        .type(NotificationType.EMPLOYER_PROFILE_REJECTED)
+                        .title("Employer profile rejected")
+                        .message(message)
+                        .targetUrl("/employer")
+                        .icon("circle-x")
+                        .channels(List.of(Channel.IN_APP, Channel.DEVICE))
+                        .build());
             }
         }
 

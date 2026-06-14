@@ -1,11 +1,12 @@
 package Cloudian.JobPortal.modules.jobapplication;
 
+import Cloudian.JobPortal.events.notification.NotificationEvent;
+import Cloudian.JobPortal.events.notification.NotificationPublisher;
 import Cloudian.JobPortal.events.notification.NotificationType;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.jobapplication.dto.CreateJobApplicationDto;
 import Cloudian.JobPortal.modules.jobapplication.dto.UpdateJobApplicationDto;
 import Cloudian.JobPortal.modules.minio.MinioService;
-import Cloudian.JobPortal.modules.notification.NotificationDispatchService;
 import Cloudian.JobPortal.modules.resume.ResumeRepository;
 import Cloudian.JobPortal.modules.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
@@ -30,7 +32,7 @@ class JobApplicationServiceTest {
     @Mock private Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository jobSeekerRepository;
     @Mock private UserRepository userRepository;
     @Mock private MinioService minioService;
-    @Mock private NotificationDispatchService notificationDispatchService;
+    @Mock private NotificationPublisher notificationPublisher;
 
     @InjectMocks
     private JobApplicationService jobApplicationService;
@@ -93,14 +95,11 @@ class JobApplicationServiceTest {
         var response = jobApplicationService.createJobApplication(5L, dto);
 
         assertThat(response.getId()).isEqualTo(60L);
-        verify(notificationDispatchService).notifyUser(
-                eq(9L),
-                eq(NotificationType.CANDIDATE_APPLY),
-                eq("New job application received"),
-                eq("Nguyen Van A applied for your job post Java Developer."),
-                eq("/employer/job-posts/40/candidates"),
-                eq("users")
-        );
+        NotificationEvent event = capturePublishedEvent();
+        assertThat(event.getUserId()).isEqualTo(9L);
+        assertThat(event.getType()).isEqualTo(NotificationType.CANDIDATE_APPLY);
+        assertThat(event.getTargetUrl()).isEqualTo("/employer/job-posts/40/candidates");
+        assertThat(event.getChannels()).containsExactly(Channel.IN_APP, Channel.DEVICE);
     }
 
     @Test
@@ -123,14 +122,10 @@ class JobApplicationServiceTest {
         var response = jobApplicationService.updateApplicationStatusForEmployer(60L, 9L, dto);
 
         assertThat(response.getStatus()).isEqualTo(JobApplicationStatus.ACCEPTED);
-        verify(notificationDispatchService).notifyUser(
-                eq(5L),
-                eq(NotificationType.APPLICATION_ACCEPTED),
-                eq("Application accepted"),
-                eq("Your application for Java Developer has been accepted by the employer."),
-                eq("/job-seeker/applications"),
-                eq("check-circle")
-        );
+        NotificationEvent event = capturePublishedEvent();
+        assertThat(event.getUserId()).isEqualTo(5L);
+        assertThat(event.getType()).isEqualTo(NotificationType.APPLICATION_ACCEPTED);
+        assertThat(event.getChannels()).containsExactly(Channel.IN_APP, Channel.DEVICE);
     }
 
     @Test
@@ -153,13 +148,12 @@ class JobApplicationServiceTest {
         var response = jobApplicationService.updateApplicationStatusForEmployer(60L, 9L, dto);
 
         assertThat(response.getStatus()).isEqualTo(JobApplicationStatus.REVIEWING);
-        verify(notificationDispatchService, never()).notifyUser(
-                eq(5L),
-                any(),
-                anyString(),
-                anyString(),
-                anyString(),
-                anyString()
-        );
+        verify(notificationPublisher, never()).publish(any(NotificationEvent.class));
+    }
+
+    private NotificationEvent capturePublishedEvent() {
+        ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(notificationPublisher).publish(captor.capture());
+        return captor.getValue();
     }
 }
