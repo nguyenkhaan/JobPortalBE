@@ -21,6 +21,7 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +51,10 @@ public class JobPostService {
     private final SubscriptionRepository subscriptionRepository;
     private final JobPostRepository jobPostRepository;
     private final JobApplicationRepository jobApplicationRepository;
+
+    // ========================
+    // RIGHTS VALIDATION
+    // ========================
 
     private void validatePostingRights(Long employerId) {
         java.util.Optional<EmployerSubscription> optSub =
@@ -65,7 +71,7 @@ public class JobPostService {
             throw new BadRequestException("Your package has expired. Please renew to continue posting.");
         }
 
-        // HẠM MỤC 3b: Count posts within subscription period (startedAt → expiresAt) instead of calendar month
+        // Count posts within subscription period (startedAt → expiresAt)
         LocalDateTime rangeStart = activeSub.getStartedAt() != null ? activeSub.getStartedAt() : LocalDateTime.now().minusMonths(1);
         LocalDateTime rangeEnd = activeSub.getExpiresAt() != null ? activeSub.getExpiresAt() : LocalDateTime.now();
 
@@ -76,6 +82,16 @@ public class JobPostService {
             throw new BadRequestException("You have reached your maximum limit of " + maxPosts
                     + " posts for this subscription period. Please upgrade your package to post more.");
         }
+    }
+
+    /**
+     * Lấy subscription ACTIVE hiện tại của employer, kèm thông tin Plan để tính
+     * quyền lợi Feature và Highlight tự động.
+     */
+    private EmployerSubscription getActiveSubscriptionOrThrow(Long employerId) {
+        return subscriptionRepository
+                .findTopByEmployerIdAndSubStatusOrderByIdDesc(employerId, "ACTIVE")
+                .orElseThrow(() -> new BadRequestException("No active subscription found for this business"));
     }
 
     private Pageable buildPageable(int limit, int offset) {
@@ -89,11 +105,83 @@ public class JobPostService {
         return PageRequest.of(page, limit);
     }
 
+    // ========================
+    // PUBLIC LISTING API (2-TIER SORTING)
+    // ========================
+
+    /**
+     * Lấy danh sách bài đăng với bộ lọc và sắp xếp 2 tầng:
+     * Tầng 1: Bài đang trong thời gian Feature (now < featureExpiresAt) - featureActivatedAt DESC
+     * Tầng 2: Bài đã hết hạn Feature (now >= featureExpiresAt hoặc chưa từng có feature) - createdAt DESC
+     */
     @Transactional
     public org.springframework.data.domain.Page<JobPostResponse> getAllJobPost(JobPostFilterRequest filter, int limit, int offset) {
-        Pageable pageable = buildPageable(limit, offset);
+        LocalDateTime now = LocalDateTime.now();
 
-        Specification<JobPost> spec = (root, query, cb) -> {
+        // 1. Build specification for filtering
+        Specification<JobPost> spec = buildFilterSpec(filter);
+
+        // 2. Lấy tất cả kết quả đã filter
+        List<JobPost> allFiltered = jobPostRepository.findAll(spec);
+
+        // 3. Phân tách thành 2 tầng
+        List<JobPost> tier1 = new ArrayList<>(); // Feature còn hiệu lực
+        List<JobPost> tier2 = new ArrayList<>(); // Hết hạn feature + chưa từng có feature
+
+        for (JobPost jp : allFiltered) {
+            boolean isActiveFeatured = jp.getFeatureExpiresAt() != null
+                    && jp.getFeatureExpiresAt().isAfter(now);
+
+            if (isActiveFeatured) {
+                tier1.add(jp);
+            } else {
+                tier2.add(jp);
+            }
+        }
+
+        // 4. Sort từng tầng
+        tier1.sort((a, b) -> {
+            // Feature: featureActivatedAt DESC (FIFO: bài kích hoạt sau xếp sau)
+            if (a.getFeatureActivatedAt() == null && b.getFeatureActivatedAt() == null) return 0;
+            if (a.getFeatureActivatedAt() == null) return 1;
+            if (b.getFeatureActivatedAt() == null) return -1;
+            return b.getFeatureActivatedAt().compareTo(a.getFeatureActivatedAt());
+        });
+
+        tier2.sort((a, b) -> {
+            // Non-feature: createdAt DESC
+            if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+            if (a.getCreatedAt() == null) return 1;
+            if (b.getCreatedAt() == null) return -1;
+            return b.getCreatedAt().compareTo(a.getCreatedAt());
+        });
+
+        // 5. Gộp: tier1 trước, tier2 sau
+        List<JobPost> merged = new ArrayList<>(tier1);
+        merged.addAll(tier2);
+
+        // 6. Apply pagination in-memory
+        int totalSize = merged.size();
+        int start = Math.min(offset, totalSize);
+        int end = Math.min(start + limit, totalSize);
+
+        List<JobPost> pageContent = (start >= totalSize) ? new ArrayList<>() : merged.subList(start, end);
+
+        // 7. Convert sang Page object
+        org.springframework.data.domain.Page<JobPostResponse> page = new PageImpl<>(
+                pageContent.stream().map(this::toResponse).collect(Collectors.toList()),
+                buildPageable(limit, offset),
+                totalSize
+        );
+
+        return page;
+    }
+
+    /**
+     * Xây dựng Specification cho filter.
+     */
+    private Specification<JobPost> buildFilterSpec(JobPostFilterRequest filter) {
+        return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             predicates.add(cb.equal(root.get("status"), JobPostStatus.OPEN));
@@ -145,7 +233,6 @@ public class JobPostService {
                     EmploymentType type = EmploymentType.valueOf(filter.getJobType().trim().toUpperCase());
                     predicates.add(cb.equal(root.get("employmentType"), type));
                 } catch (IllegalArgumentException ignored) {
-                    // ignore invalid enum value
                 }
             }
 
@@ -167,20 +254,20 @@ public class JobPostService {
 
             if (filter.getExperience() != null && !filter.getExperience().trim().isEmpty()) {
                 String exp = filter.getExperience().trim();
-                if (exp.endsWith("+")) {
-                    int minExp = Integer.parseInt(exp.replace("+", "").trim());
-                    predicates.add(cb.greaterThanOrEqualTo(root.get("experience"), minExp));
-                } else if (exp.contains("-")) {
-                    String[] parts = exp.split("-");
-                    int minExp = Integer.parseInt(parts[0].trim());
-                    int maxExp = Integer.parseInt(parts[1].trim());
-                    predicates.add(cb.between(root.get("experience"), minExp, maxExp));
-                } else {
-                    try {
+                try {
+                    if (exp.endsWith("+")) {
+                        int minExp = Integer.parseInt(exp.replace("+", "").trim());
+                        predicates.add(cb.greaterThanOrEqualTo(root.get("experience"), minExp));
+                    } else if (exp.contains("-")) {
+                        String[] parts = exp.split("-");
+                        int minExp = Integer.parseInt(parts[0].trim());
+                        int maxExp = Integer.parseInt(parts[1].trim());
+                        predicates.add(cb.between(root.get("experience"), minExp, maxExp));
+                    } else {
                         int exactExp = Integer.parseInt(exp);
                         predicates.add(cb.equal(root.get("experience"), exactExp));
-                    } catch (NumberFormatException ignored) {
                     }
+                } catch (NumberFormatException ignored) {
                 }
             }
 
@@ -217,9 +304,11 @@ public class JobPostService {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-
-        return jobPostRepository.findAll(spec, pageable).map(this::toResponse);
     }
+
+    // ========================
+    // EMPLOYER'S OWN JOBS
+    // ========================
 
     @Transactional
     public org.springframework.data.domain.Page<JobPostResponse> getAllJobPostsByEmployer(Long userId, int limit, int offset) {
@@ -251,6 +340,10 @@ public class JobPostService {
                 .map(this::toResponse);
     }
 
+    // ========================
+    // CRUD
+    // ========================
+
     @Transactional
     public JobPostDetailResponse getJobPostById(Long id) {
         JobPost jobPost = jobPostRepository.findByIdWithEmployer(id)
@@ -258,11 +351,37 @@ public class JobPostService {
         return toDetailResponse(jobPost);
     }
 
+    /**
+     * Tạo bài đăng mới với quyền lợi Feature & Highlight TỰ ĐỘNG dựa trên gói dịch vụ:
+     * - Basic:   featureDurationDays=3, allowHighlight=false
+     * - Standard: featureDurationDays=5, allowHighlight=true
+     * - Premium:  featureDurationDays=7, allowHighlight=true
+     * - Free:     featureDurationDays=0, allowHighlight=false
+     */
     @Transactional
     public JobPostResponse createJobPost(Long userId, CreateJobPostDto data) {
         EmployerProfile employer = requireEmployerProfile(userId);
         validatePostingRights(employer.getId());
         validateSalaries(data.getSalaryMin(), data.getSalaryMax());
+
+        // Lấy gói subscription ACTIVE để xác định quyền lợi tự động
+        EmployerSubscription activeSub = getActiveSubscriptionOrThrow(employer.getId());
+        Plan plan = activeSub.getPlan();
+
+        boolean autoHighlight = plan != null && Boolean.TRUE.equals(plan.getAllowHighlight());
+        int featureDurationDays = plan != null ? plan.getFeatureDurationDays() : 0;
+        LocalDateTime now = LocalDateTime.now();
+
+        // Tính toán thời gian Feature
+        LocalDateTime featureActivatedAt = null;
+        LocalDateTime featureExpiresAt = null;
+        boolean isFeatured = false;
+
+        if (featureDurationDays > 0) {
+            featureActivatedAt = now;
+            featureExpiresAt = now.plusDays(featureDurationDays);
+            isFeatured = true;
+        }
 
         List<String> safeTags = data.getTags() != null ? new ArrayList<>(data.getTags()) : new ArrayList<>();
 
@@ -279,9 +398,13 @@ public class JobPostService {
                 .salaryMin(data.getSalaryMin())
                 .salaryMax(data.getSalaryMax())
                 .tags(safeTags)
-                .expiresAt(data.getExpiresAt())   //Default will set to null
-                .isFeatured(data.getIsFeatured() != null ? data.getIsFeatured() : false)
-                .isHighlighted(data.getIsHighlighted() != null ? data.getIsHighlighted() : false)
+                .expiresAt(data.getExpiresAt())
+                // Feature: tự động dựa trên gói
+                .isFeatured(isFeatured)
+                .featureActivatedAt(featureActivatedAt)
+                .featureExpiresAt(featureExpiresAt)
+                // Highlight: tự động dựa trên gói
+                .isHighlighted(autoHighlight)
                 .jobRole(data.getJobRole())
                 .requirements(data.getRequirements())
                 .vacancies(data.getVacancies() != null ? data.getVacancies() : 1)
@@ -304,6 +427,11 @@ public class JobPostService {
         return toResponse(jobPost);
     }
 
+    /**
+     * Cập nhật bài đăng. Lưu ý:
+     * - KHÔNG reset featureActivatedAt, featureExpiresAt (giữ nguyên mốc thời gian ban đầu).
+     * - KHÔNG thay đổi isFeatured, isHighlighted qua update (chỉ set lúc tạo).
+     */
     @Transactional
     public JobPostResponse updateJobPost(Long id, Long userId, boolean isAdmin, UpdateJobPostDto data) {
         JobPost jobPost = requireJobPost(id);
@@ -346,20 +474,14 @@ public class JobPostService {
             }
             replaceJobIndustries(jobPost, data.getIndustryIds());
         }
-        if (data.getIsUpdateExpires() != null)
-        {
+        if (data.getIsUpdateExpires() != null) {
             jobPost.setExpiresAt(data.getExpiresAt());
         }
-        if (data.getTags() != null)
-        {
+        if (data.getTags() != null) {
             jobPost.setTags(new ArrayList<>(data.getTags()));
         }
-        if (data.getIsFeatured() != null) {
-            jobPost.setIsFeatured(data.getIsFeatured());
-        }
-        if (data.getIsHighlighted() != null) {
-            jobPost.setIsHighlighted(data.getIsHighlighted());
-        }
+        // KHÔNG thay đổi isFeatured, isHighlighted, featureActivatedAt, featureExpiresAt
+        // (đã được set lúc tạo, giữ nguyên suốt vòng đời)
         if (data.getJobRole() != null) {
             jobPost.setJobRole(data.getJobRole());
         }
@@ -407,6 +529,10 @@ public class JobPostService {
         jobPost.setDeleteAt(LocalDateTime.now());
         jobPostRepository.save(jobPost);
     }
+
+    // ========================
+    // DASHBOARD & HELPER
+    // ========================
 
     private EmployerProfile requireEmployerProfile(Long userId) {
         return employerRepository.findByOwnerId(userId)
@@ -465,7 +591,7 @@ public class JobPostService {
     public JobPostResponse updateJobPostStatus(Long id, Long userId, JobPostStatus newStatus) {
         JobPost jobPost = requireJobPost(id);
 
-        // Bảo mật IDOR: Kiểm tra xem Job này có thuộc về chính Employer đang đăng nhập không
+        // Bảo mật IDOR
         if (!jobPost.getEmployer().getOwner().getId().equals(userId)) {
             throw new ForbiddenException("You do not have permission to modify this job post");
         }
@@ -473,7 +599,6 @@ public class JobPostService {
         jobPost.setStatus(newStatus);
         jobPost = jobPostRepository.save(jobPost);
 
-        // Ghi lại lịch sử thao tác hệ thống (Audit Log)
         Map<String, Object> auditData = new HashMap<>();
         auditData.put("title", jobPost.getTitle());
         auditData.put("newStatus", newStatus.name());
@@ -530,70 +655,42 @@ public class JobPostService {
         saveJobIndustries(jobPost, industryIds);
     }
 
+    // ========================
+    // SCHEDULER: un-highlight expired subscriptions
+    // ========================
+
+    /**
+     * Gỡ highlight cho tất cả bài đăng của employer đã hết hạn subscription.
+     * Gọi từ scheduler mỗi ngày.
+     * Feature (isFeatured) KHÔNG bị gỡ ở đây - nó tự động hết hạn dựa trên
+     * featureExpiresAt trong thuật toán sắp xếp 2 tầng.
+     */
     @Transactional
-    public Map<String, Object> highlightJobPost(Long jobId, Long userId) {
-        EmployerProfile employer = requireEmployerProfile(userId);
+    public int unhighlightExpiredSubscriptions() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Long> employerIds = subscriptionRepository.findEmployerIdsWithExpiredPaidSubscriptions(now);
 
-        JobPost jobPost = jobPostRepository.findById(jobId)
-                .orElseThrow(() -> new NotFoundException("Job post not found"));
-
-        if (!jobPost.getEmployer().getOwner().getId().equals(userId)) {
-            throw new ForbiddenException("You do not have permission to highlight this job post");
+        if (employerIds.isEmpty()) {
+            return 0;
         }
 
-        // Check subscription exists and is not expired
-        EmployerSubscription sub = subscriptionRepository
-                .findTopByEmployerIdAndSubStatusOrderByIdDesc(employer.getId(), "ACTIVE")
-                .orElseThrow(() -> new BadRequestException("No active subscription found for this business"));
-
-        if (sub.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Your package has expired. Please renew to continue using highlight feature.");
-        }
-
-        // Check allowHighlight permission from plan
-        if (sub.getPlan() == null || !Boolean.TRUE.equals(sub.getPlan().getAllowHighlight())) {
-            throw new ForbiddenException("Your current plan does not support the highlight feature. Please upgrade to a plan that includes highlight.");
-        }
-
-        // Cooldown check: at least 4 hours between highlights
-        if (jobPost.getPushedAt() != null) {
-            LocalDateTime nextAllowedTime = jobPost.getPushedAt().plusHours(4);
-            LocalDateTime now = LocalDateTime.now();
-            if (now.isBefore(nextAllowedTime)) {
-                long totalMinutes = java.time.Duration.between(now, nextAllowedTime).toMinutes();
-                long hours = totalMinutes / 60;
-                long minutes = totalMinutes % 60;
-                String remaining;
-                if (hours > 0 && minutes > 0) {
-                    remaining = hours + " giờ " + minutes + " phút";
-                } else if (hours > 0) {
-                    remaining = hours + " giờ";
-                } else {
-                    remaining = minutes + " phút";
+        int count = 0;
+        for (Long empId : employerIds) {
+            List<JobPost> highlightedPosts = jobPostRepository.findByEmployerIdAndStatus(empId, JobPostStatus.OPEN);
+            for (JobPost jp : highlightedPosts) {
+                if (Boolean.TRUE.equals(jp.getIsHighlighted())) {
+                    jp.setIsHighlighted(false);
+                    jobPostRepository.save(jp);
+                    count++;
                 }
-                throw new BadRequestException("Bạn thao tác quá nhanh. Vui lòng thử lại sau " + remaining + ".");
             }
         }
-
-        // Update the push/highlight fields
-        jobPost.setIsHighlighted(true);
-        jobPost.setPushedAt(LocalDateTime.now());
-        jobPostRepository.save(jobPost);
-
-        Map<String, Object> auditData = new HashMap<>();
-        auditData.put("title", jobPost.getTitle());
-        auditData.put("highlightedAt", LocalDateTime.now().toString());
-        auditService.createAuditLog(CreateAuditDto.builder()
-                .actionType(ActionType.UPDATE)
-                .userId(userId)
-                .recordId(jobPost.getId())
-                .entityName(EntityName.JobPost)
-                .data(auditData)
-                .build());
-
-        return Map.of("message", "Job post highlighted successfully");
+        return count;
     }
 
+    // ========================
+    // MAPPING
+    // ========================
 
     private JobPostResponse toResponse(JobPost jobPost) {
         EmployerProfile employer = jobPost.getEmployer();
@@ -624,6 +721,8 @@ public class JobPostService {
                 .tags(jobPost.getTags() != null ? jobPost.getTags() : new ArrayList<>())
                 .isFeatured(jobPost.getIsFeatured())
                 .isHighlighted(jobPost.getIsHighlighted())
+                .featureActivatedAt(jobPost.getFeatureActivatedAt())
+                .featureExpiresAt(jobPost.getFeatureExpiresAt())
                 .jobRole(jobPost.getJobRole())
                 .requirements(jobPost.getRequirements())
                 .vacancies(jobPost.getVacancies())
@@ -649,7 +748,6 @@ public class JobPostService {
                 .industries(industries)
                 .build();
     }
-
 
     private JobPostDetailResponse toDetailResponse(JobPost jobPost) {
         EmployerProfile employer = jobPost.getEmployer();

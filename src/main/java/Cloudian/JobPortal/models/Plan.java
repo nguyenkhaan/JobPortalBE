@@ -37,4 +37,8 @@ public class Plan {
     @Column(nullable = false)
     @Builder.Default
     private Boolean allowHighlight = false;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer featureDurationDays = 0;
 }

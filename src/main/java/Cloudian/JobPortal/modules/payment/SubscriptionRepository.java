@@ -27,6 +27,9 @@ public interface SubscriptionRepository extends JpaRepository<EmployerSubscripti
     @Query("SELECT s FROM EmployerSubscription s WHERE s.subStatus = 'ACTIVE' AND s.expiresAt < :now")
     List<EmployerSubscription> findAllActiveExpiredBefore(@Param("now") LocalDateTime now);
 
+    @Query("SELECT s.employer.id FROM EmployerSubscription s WHERE s.subStatus = 'ACTIVE' AND s.plan.name != 'Free' AND s.expiresAt < :now")
+    List<Long> findEmployerIdsWithExpiredPaidSubscriptions(@Param("now") LocalDateTime now);
+
     // Subscription history for employer with date filter
     @Query("SELECT s FROM EmployerSubscription s WHERE s.employer.id = :employerId " +
            "AND (:startDate IS NULL OR s.startedAt >= :startDate) " +
