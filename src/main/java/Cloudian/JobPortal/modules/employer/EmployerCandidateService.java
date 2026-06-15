@@ -73,7 +73,7 @@ public class EmployerCandidateService {
 
         Page<CandidateListResponse> responsePage = applicationPage.map(ja -> {
             String resumeUrl = ja.getResume() != null && ja.getResume().getFileUrl() != null
-                    ? minioService.getFileUrl(ja.getResume().getFileUrl())
+                    ? ja.getResume().getFileUrl()
                     : null;
             return CandidateListResponse.builder()
                     .id(ja.getId())
@@ -111,7 +111,7 @@ public class EmployerCandidateService {
 
         Page<CandidateListResponse> responsePage = applicationPage.map(ja -> {
             String resumeUrl = ja.getResume() != null && ja.getResume().getFileUrl() != null
-                    ? minioService.getFileUrl(ja.getResume().getFileUrl())
+                    ? ja.getResume().getFileUrl()
                     : null;
             return CandidateListResponse.builder()
                     .id(ja.getId())
@@ -138,7 +138,7 @@ public class EmployerCandidateService {
         assertApplicationOwnership(application, employer.getId());
 
         String resumeUrl = application.getResume() != null && application.getResume().getFileUrl() != null
-                ? minioService.getFileUrl(application.getResume().getFileUrl())
+                ? application.getResume().getFileUrl()
                 : null;
 
         JobSeekerResponse jobSeekerResponse = null;
