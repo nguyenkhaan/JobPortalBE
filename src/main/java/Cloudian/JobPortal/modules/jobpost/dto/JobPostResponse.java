@@ -39,6 +39,10 @@ public class JobPostResponse {
     private SalaryType salaryType;
     private Long applicationCount;
 
+    // --- Feature fields ---
+    private LocalDateTime featureActivatedAt;
+    private LocalDateTime featureExpiresAt;
+
     // --- Fields added for Job Seeker list view (matching FE Job interface) ---
     private String daysRemaining;
     private String salary;

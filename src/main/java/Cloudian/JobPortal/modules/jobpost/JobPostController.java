@@ -121,21 +121,6 @@ public class JobPostController {
         return ResponseEntity.ok(body);
     }
 
-    @PostMapping("/{id}/highlight")
-    @PreAuthorize("hasRole('EMPLOYER')")
-    @Operation(summary = "Highlight a job post", description = "Highlights/pins a job post to boost visibility. Requires employer role.")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> highlightJobPost(
-            @PathVariable Long id,
-            HttpServletRequest request
-    ) {
-        Long userId = (Long) request.getAttribute("userId");
-        if (userId == null) {
-            throw new UnauthorizedException("User not found");
-        }
-        Map<String, Object> result = jobPostService.highlightJobPost(id, userId);
-        return ResponseEntity.ok(ApiResponse.ok((String) result.get("message"), result));
-    }
-
     //  ENDPOINT 1: LẤY DANH SÁCH BÀI ĐĂNG DÀNH RIÊNG CHO EMPLOYER DASHBOARD
     @GetMapping("/me/dashboard")
     @PreAuthorize("hasRole('EMPLOYER')")

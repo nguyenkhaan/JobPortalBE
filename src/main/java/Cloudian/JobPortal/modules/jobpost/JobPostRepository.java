@@ -70,4 +70,12 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long>, JpaSpec
             @Param("since") LocalDateTime since,
             Pageable pageable
     );
+
+    // Feature: Find all expired features (feature_expires_at < now) for scheduler cleanup
+    @Query("SELECT jp FROM JobPost jp WHERE jp.isFeatured = true AND jp.featureExpiresAt IS NOT NULL AND jp.featureExpiresAt < :now")
+    List<JobPost> findExpiredFeatures(@Param("now") LocalDateTime now);
+
+    // Feature: Count how many active featured jobs exist (for future stats)
+    @Query("SELECT COUNT(jp) FROM JobPost jp WHERE jp.isFeatured = true AND (jp.featureExpiresAt IS NULL OR jp.featureExpiresAt >= :now)")
+    long countActiveFeatured(@Param("now") LocalDateTime now);
 }

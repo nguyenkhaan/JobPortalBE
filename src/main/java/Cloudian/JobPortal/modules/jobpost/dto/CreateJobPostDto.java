@@ -59,10 +59,6 @@ public class CreateJobPostDto {
     @NotNull(message = "Tags cannot be null")
     private java.util.List<String> tags;
 
-    private Boolean isFeatured;
-
-    private Boolean isHighlighted;
-
     private String jobRole;
 
     private String requirements;
