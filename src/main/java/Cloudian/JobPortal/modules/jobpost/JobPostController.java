@@ -3,10 +3,7 @@ package Cloudian.JobPortal.modules.jobpost;
 import Cloudian.JobPortal.exceptions.custom.UnauthorizedException;
 import Cloudian.JobPortal.modules.base.dto.ApiResponse;
 import Cloudian.JobPortal.modules.base.dto.PageResponse;
-import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
-import Cloudian.JobPortal.modules.jobpost.dto.JobPostDetailResponse;
-import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
-import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
+import Cloudian.JobPortal.modules.jobpost.dto.*;
 import Cloudian.JobPortal.security.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,7 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
-
+import Cloudian.JobPortal.modules.jobpost.dto.JobPostEditResponse;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -124,21 +121,6 @@ public class JobPostController {
         return ResponseEntity.ok(body);
     }
 
-    @PostMapping("/{id}/highlight")
-    @PreAuthorize("hasRole('EMPLOYER')")
-    @Operation(summary = "Highlight a job post", description = "Highlights/pins a job post to boost visibility. Requires employer role.")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> highlightJobPost(
-            @PathVariable Long id,
-            HttpServletRequest request
-    ) {
-        Long userId = (Long) request.getAttribute("userId");
-        if (userId == null) {
-            throw new UnauthorizedException("User not found");
-        }
-        Map<String, Object> result = jobPostService.highlightJobPost(id, userId);
-        return ResponseEntity.ok(ApiResponse.ok((String) result.get("message"), result));
-    }
-
     //  ENDPOINT 1: LẤY DANH SÁCH BÀI ĐĂNG DÀNH RIÊNG CHO EMPLOYER DASHBOARD
     @GetMapping("/me/dashboard")
     @PreAuthorize("hasRole('EMPLOYER')")
@@ -157,22 +139,32 @@ public class JobPostController {
                 dashboardJobs
         ));
     }
-
+    @GetMapping("/{id}/for-edit")
+    @PreAuthorize("hasRole('EMPLOYER') or hasRole('ADMIN')")
+    @Operation(summary = "Get job post raw data for editing", description = "Returns raw data of a job post including original enums and IDs for form filling. Owner or Admin only.")
+    public ResponseEntity<JobPostEditResponse> getJobPostForEdit(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Long userId = getUserIdFromAuth(authentication);
+        JobPostEditResponse response = jobPostService.getJobPostForEdit(id, userId, isAdmin(authentication));
+        return ResponseEntity.ok(response);
+    }
     //  ENDPOINT 2: CẬP NHẬT TRẠNG THÁI NHANH CHO BÀI ĐĂNG (Ví dụ: Mark as expired, Close)
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('EMPLOYER')")
     @Operation(summary = "Update job post status", description = "Quickly updates the status of a job post (e.g., ACTIVE, CLOSED, EXPIRED). Requires employer role.")
     public ResponseEntity<Cloudian.JobPortal.modules.base.dto.ApiResponse<Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse>> updateJobPostStatus(
             @PathVariable Long id,
-            @RequestParam Cloudian.JobPortal.models.JobPostStatus status,
+            @RequestBody @Valid UpdateJobPostStatusDto statusDto,
             org.springframework.security.core.Authentication authentication
     ) {
         long userId = getUserIdFromAuth(authentication);
         Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse updatedJob =
-                jobPostService.updateJobPostStatus(id, userId, status);
+                jobPostService.updateJobPostStatus(id, userId, statusDto.getStatus());
 
         return ResponseEntity.ok(Cloudian.JobPortal.modules.base.dto.ApiResponse.ok(
-                "Job post status updated successfully to " + status.name(),
+                "Job post status updated successfully to " + statusDto.getStatus().name(),
                 updatedJob
         ));
     }

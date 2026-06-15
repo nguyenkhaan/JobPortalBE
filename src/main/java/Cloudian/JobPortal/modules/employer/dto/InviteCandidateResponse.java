@@ -6,11 +6,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class EmployerStatisticResponse {
-    private long totalJobs;
-    private long totalApplicants;
-    private long totalSavedCandidates;
+public class InviteCandidateResponse {
+    private Long jobSeekerId;
+    private Long jobPostId;
+    private String candidateEmail;
 }

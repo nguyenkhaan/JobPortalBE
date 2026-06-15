@@ -27,7 +27,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -89,14 +88,22 @@ class JobPostServiceTest {
                 .salaryMax(new BigDecimal("25000000"))
                 .salaryType(SalaryType.MONTHLY)
                 .tags(List.of("java", "spring"))
-                .isFeatured(false)
-                .isHighlighted(false)
+                .isFeatured(true)
+                .isHighlighted(true)
+                .featureActivatedAt(LocalDateTime.now().minusDays(1))
+                .featureExpiresAt(LocalDateTime.now().plusDays(4))
                 .vacancies(2)
                 .createdAt(LocalDateTime.now().minusDays(5))
                 .expiresAt(LocalDateTime.now().plusDays(10))
                 .build();
 
-        Plan plan = Plan.builder().maxJobPostsPerMonth(5).allowHighlight(true).build();
+        // Plan mặc định: Standard (allowHighlight=true, featureDurationDays=5)
+        Plan plan = Plan.builder()
+                .maxJobPostsPerMonth(5)
+                .allowHighlight(true)
+                .featureDurationDays(5)
+                .build();
+
         mockSubscription = EmployerSubscription.builder()
                 .id(1L)
                 .employer(mockEmployer)
@@ -238,6 +245,96 @@ class JobPostServiceTest {
         verify(jobPostRepository, times(1)).save(any(JobPost.class));
         verify(auditService, times(1)).createAuditLog(any());
     }
+
+    // ==================== createJobPost Auto-Apply ====================
+
+    @Test
+    void createJobPost_StandardPlan_AutoAppliesFeatureAndHighlight() {
+        // Standard plan: allowHighlight=true, featureDurationDays=5
+        when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(mockSubscription));
+        when(jobPostRepository.countByEmployerIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(0);
+
+        when(jobPostRepository.save(any(JobPost.class))).thenAnswer(invocation -> {
+            JobPost saved = invocation.getArgument(0);
+            saved.setId(200L);
+            return saved;
+        });
+
+        JobPostResponse response = jobPostService.createJobPost(1L, createDto);
+
+        // Verify auto-feature: featureDurationDays > 0 → isFeatured=true
+        assertThat(response.getIsFeatured()).isTrue();
+        assertThat(response.getFeatureActivatedAt()).isNotNull();
+        assertThat(response.getFeatureExpiresAt()).isNotNull();
+
+        // Verify auto-highlight: allowHighlight=true → isHighlighted=true
+        assertThat(response.getIsHighlighted()).isTrue();
+    }
+
+    @Test
+    void createJobPost_BasicPlan_AutoAppliesFeatureOnly() {
+        // Basic plan: allowHighlight=false, featureDurationDays=3
+        Plan basicPlan = Plan.builder()
+                .maxJobPostsPerMonth(5)
+                .allowHighlight(false)
+                .featureDurationDays(3)
+                .build();
+        EmployerSubscription basicSub = EmployerSubscription.builder()
+                .id(2L)
+                .employer(mockEmployer)
+                .subStatus("ACTIVE")
+                .startedAt(LocalDateTime.now().minusDays(30))
+                .expiresAt(LocalDateTime.now().plusDays(30))
+                .plan(basicPlan)
+                .build();
+
+        when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(basicSub));
+        when(jobPostRepository.countByEmployerIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(0);
+
+        when(jobPostRepository.save(any(JobPost.class))).thenAnswer(invocation -> {
+            JobPost saved = invocation.getArgument(0);
+            saved.setId(201L);
+            return saved;
+        });
+
+        JobPostResponse response = jobPostService.createJobPost(1L, createDto);
+
+        // Feature: true (3 ngày)
+        assertThat(response.getIsFeatured()).isTrue();
+        assertThat(response.getFeatureExpiresAt()).isNotNull();
+        // Highlight: false (Basic không hỗ trợ)
+        assertThat(response.getIsHighlighted()).isFalse();
+    }
+
+    @Test
+    void createJobPost_FreePlan_QuotaExceeded() {
+        // Free plan: maxJobPostsPerMonth=0 → không thể tạo bài đăng
+        Plan freePlan = Plan.builder()
+                .maxJobPostsPerMonth(0)
+                .allowHighlight(false)
+                .featureDurationDays(0)
+                .build();
+        EmployerSubscription freeSub = EmployerSubscription.builder()
+                .id(3L)
+                .employer(mockEmployer)
+                .subStatus("ACTIVE")
+                .startedAt(LocalDateTime.now().minusDays(30))
+                .expiresAt(LocalDateTime.now().plusYears(100))
+                .plan(freePlan)
+                .build();
+
+        when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
+        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(freeSub));
+        when(jobPostRepository.countByEmployerIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(0);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> jobPostService.createJobPost(1L, createDto));
+        assertTrue(ex.getMessage().contains("maximum limit"));
+    }
+
+    // ==================== getRecentJobsForSeeker ====================
 
     @Test
     void getRecentJobsForSeeker_Success_ReturnsPaginatedResponses() {
@@ -392,24 +489,82 @@ class JobPostServiceTest {
         mockJobPost.setEmployer(mockEmployer);
     }
 
-    // ==================== toResponse via getAllJobPost ====================
+    // ==================== getAllJobPost (2-tier sorting) ====================
 
     @Test
     void getAllJobPost_WithFilter_ReturnsMappedPage() {
-        JobPostFilterRequest filter = new JobPostFilterRequest();
-        Page<JobPost> page = new PageImpl<>(List.of(mockJobPost));
-
+        // getAllJobPost now uses findAll(spec) (without Pageable) then sorts in-memory
         @SuppressWarnings("unchecked")
         Specification<JobPost> anySpec = any();
-        when(jobPostRepository.findAll(anySpec, any(PageRequest.class))).thenReturn(page);
+        when(jobPostRepository.findAll(anySpec)).thenReturn(List.of(mockJobPost));
         when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
         when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
 
+        JobPostFilterRequest filter = new JobPostFilterRequest();
         Page<JobPostResponse> result = jobPostService.getAllJobPost(filter, 10, 0);
 
         assertThat(result).isNotEmpty();
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("Java Developer");
+        verify(jobPostRepository).findAll((Specification<JobPost>) any());  // verifies new method signature
+    }
+
+    @Test
+    void getAllJobPost_2Tier_FeaturedFirst() {
+        // Tạo 2 bài: một đang feature (tier1), một không feature (tier2)
+        JobPost featuredPost = JobPost.builder()
+                .id(1L)
+                .employer(mockEmployer)
+                .title("Featured Post")
+                .description("Desc")
+                .employmentType(EmploymentType.FULL_TIME)
+                .status(JobPostStatus.OPEN)
+                .educationLevel(EducationLevel.BACHELOR)
+                .experience(2)
+                .jobLevel(JobLevel.MIDDLE)
+                .salaryMin(new BigDecimal("20000000"))
+                .salaryMax(new BigDecimal("30000000"))
+                .tags(List.of())
+                .isFeatured(true)
+                .isHighlighted(false)
+                .featureActivatedAt(LocalDateTime.now().minusHours(2))  // newer feature
+                .featureExpiresAt(LocalDateTime.now().plusDays(2))
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .build();
+
+        JobPost nonFeaturedPost = JobPost.builder()
+                .id(2L)
+                .employer(mockEmployer)
+                .title("Non-Featured Post")
+                .description("Desc")
+                .employmentType(EmploymentType.FULL_TIME)
+                .status(JobPostStatus.OPEN)
+                .educationLevel(EducationLevel.BACHELOR)
+                .experience(2)
+                .jobLevel(JobLevel.MIDDLE)
+                .salaryMin(new BigDecimal("15000000"))
+                .salaryMax(new BigDecimal("25000000"))
+                .tags(List.of())
+                .isFeatured(false)
+                .isHighlighted(false)
+                .featureActivatedAt(null)
+                .featureExpiresAt(null)
+                .createdAt(LocalDateTime.now().minusDays(5))
+                .build();
+
+        @SuppressWarnings("unchecked")
+        Specification<JobPost> anySpec = any();
+        when(jobPostRepository.findAll(anySpec)).thenReturn(List.of(nonFeaturedPost, featuredPost));
+        when(jobIndustryRepository.findByJobPostId(anyLong())).thenReturn(Collections.emptyList());
+        when(jobApplicationRepository.countByJobPost_Id(anyLong())).thenReturn(0L);
+
+        JobPostFilterRequest filter = new JobPostFilterRequest();
+        Page<JobPostResponse> result = jobPostService.getAllJobPost(filter, 10, 0);
+
+        // Bài featured phải đứng trước bài non-featured
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Featured Post");
+        assertThat(result.getContent().get(1).getTitle()).isEqualTo("Non-Featured Post");
     }
 
     @Test
@@ -428,76 +583,6 @@ class JobPostServiceTest {
                 () -> jobPostService.getAllJobPost(filter, 10, -1));
     }
 
-    // ==================== highlightJobPost ====================
-
-    @Test
-    void highlightJobPost_Success() {
-        when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(mockSubscription));
-
-        Map<String, Object> result = jobPostService.highlightJobPost(100L, 1L);
-
-        assertThat(result.get("message")).isEqualTo("Job post highlighted successfully");
-        verify(jobPostRepository, times(1)).save(any(JobPost.class));
-        assertTrue(mockJobPost.getIsHighlighted());
-    }
-
-    @Test
-    void highlightJobPost_NotOwner_ThrowsForbidden() {
-        when(employerRepository.findByOwnerId(888L)).thenReturn(Optional.of(mockEmployer));
-        when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-
-        ForbiddenException ex = assertThrows(ForbiddenException.class,
-                () -> jobPostService.highlightJobPost(100L, 888L));
-        assertTrue(ex.getMessage().contains("permission"));
-    }
-
-    @Test
-    void highlightJobPost_SubscriptionExpired_ThrowsBadRequest() {
-        EmployerSubscription expiredSub = EmployerSubscription.builder()
-                .subStatus("ACTIVE")
-                .expiresAt(LocalDateTime.now().minusDays(1))
-                .plan(Plan.builder().allowHighlight(true).build())
-                .build();
-        when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(expiredSub));
-
-        BadRequestException ex = assertThrows(BadRequestException.class,
-                () -> jobPostService.highlightJobPost(100L, 1L));
-        assertTrue(ex.getMessage().contains("expired"));
-    }
-
-    @Test
-    void highlightJobPost_FreePlan_ThrowsForbidden() {
-        Plan freePlan = Plan.builder().maxJobPostsPerMonth(2).price(0.0).allowHighlight(false).build();
-        EmployerSubscription sub = EmployerSubscription.builder()
-                .subStatus("ACTIVE")
-                .expiresAt(LocalDateTime.now().plusDays(10))
-                .plan(freePlan)
-                .build();
-        when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(sub));
-
-        ForbiddenException ex = assertThrows(ForbiddenException.class,
-                () -> jobPostService.highlightJobPost(100L, 1L));
-        assertTrue(ex.getMessage().contains("does not support"));
-    }
-
-    @Test
-    void highlightJobPost_CooldownActive_ThrowsBadRequest() {
-        mockJobPost.setPushedAt(LocalDateTime.now().minusHours(2));
-        when(employerRepository.findByOwnerId(1L)).thenReturn(Optional.of(mockEmployer));
-        when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
-        when(subscriptionRepository.findTopByEmployerIdAndSubStatusOrderByIdDesc(1L, "ACTIVE")).thenReturn(Optional.of(mockSubscription));
-
-        BadRequestException ex = assertThrows(BadRequestException.class,
-                () -> jobPostService.highlightJobPost(100L, 1L));
-        assertTrue(ex.getMessage().contains("thử lại sau"));
-    }
-
     // ==================== getEmployerJobPosts ====================
 
     @Test
@@ -508,7 +593,7 @@ class JobPostServiceTest {
         when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
 
-        Page<JobPostResponse> result = jobPostService.getEmployerJobPosts(1L, 10, 0);
+        Page<JobPostResponse> result = jobPostService.getAllJobPostsByEmployer(1L, 10, 0);
 
         assertThat(result).isNotEmpty();
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("Java Developer");
@@ -520,8 +605,7 @@ class JobPostServiceTest {
     void toResponse_SalaryFormattedCorrectly() {
         @SuppressWarnings("unchecked")
         Specification<JobPost> anySpec = any();
-        Page<JobPost> page = new PageImpl<>(List.of(mockJobPost));
-        when(jobPostRepository.findAll(anySpec, any(PageRequest.class))).thenReturn(page);
+        when(jobPostRepository.findAll(anySpec)).thenReturn(List.of(mockJobPost));
         when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
         when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
@@ -541,8 +625,7 @@ class JobPostServiceTest {
 
         @SuppressWarnings("unchecked")
         Specification<JobPost> anySpec = any();
-        Page<JobPost> page = new PageImpl<>(List.of(mockJobPost));
-        when(jobPostRepository.findAll(anySpec, any(PageRequest.class))).thenReturn(page);
+        when(jobPostRepository.findAll(anySpec)).thenReturn(List.of(mockJobPost));
         when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
         when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
@@ -562,8 +645,7 @@ class JobPostServiceTest {
 
         @SuppressWarnings("unchecked")
         Specification<JobPost> anySpec = any();
-        Page<JobPost> page = new PageImpl<>(List.of(mockJobPost));
-        when(jobPostRepository.findAll(anySpec, any(PageRequest.class))).thenReturn(page);
+        when(jobPostRepository.findAll(anySpec)).thenReturn(List.of(mockJobPost));
         when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
         when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
@@ -580,8 +662,7 @@ class JobPostServiceTest {
 
         @SuppressWarnings("unchecked")
         Specification<JobPost> anySpec = any();
-        Page<JobPost> page = new PageImpl<>(List.of(mockJobPost));
-        when(jobPostRepository.findAll(anySpec, any(PageRequest.class))).thenReturn(page);
+        when(jobPostRepository.findAll(anySpec)).thenReturn(List.of(mockJobPost));
         when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
         when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
@@ -598,8 +679,7 @@ class JobPostServiceTest {
 
         @SuppressWarnings("unchecked")
         Specification<JobPost> anySpec = any();
-        Page<JobPost> page = new PageImpl<>(List.of(mockJobPost));
-        when(jobPostRepository.findAll(anySpec, any(PageRequest.class))).thenReturn(page);
+        when(jobPostRepository.findAll(anySpec)).thenReturn(List.of(mockJobPost));
         when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
         when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
@@ -608,5 +688,31 @@ class JobPostServiceTest {
         assertThat(result.getContent().get(0).getDaysRemaining()).isEqualTo("Vô thời hạn");
 
         mockJobPost.setExpiresAt(LocalDateTime.now().plusDays(10));
+    }
+
+    // ==================== updateJobPostStatus ====================
+
+    @Test
+    void updateJobPostStatus_Success() {
+        when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
+        when(jobPostRepository.save(any(JobPost.class))).thenReturn(mockJobPost);
+        when(jobIndustryRepository.findByJobPostId(100L)).thenReturn(Collections.emptyList());
+        when(jobApplicationRepository.countByJobPost_Id(100L)).thenReturn(0L);
+        when(minioService.getFileUrl(any())).thenReturn("logo.png");
+
+        JobPostResponse response = jobPostService.updateJobPostStatus(100L, 1L, JobPostStatus.CLOSED);
+
+        assertThat(response).isNotNull();
+        verify(jobPostRepository, times(1)).save(any(JobPost.class));
+        verify(auditService, times(1)).createAuditLog(any());
+    }
+
+    @Test
+    void updateJobPostStatus_NotOwner_ThrowsForbidden() {
+        when(jobPostRepository.findById(100L)).thenReturn(Optional.of(mockJobPost));
+
+        ForbiddenException ex = assertThrows(ForbiddenException.class,
+                () -> jobPostService.updateJobPostStatus(100L, 888L, JobPostStatus.CLOSED));
+        assertTrue(ex.getMessage().contains("permission"));
     }
 }
