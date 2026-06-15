@@ -311,7 +311,7 @@ public class JobApplicationService {
                 .resume(
                         JobApplicationResumeSummaryResponse.builder()
                                 .id(application.getResume().getId())
-                                .fileUrl(minioService.getFileUrl(application.getResume().getFileUrl()))
+                                .fileUrl(application.getResume().getFileUrl())
                                 .build()
                 )
                 .build();
