@@ -30,23 +30,21 @@ public interface SubscriptionRepository extends JpaRepository<EmployerSubscripti
     @Query("SELECT s.employer.id FROM EmployerSubscription s WHERE s.subStatus = 'ACTIVE' AND s.plan.name != 'Free' AND s.expiresAt < :now")
     List<Long> findEmployerIdsWithExpiredPaidSubscriptions(@Param("now") LocalDateTime now);
 
-    // Subscription history for employer with date filter
     @Query("SELECT s FROM EmployerSubscription s WHERE s.employer.id = :employerId " +
-           "AND (:startDate IS NULL OR s.startedAt >= :startDate) " +
-           "AND (:endDate IS NULL OR s.startedAt <= :endDate) " +
-           "ORDER BY s.startedAt DESC NULLS LAST")
+            "AND (cast(:startDate as timestamp) IS NULL OR s.startedAt >= :startDate) " +
+            "AND (cast(:endDate as timestamp) IS NULL OR s.startedAt <= :endDate) " +
+            "ORDER BY s.startedAt DESC NULLS LAST")
     Page<EmployerSubscription> findByEmployerIdWithDateFilter(
             @Param("employerId") Long employerId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable);
 
-    // All subscriptions history for admin with optional employerId + date filter
     @Query("SELECT s FROM EmployerSubscription s WHERE " +
-           "(:employerId IS NULL OR s.employer.id = :employerId) " +
-           "AND (:startDate IS NULL OR s.startedAt >= :startDate) " +
-           "AND (:endDate IS NULL OR s.startedAt <= :endDate) " +
-           "ORDER BY s.startedAt DESC NULLS LAST")
+            "(cast(:employerId as long) IS NULL OR s.employer.id = :employerId) " +
+            "AND (cast(:startDate as timestamp) IS NULL OR s.startedAt >= :startDate) " +
+            "AND (cast(:endDate as timestamp) IS NULL OR s.startedAt <= :endDate) " +
+            "ORDER BY s.startedAt DESC NULLS LAST")
     Page<EmployerSubscription> findAllWithFilters(
             @Param("employerId") Long employerId,
             @Param("startDate") LocalDateTime startDate,

@@ -84,8 +84,8 @@ class JobPostServiceTest {
                 .educationLevel(EducationLevel.BACHELOR)
                 .experience(3)
                 .jobLevel(JobLevel.SENIOR)
-                .salaryMin(new BigDecimal("15000000"))
-                .salaryMax(new BigDecimal("25000000"))
+                .salaryMin(new BigDecimal("1500"))
+                .salaryMax(new BigDecimal("2500"))
                 .salaryType(SalaryType.MONTHLY)
                 .tags(List.of("java", "spring"))
                 .isFeatured(true)
@@ -116,8 +116,8 @@ class JobPostServiceTest {
         createDto = CreateJobPostDto.builder()
                 .title("New Job")
                 .description("Desc")
-                .salaryMin(new BigDecimal("10000000"))
-                .salaryMax(new BigDecimal("20000000"))
+                .salaryMin(new BigDecimal("1000"))
+                .salaryMax(new BigDecimal("2000"))
                 .educationLevel(EducationLevel.BACHELOR)
                 .jobLevel(JobLevel.JUNIOR)
                 .status(JobPostStatus.OPEN)
@@ -182,7 +182,7 @@ class JobPostServiceTest {
 
         CreateJobPostDto dto = CreateJobPostDto.builder()
                 .title("Test").description("Desc")
-                .salaryMin(null).salaryMax(new BigDecimal("20000000"))
+                .salaryMin(null).salaryMax(new BigDecimal("2000"))
                 .educationLevel(EducationLevel.BACHELOR)
                 .jobLevel(JobLevel.JUNIOR)
                 .status(JobPostStatus.OPEN)
@@ -204,8 +204,8 @@ class JobPostServiceTest {
 
         CreateJobPostDto dto = CreateJobPostDto.builder()
                 .title("Test").description("Desc")
-                .salaryMin(new BigDecimal("50000000"))
-                .salaryMax(new BigDecimal("20000000"))
+                .salaryMin(new BigDecimal("5000"))
+                .salaryMax(new BigDecimal("2000"))
                 .educationLevel(EducationLevel.BACHELOR)
                 .jobLevel(JobLevel.JUNIOR)
                 .status(JobPostStatus.OPEN)
@@ -454,7 +454,7 @@ class JobPostServiceTest {
         JobPostDetailResponse response = jobPostService.getJobPostById(100L);
 
         assertThat(response.getOverview()).isNotNull();
-        assertThat(response.getOverview().getSalary()).contains("15,000,000");
+        assertThat(response.getOverview().getSalary()).contains("1,500");
         assertThat(response.getOverview().getJobType()).isEqualTo("Full Time");
         assertThat(response.getOverview().getEducation()).isEqualTo("Đại học");
         assertThat(response.getOverview().getLocation()).isEqualTo("HCMC");
@@ -522,8 +522,8 @@ class JobPostServiceTest {
                 .educationLevel(EducationLevel.BACHELOR)
                 .experience(2)
                 .jobLevel(JobLevel.MIDDLE)
-                .salaryMin(new BigDecimal("20000000"))
-                .salaryMax(new BigDecimal("30000000"))
+                .salaryMin(new BigDecimal("2000"))
+                .salaryMax(new BigDecimal("3000"))
                 .tags(List.of())
                 .isFeatured(true)
                 .isHighlighted(false)
@@ -542,8 +542,8 @@ class JobPostServiceTest {
                 .educationLevel(EducationLevel.BACHELOR)
                 .experience(2)
                 .jobLevel(JobLevel.MIDDLE)
-                .salaryMin(new BigDecimal("15000000"))
-                .salaryMax(new BigDecimal("25000000"))
+                .salaryMin(new BigDecimal("1500"))
+                .salaryMax(new BigDecimal("2500"))
                 .tags(List.of())
                 .isFeatured(false)
                 .isHighlighted(false)
@@ -613,8 +613,8 @@ class JobPostServiceTest {
         Page<JobPostResponse> result = jobPostService.getAllJobPost(new JobPostFilterRequest(), 10, 0);
         JobPostResponse resp = result.getContent().get(0);
 
-        assertThat(resp.getSalary()).contains("15,000,000");
-        assertThat(resp.getSalary()).contains("25,000,000");
+        assertThat(resp.getSalary()).contains("1,500");
+        assertThat(resp.getSalary()).contains("2,500");
         assertThat(resp.getSalary()).contains("monthly");
     }
 
@@ -631,10 +631,10 @@ class JobPostServiceTest {
         when(minioService.getFileUrl(any())).thenReturn("logo.png");
 
         Page<JobPostResponse> result = jobPostService.getAllJobPost(new JobPostFilterRequest(), 10, 0);
-        assertThat(result.getContent().get(0).getSalary()).isEqualTo("Thỏa thuận");
+        assertThat(result.getContent().get(0).getSalary()).isEqualTo("Negotiable");
 
-        mockJobPost.setSalaryMin(new BigDecimal("15000000"));
-        mockJobPost.setSalaryMax(new BigDecimal("25000000"));
+        mockJobPost.setSalaryMin(new BigDecimal("1500"));
+        mockJobPost.setSalaryMax(new BigDecimal("2500"));
     }
 
     // ==================== Experience & Days remaining ====================

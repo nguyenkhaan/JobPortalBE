@@ -551,12 +551,12 @@ public class JobSeekerService {
     }
 
     private String formatSalary(BigDecimal salaryMin, BigDecimal salaryMax, SalaryType salaryType) {
-        if (salaryMin == null && salaryMax == null) return "Thỏa thuận";
+        if (salaryMin == null && salaryMax == null) return "Negotiable";
         DecimalFormat df = new DecimalFormat("#,###");
-        String minStr = salaryMin != null ? df.format(salaryMin) : "0";
-        String maxStr = salaryMax != null ? df.format(salaryMax) : "∞";
+        String minStr = salaryMin != null ? "$" + df.format(salaryMin) : "$0";
+        String maxStr = salaryMax != null ? "$" + df.format(salaryMax) : "$∞";
         String period = salaryType != null ? salaryType.label : "";
-        return minStr + " - " + maxStr + " VND / " + period;
+        return minStr + " - " + maxStr + " / " + period;
     }
 
     private String formatPostedDate(LocalDateTime date) {

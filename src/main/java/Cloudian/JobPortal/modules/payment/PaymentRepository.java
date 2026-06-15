@@ -22,15 +22,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>, JpaSpec
 
     Page<Payment> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
-    // Employer invoices with date filter
     @Query("SELECT p FROM Payment p WHERE p.user.id = :userId " +
-           "AND (:startDate IS NULL OR p.createdAt >= :startDate) " +
-           "AND (:endDate IS NULL OR p.createdAt <= :endDate) " +
-           "ORDER BY p.createdAt DESC")
+            "AND (cast(:startDate as timestamp) IS NULL OR p.createdAt >= :startDate) " +
+            "AND (cast(:endDate as timestamp) IS NULL OR p.createdAt <= :endDate) " +
+            "ORDER BY p.createdAt DESC")
     Page<Payment> findInvoicesByUserIdWithDateFilter(
             @Param("userId") Long userId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable);
-
 }

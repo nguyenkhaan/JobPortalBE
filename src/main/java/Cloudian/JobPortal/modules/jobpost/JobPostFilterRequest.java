@@ -25,4 +25,5 @@ public class JobPostFilterRequest {
     private List<EducationLevel> education;
     private String category;      // industry category name (FE sends string, BE looks up)
     private String salaryRange;   // optional pre-defined range string
+    private String sortBy;        // Sort option: LATEST, OLDEST, HIGHEST_SALARY (default: LATEST)
 }

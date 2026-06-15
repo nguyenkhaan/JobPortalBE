@@ -59,7 +59,7 @@ class PaymentServiceTest {
                 .planId(3L)
                 .planName("Premium")
                 .status(PaymentStatus.PENDING)
-                .cost(500_000.0)
+                .cost(20.0)
                 .build();
     }
 
@@ -86,7 +86,7 @@ class PaymentServiceTest {
         Plan plan = Plan.builder()
                 .id(3L)
                 .name("Premium")
-                .price(500_000.0)
+                .price(20.0)
                 .duration(1)
                 .priority(2)
                 .maxJobPostsPerMonth(10)
@@ -112,7 +112,7 @@ class PaymentServiceTest {
         Plan plan = Plan.builder()
                 .id(3L)
                 .name("Premium")
-                .price(500_000.0)
+                .price(20.0)
                 .duration(1)
                 .priority(2)
                 .maxJobPostsPerMonth(10)
@@ -124,7 +124,7 @@ class PaymentServiceTest {
                 .planId(3L)
                 .planName("Premium")
                 .status(PaymentStatus.PENDING)
-                .cost(500_000.0)
+                .cost(20.0)
                 .transactionRef("TXN-12345-7")
                 .build();
 
@@ -139,7 +139,7 @@ class PaymentServiceTest {
         assertThat(result.get("planId")).isEqualTo(3L);
         assertThat(result.get("planName")).isEqualTo("Premium");
         assertThat(result.get("paymentId")).isEqualTo(60L);
-        assertThat(result.get("amount")).isEqualTo(500_000.0);
+        assertThat(result.get("amount")).isEqualTo(20.0);
         assertThat(result.get("qrCodeUrl")).isNotNull();
         verify(paymentRepository).save(any(Payment.class));
     }

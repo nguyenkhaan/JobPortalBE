@@ -120,6 +120,7 @@ public class JobPostService {
         buildPageable(limit, offset);
 
         LocalDateTime now = LocalDateTime.now();
+        JobPostSortBy sortBy = JobPostSortBy.fromString(filter.getSortBy());
 
         // 1. Build specification for filtering
         Specification<JobPost> spec = buildFilterSpec(filter);
@@ -152,11 +153,7 @@ public class JobPostService {
         });
 
         tier2.sort((a, b) -> {
-            // Non-feature: createdAt DESC
-            if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
-            if (a.getCreatedAt() == null) return 1;
-            if (b.getCreatedAt() == null) return -1;
-            return b.getCreatedAt().compareTo(a.getCreatedAt());
+            return doSortJobs(a, b, sortBy);
         });
 
         // 5. Gộp: tier1 trước, tier2 sau
@@ -870,13 +867,13 @@ public class JobPostService {
 
     private String formatSalary(BigDecimal salaryMin, BigDecimal salaryMax, SalaryType salaryType) {
         if (salaryMin == null && salaryMax == null) {
-            return "Thỏa thuận";
+            return "Negotiable";
         }
         DecimalFormat df = new DecimalFormat("#,###");
-        String minStr = salaryMin != null ? df.format(salaryMin) : "0";
-        String maxStr = salaryMax != null ? df.format(salaryMax) : "∞";
+        String minStr = salaryMin != null ? "$" + df.format(salaryMin) : "$0";
+        String maxStr = salaryMax != null ? "$" + df.format(salaryMax) : "$∞";
         String period = salaryType != null ? salaryType.label : "";
-        return minStr + " - " + maxStr + " VND / " + period;
+        return minStr + " - " + maxStr + " / " + period;
     }
 
     private String formatExperience(Integer experience) {
@@ -944,5 +941,36 @@ public class JobPostService {
     private String getOrganizationTypeLabel(OrganizationType type) {
         if (type == null) return null;
         return type.label;
+    }
+
+    // ========================
+    // SORT COMPARATOR
+    // ========================
+
+    /**
+     * Compare two JobPost based on the sortBy option.
+     * Used for tier2 (non-featured) sorting.
+     */
+    private int doSortJobs(JobPost a, JobPost b, JobPostSortBy sortBy) {
+        switch (sortBy) {
+            case OLDEST:
+                if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                if (a.getCreatedAt() == null) return 1;
+                if (b.getCreatedAt() == null) return -1;
+                return a.getCreatedAt().compareTo(b.getCreatedAt()); // ASC
+
+            case HIGHEST_SALARY:
+                if (a.getSalaryMax() == null && b.getSalaryMax() == null) return 0;
+                if (a.getSalaryMax() == null) return 1;
+                if (b.getSalaryMax() == null) return -1;
+                return b.getSalaryMax().compareTo(a.getSalaryMax()); // DESC
+
+            case LATEST:
+            default:
+                if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                if (a.getCreatedAt() == null) return 1;
+                if (b.getCreatedAt() == null) return -1;
+                return b.getCreatedAt().compareTo(a.getCreatedAt()); // DESC
+        }
     }
 }

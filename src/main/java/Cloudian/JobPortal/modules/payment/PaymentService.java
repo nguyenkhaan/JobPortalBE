@@ -259,7 +259,7 @@ public class PaymentService {
         java.text.DecimalFormat df = new java.text.DecimalFormat("#,###");
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.ENGLISH);
 
-        String formattedAmount = plan != null ? df.format(plan.getPrice()) + " VND" : "0 VND";
+        String formattedAmount = plan != null ? "$" + df.format(plan.getPrice()) : "$0";
         String formattedDueDate = sub != null && sub.getExpiresAt() != null ? sub.getExpiresAt().format(dateFormatter) : "N/A";
         String formattedStartedDate = sub != null && sub.getStartedAt() != null ? sub.getStartedAt().format(dateFormatter) : "N/A";
 
@@ -302,7 +302,7 @@ public class PaymentService {
                 .id("#" + payment.getId())
                 .date(payment.getCreatedAt() != null ? payment.getCreatedAt().format(dateTimeFormatter) : "N/A")
                 .plan(payment.getPlanName())
-                .amount(df.format(payment.getCost()) + " VND")
+                .amount("$" + df.format(payment.getCost()))
                 .build());
     }
 
@@ -322,7 +322,7 @@ public class PaymentService {
                 .date(payment.getCreatedAt() != null ? payment.getCreatedAt().format(fmt) : "N/A")
                 .plan(payment.getPlanName())
                 .status(payment.getStatus() != null ? payment.getStatus().name() : "N/A")
-                .amount(df.format(payment.getCost()) + " VND")
+                .amount("$" + df.format(payment.getCost()))
                 .build());
     }
 

@@ -350,8 +350,8 @@ public class DataSeeder implements ApplicationRunner {
                     .tags(postTags)
                     .isFeatured(featuredArray[titleIdx])
                     .isHighlighted(highlightedArray[titleIdx])
-                    .salaryMin(BigDecimal.valueOf(10_000_000L + (long) titleIdx * 1_500_000L))
-                    .salaryMax(BigDecimal.valueOf(18_000_000L + (long) titleIdx * 2_500_000L))
+                    .salaryMin(BigDecimal.valueOf(500L + (long) titleIdx * 75L))
+                    .salaryMax(BigDecimal.valueOf(900L + (long) titleIdx * 125L))
                     .build());
         }
         return posts;
@@ -409,7 +409,7 @@ public class DataSeeder implements ApplicationRunner {
         PaymentMethod[] methods = PaymentMethod.values();
         PaymentStatus[] statuses = PaymentStatus.values();
         String[] plans = {"Standard", "Premium"};
-        Double[] costs = {300000.0, 600000.0};
+        Double[] costs = {12.0, 24.0};
         int limit = Math.min(users.size(), SEED_COUNT);
         for (int i = 0; i < limit; i++) {
             int planIndex = random.nextInt(plans.length);

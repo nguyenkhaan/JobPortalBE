@@ -34,6 +34,19 @@ public class PaymentResponse {
     private String accountName;
 
     public static PaymentResponse from(Payment payment, String checkoutUrl, String qrCode, String bin, String accountNumber, String accountName) {
+        String payerEmail = null;
+        String employerName = null;
+        if (payment.getUser() != null) {
+            payerEmail = payment.getUser().getEmail();
+            try {
+                var profiles = payment.getUser().getEmployerProfileList();
+                if (profiles != null && !profiles.isEmpty()) {
+                    employerName = profiles.get(0).getCompanyName();
+                }
+            } catch (Exception ignored) {
+                // Lazy loading or NPE on employerProfileList is safe to ignore
+            }
+        }
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .planId(payment.getPlanId())
@@ -44,14 +57,8 @@ public class PaymentResponse {
                 .status(payment.getStatus())
                 .note(payment.getNote())
                 .createdAt(payment.getCreatedAt())
-                .payerEmail(payment.getUser() != null ? payment.getUser().getEmail() : null)
-                .employerName(
-                        payment.getUser() != null
-                                && payment.getUser().getEmployerProfileList() != null
-                                && !payment.getUser().getEmployerProfileList().isEmpty()
-                                ? payment.getUser().getEmployerProfileList().get(0).getCompanyName()
-                                : null
-                )
+                .payerEmail(payerEmail)
+                .employerName(employerName)
                 .checkoutUrl(checkoutUrl)
                 .qrCode(qrCode)
                 .bin(bin)

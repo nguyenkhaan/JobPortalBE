@@ -5,5 +5,5 @@ public enum JobApplicationStatus {
    public final String label;
    JobApplicationStatus(String label) {
        this.label = label;
-   }  //constructor thi khong can them public hay private, them vao la thanh sai
+   }
 }
