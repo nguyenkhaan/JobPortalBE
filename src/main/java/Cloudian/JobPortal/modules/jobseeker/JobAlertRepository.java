@@ -25,4 +25,6 @@ public interface JobAlertRepository extends JpaRepository<JobAlert, Long> {
 
     @Query("SELECT ja FROM JobAlert ja WHERE ja.id = :id AND ja.jobSeeker.user.id = :userId")
     Optional<JobAlert> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
+
+    long countByJobSeekerId(Long jobSeekerId);
 }

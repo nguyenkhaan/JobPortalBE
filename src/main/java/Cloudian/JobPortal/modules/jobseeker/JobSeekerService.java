@@ -483,7 +483,12 @@ public class JobSeekerService {
                 && profile.getProfessionalTitle() != null && !profile.getProfessionalTitle().isBlank()
                 && profile.getBiography() != null && !profile.getBiography().isBlank();
 
-        long alertCount = jobAlertRepository.countByUserId(userId);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime cutoff = now.minusDays(7);
+
+        Page<JobPost> recentJobsPage = jobPostRepository.findRecentJobsForSeeker(cutoff, now, PageRequest.of(0, 1));
+
+        long alertCount = recentJobsPage.getTotalElements();
 
         return JobSeekerStatisticResponse.builder()
                 .appliedCount(totalApplied)
