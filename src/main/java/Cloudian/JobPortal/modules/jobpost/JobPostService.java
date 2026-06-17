@@ -15,6 +15,7 @@ import Cloudian.JobPortal.modules.jobpost.dto.CreateJobPostDto;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostDetailResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.JobPostResponse;
 import Cloudian.JobPortal.modules.jobpost.dto.UpdateJobPostDto;
+import Cloudian.JobPortal.modules.jobpostreview.JobPostReviewRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.payment.SubscriptionRepository;
 import jakarta.persistence.criteria.Join;
@@ -51,6 +52,7 @@ public class JobPostService {
     private final SubscriptionRepository subscriptionRepository;
     private final JobPostRepository jobPostRepository;
     private final JobApplicationRepository jobApplicationRepository;
+    private final JobPostReviewRepository jobPostReviewRepository;
 
     // ========================
     // RIGHTS VALIDATION
@@ -791,9 +793,15 @@ public class JobPostService {
                 .description(jobPost.getDescription())
                 .requirements(jobPost.getRequirements())
                 .tags(jobPost.getTags() != null ? jobPost.getTags() : new ArrayList<>())
+                .averageRating(roundAverage(jobPostReviewRepository.averageRatingByJobPostId(jobPost.getId())))
+                .reviewCount(jobPostReviewRepository.countByJobPost_Id(jobPost.getId()))
                 .overview(overview)
                 .companyProfile(companyProfile)
                 .build();
+    }
+
+    private Double roundAverage(double average) {
+        return Math.round(average * 10.0) / 10.0;
     }
     @Transactional
     public JobPostEditResponse getJobPostForEdit(Long id, Long userId, boolean isAdmin) {

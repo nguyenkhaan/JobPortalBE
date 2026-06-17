@@ -1,5 +1,5 @@
 // Running seeder (stop any app already on 8080 first, or use another port):
-//   .\gradlew bootRun --args="--seeder --server.port=8080"
+//   ./gradlew bootRun --args="--seeder --server.port=8080"
 package Cloudian.JobPortal.configs;
 
 import Cloudian.JobPortal.models.*;
@@ -378,10 +378,10 @@ public class DataSeeder implements ApplicationRunner {
         JobApplicationStatus[] statuses = {
                 JobApplicationStatus.PENDING,
                 JobApplicationStatus.REVIEWING,
-                JobApplicationStatus.INTERVIEW,
                 JobApplicationStatus.OFFER,
                 JobApplicationStatus.ACCEPTED,
-                JobApplicationStatus.REJECTED
+                JobApplicationStatus.REJECTED,
+                JobApplicationStatus.PENDING
         };
         String[] coverLetters = {
                 "I am excited to apply for this backend role.",

@@ -160,6 +160,12 @@ public class JobApplicationService {
         }
         JobApplication application = requireApplication(applicationId);
         assertEmployerOwnsApplication(application, userId);
+        if (data.getStatus() == JobApplicationStatus.REVIEWING) {
+            throw new BadRequestException("Use interview scheduling to move an application to REVIEWING");
+        }
+        if (application.getStatus() == JobApplicationStatus.REJECTED || application.getStatus() == JobApplicationStatus.ACCEPTED) {
+            throw new BadRequestException("Cannot update a terminal application status");
+        }
         JobApplicationStatus previousStatus = application.getStatus();
         application.setStatus(data.getStatus());
         JobApplication saved = jobApplicationRepository.save(application);

@@ -25,6 +25,8 @@ public class JobPostDetailResponse {
     private String description;
     private String requirements;
     private List<String> tags;
+    private Double averageRating;
+    private Long reviewCount;
     private JobOverview overview;
     private CompanyProfile companyProfile;
 

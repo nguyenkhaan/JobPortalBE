@@ -13,7 +13,12 @@ public enum NotificationType {
     PAYMENT_SUBMITTED("Payment submitted"),
     PAYMENT_APPROVED("Payment approved"),
     APPLICATION_ACCEPTED("Application accepted"),
-    APPLICATION_REJECTED("Application rejected");
+    APPLICATION_REJECTED("Application rejected"),
+    INTERVIEW_PROPOSED("Interview proposed"),
+    INTERVIEW_CONFIRMED("Interview confirmed"),
+    INTERVIEW_EXPIRED("Interview expired"),
+    INTERVIEW_CANCELLED("Interview cancelled"),
+    INTERVIEW_COMPLETED("Interview completed");
     public final String label;
     NotificationType(String label) {
         this.label = label;

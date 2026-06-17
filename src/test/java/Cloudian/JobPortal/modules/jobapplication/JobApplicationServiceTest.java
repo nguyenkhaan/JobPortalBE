@@ -3,6 +3,7 @@ package Cloudian.JobPortal.modules.jobapplication;
 import Cloudian.JobPortal.events.notification.NotificationEvent;
 import Cloudian.JobPortal.events.notification.NotificationPublisher;
 import Cloudian.JobPortal.events.notification.NotificationType;
+import Cloudian.JobPortal.exceptions.custom.BadRequestException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.jobapplication.dto.CreateJobApplicationDto;
 import Cloudian.JobPortal.modules.jobapplication.dto.UpdateJobApplicationDto;
@@ -22,6 +23,7 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(MockitoExtension.class)
 class JobApplicationServiceTest {
@@ -129,7 +131,7 @@ class JobApplicationServiceTest {
     }
 
     @Test
-    void updateApplicationStatusForEmployer_Reviewing_DoesNotSendNotification() {
+    void updateApplicationStatusForEmployer_Reviewing_RequiresInterviewScheduling() {
         JobApplication application = JobApplication.builder()
                 .id(60L)
                 .jobPost(jobPost)
@@ -143,11 +145,12 @@ class JobApplicationServiceTest {
                 .build();
 
         when(jobApplicationRepository.findById(60L)).thenReturn(Optional.of(application));
-        when(jobApplicationRepository.save(any(JobApplication.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = jobApplicationService.updateApplicationStatusForEmployer(60L, 9L, dto);
+        assertThatThrownBy(() -> jobApplicationService.updateApplicationStatusForEmployer(60L, 9L, dto))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Use interview scheduling");
 
-        assertThat(response.getStatus()).isEqualTo(JobApplicationStatus.REVIEWING);
+        verify(jobApplicationRepository, never()).save(any(JobApplication.class));
         verify(notificationPublisher, never()).publish(any(NotificationEvent.class));
     }
 
