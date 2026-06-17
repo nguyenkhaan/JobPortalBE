@@ -84,7 +84,7 @@ class JobApplicationServiceTest {
                 .build();
 
         when(jobPostRepository.findById(40L)).thenReturn(Optional.of(jobPost));
-        when(resumeRepository.findById(50L)).thenReturn(Optional.of(resume));
+        when(resumeRepository.findByIdAndDeleteAtIsNull(50L)).thenReturn(Optional.of(resume));
         when(jobSeekerRepository.findById(30L)).thenReturn(Optional.of(seekerProfile));
         when(jobApplicationRepository.save(any(JobApplication.class))).thenAnswer(invocation -> {
             JobApplication application = invocation.getArgument(0);
@@ -149,6 +149,24 @@ class JobApplicationServiceTest {
 
         assertThat(response.getStatus()).isEqualTo(JobApplicationStatus.REVIEWING);
         verify(notificationPublisher, never()).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void getJobApplicationDetailAdmin_WhenResumeIsMissing_ReturnsNullResume() {
+        JobApplication application = JobApplication.builder()
+                .id(60L)
+                .jobPost(jobPost)
+                .jobSeeker(seekerProfile)
+                .resume(null)
+                .status(JobApplicationStatus.PENDING)
+                .build();
+
+        when(jobApplicationRepository.findById(60L)).thenReturn(Optional.of(application));
+
+        var response = jobApplicationService.getJobApplicationDetailAdmin(60L);
+
+        assertThat(response.getId()).isEqualTo(60L);
+        assertThat(response.getResume()).isNull();
     }
 
     private NotificationEvent capturePublishedEvent() {

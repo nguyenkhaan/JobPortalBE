@@ -76,7 +76,8 @@ public class JobApplicationService {
     public JobApplicationResponse createJobApplication(Long userId , CreateJobApplicationDto data)
     {
         JobPost jobPost = jobPostRepository.findById(data.getJobPostId()).orElseThrow(() -> new NotFoundException("Job Post cannot be found"));
-        Resume resume = resumeRepository.findById(data.getResumeId()).orElseThrow(() -> new NotFoundException(("Resume cannot be found")));
+        Resume resume = resumeRepository.findByIdAndDeleteAtIsNull(data.getResumeId())
+                .orElseThrow(() -> new NotFoundException(("Resume cannot be found")));
         JobSeekerProfile jobSeekerProfile = jobSeekerRepository.findById(data.getJobSeekerId()).orElseThrow(() -> new NotFoundException(("Job seeker profile cannot be found")));
         if (!Objects.equals(jobSeekerProfile.getUser().getId(), userId) || !Objects.equals(resume.getJobSeeker().getId(), jobSeekerProfile.getId()))
             throw new BadRequestException("Profile doesn't belong to the the candidate");
@@ -139,7 +140,7 @@ public class JobApplicationService {
             hasAnyUpdate = true;
         }
         if (data.getResumeId() != null) {
-            Resume resume = resumeRepository.findById(data.getResumeId())
+            Resume resume = resumeRepository.findByIdAndDeleteAtIsNull(data.getResumeId())
                     .orElseThrow(() -> new NotFoundException("Resume cannot be found"));
             if (!Objects.equals(resume.getJobSeeker().getId(), application.getJobSeeker().getId())) {
                 throw new BadRequestException("Resume doesn't belong to the candidate");
@@ -277,6 +278,7 @@ public class JobApplicationService {
 
     private JobApplicationDetailResponse toJobApplicationDetailResponse(JobApplication application) {
         JobSeekerProfile profile = application.getJobSeeker();
+        Resume resume = application.getResume();
         return JobApplicationDetailResponse.builder()
                 .id(application.getId())
                 .coverLetter(application.getCoverLetter())
@@ -308,12 +310,10 @@ public class JobApplicationService {
                                 .title(application.getJobPost().getTitle())
                                 .build()
                 )
-                .resume(
-                        JobApplicationResumeSummaryResponse.builder()
-                                .id(application.getResume().getId())
-                                .fileUrl(application.getResume().getFileUrl())
-                                .build()
-                )
+                .resume(resume == null ? null : JobApplicationResumeSummaryResponse.builder()
+                        .id(resume.getId())
+                        .fileUrl(resume.getFileUrl())
+                        .build())
                 .build();
     }
 }
