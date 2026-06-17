@@ -5,6 +5,8 @@ package Cloudian.JobPortal.configs;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.employer.EmployerRepository;
 import Cloudian.JobPortal.modules.industry.IndustryRepository;
+import Cloudian.JobPortal.modules.interview.InterviewScheduleRepository;
+import Cloudian.JobPortal.modules.review.ReviewRepository;
 import Cloudian.JobPortal.modules.jobapplication.JobApplicationRepository;
 import Cloudian.JobPortal.modules.jobindustry.JobIndustryRepository;
 import Cloudian.JobPortal.modules.jobpost.JobPostRepository;
@@ -46,6 +48,8 @@ public class DataSeeder implements ApplicationRunner {
     private final JobPostRepository jobPostRepository;
     private final JobIndustryRepository jobIndustryRepository;
     private final JobApplicationRepository jobApplicationRepository;
+    private final InterviewScheduleRepository interviewScheduleRepository;
+    private final ReviewRepository reviewRepository;
     private final PaymentRepository paymentRepository;
     private final SocialRepository socialRepository;
     private final OAuthRepository oAuthRepository;
@@ -106,8 +110,11 @@ public class DataSeeder implements ApplicationRunner {
             jobIndustryRepository.saveAll(seedJobIndustries(industries, jobPosts));
         }
 
+        List<JobApplication> jobApplications;
         if (jobApplicationRepository.count() == 0 && !seekers.isEmpty() && !jobPosts.isEmpty() && !resumes.isEmpty()) {
-            jobApplicationRepository.saveAll(seedJobApplications(seekers, jobPosts, resumes));
+            jobApplications = jobApplicationRepository.saveAll(seedJobApplications(seekers, jobPosts, resumes));
+        } else {
+            jobApplications = jobApplicationRepository.findAll();
         }
 
         if (paymentRepository.count() == 0) {
@@ -120,6 +127,27 @@ public class DataSeeder implements ApplicationRunner {
 
         if (oAuthRepository.count() == 0) {
             oAuthRepository.saveAll(seedOAuths(users));
+        }
+
+        // Seed interview schedules
+        if (interviewScheduleRepository.count() == 0 && !jobApplications.isEmpty()) {
+            List<JobApplication> appsForInterview = jobApplications.subList(0, Math.min(3, jobApplications.size()));
+            interviewScheduleRepository.saveAll(seedInterviewSchedules(appsForInterview));
+            log.info("DataSeeder: seeded {} interview schedules.", interviewScheduleRepository.count());
+        }
+
+        // Seed reviews
+        if (reviewRepository.count() == 0 && !jobPosts.isEmpty() && !seekers.isEmpty()) {
+            reviewRepository.saveAll(seedReviews(jobPosts, seekers));
+            // Update average rating on job posts after seeding reviews
+            jobPosts.forEach(jp -> {
+                Double avg = reviewRepository.getAverageRatingByJobPostId(jp.getId());
+                long total = reviewRepository.countByJobPostId(jp.getId());
+                jp.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
+                jp.setTotalReviews((int) total);
+            });
+            jobPostRepository.saveAll(jobPosts);
+            log.info("DataSeeder: seeded {} reviews.", reviewRepository.count());
         }
 
         log.info("DataSeeder: finished — users={}, jobPosts={}, resumes={}, applications={}",
@@ -516,5 +544,61 @@ public class DataSeeder implements ApplicationRunner {
                 .build());
 
         return plans;
+    }
+
+    private List<InterviewSchedule> seedInterviewSchedules(List<JobApplication> applications) {
+        List<InterviewSchedule> schedules = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now().plusDays(2);
+
+        for (int i = 0; i < Math.min(applications.size(), 3); i++) {
+            JobApplication app = applications.get(i);
+            InterviewStatus status = i == 0 ? InterviewStatus.SCHEDULED : InterviewStatus.PENDING;
+
+            InterviewSchedule schedule = InterviewSchedule.builder()
+                    .jobApplication(app)
+                    .status(status)
+                    .build();
+
+            List<InterviewSlot> slots = new ArrayList<>();
+            // Create 3 time slots for each schedule
+            for (int j = 0; j < 3; j++) {
+                slots.add(InterviewSlot.builder()
+                        .interviewSchedule(schedule)
+                        .startTime(now.plusDays(j).withHour(9).withMinute(0))
+                        .endTime(now.plusDays(j).withHour(10).withMinute(0))
+                        .build());
+            }
+            schedule.setSlots(slots);
+
+            if (status == InterviewStatus.SCHEDULED) {
+                schedule.setChosenSlotId(slots.get(0).getId());
+                schedule.setRespondedAt(LocalDateTime.now());
+            }
+
+            schedules.add(schedule);
+        }
+        return schedules;
+    }
+
+    private List<Review> seedReviews(List<JobPost> jobPosts, List<JobSeekerProfile> seekers) {
+        List<Review> reviews = new ArrayList<>();
+        Integer[] ratings = {5, 4, 3, 5, 2, 4};
+        String[] comments = {
+                "Excellent working environment and great team!",
+                "Good company with reasonable work-life balance.",
+                "Average experience, salary could be better.",
+                "Outstanding management and growth opportunities.",
+                "Decent place to work but limited advancement.",
+                "Great benefits and supportive colleagues."
+        };
+        for (int i = 0; i < Math.min(seekers.size(), jobPosts.size()); i++) {
+            reviews.add(Review.builder()
+                    .jobPost(jobPosts.get(i))
+                    .jobSeeker(seekers.get(i))
+                    .rating(ratings[i])
+                    .comment(comments[i])
+                    .build());
+        }
+        return reviews;
     }
 }
