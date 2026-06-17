@@ -152,5 +152,16 @@ public class JobPost {
     @OneToMany(mappedBy = "jobPost")
     @Builder.Default
     private List<JobIndustry> jobIndustryList = new ArrayList<>();
+    @OneToMany(mappedBy = "jobPost")
+    @Builder.Default
+    private List<Review> reviewList = new ArrayList<>();
+
+    @Column(name = "average_rating")
+    @Builder.Default
+    private Double averageRating = 0.0;
+
+    @Column(name = "total_reviews")
+    @Builder.Default
+    private Integer totalReviews = 0;
 
 }
