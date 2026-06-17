@@ -70,7 +70,7 @@ CREATE UNIQUE INDEX idx_payment_transaction_ref
     WHERE "delete_at" IS NULL;
 
 -------------------------------------------------------------------------------
--- 7. Resume (Mỗi ứng viên chỉ có duy nhất 1 CV mặc định còn hoạt động)
+-- 7. Resume (Mỗi ứng viên chỉ có duy nhất 1 CV mặc định savedcòn hoạt động)
 -------------------------------------------------------------------------------
 DROP INDEX IF EXISTS idx_resume_default;
 

@@ -1,9 +1,8 @@
 package Cloudian.JobPortal.modules.resume;
 
 import Cloudian.JobPortal.exceptions.custom.BadRequestException;
-import Cloudian.JobPortal.exceptions.custom.ResourceNotFoundException;
 import Cloudian.JobPortal.exceptions.custom.ForbiddenException;
-import Cloudian.JobPortal.exceptions.custom.NotFoundException;
+import Cloudian.JobPortal.exceptions.custom.ResourceNotFoundException;
 import Cloudian.JobPortal.models.*;
 import Cloudian.JobPortal.modules.audit.AuditService;
 import Cloudian.JobPortal.modules.audit.dto.CreateAuditDto;
@@ -11,7 +10,6 @@ import Cloudian.JobPortal.modules.jobseeker.JobSeekerRepository;
 import Cloudian.JobPortal.modules.minio.MinioService;
 import Cloudian.JobPortal.modules.resume.dto.ResumeResponse;
 import Cloudian.JobPortal.modules.resume.dto.UploadResumeRequest;
-import Cloudian.JobPortal.modules.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +28,11 @@ public class ResumeService {
     private final MinioService minioService;
     private final JobSeekerRepository jobSeekerRepository;
     private final AuditService auditService;
+
+    private Resume requireActiveResume(Long resumeId) {
+        return resumeRepository.findByIdAndDeleteAtIsNull(resumeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+    }
 
     //HELPER: Map Entity sang DTO
     private ResumeResponse mapToResponse(Resume resume) {
@@ -62,14 +65,14 @@ public class ResumeService {
         JobSeekerProfile profile = jobSeekerRepository.findByUserId(userId)
                 .orElseThrow(() -> new ForbiddenException("You must create your Job Seeker profile before uploading a resume"));
 
-        List<Resume> existingResumes = resumeRepository.findAllByJobSeeker_User_Id(userId);
+        List<Resume> existingResumes = resumeRepository.findAllByJobSeeker_User_IdAndDeleteAtIsNull(userId);
         boolean isFirstResume = existingResumes.isEmpty();
 
         // cv đầu tiên up lên mặc định làm default.
         boolean setAsDefault = isFirstResume || (isDefaultReq != null && isDefaultReq);
 
         if (setAsDefault && !isFirstResume) {
-            resumeRepository.findByJobSeeker_User_IdAndIsDefaultTrue(userId)
+            resumeRepository.findByJobSeeker_User_IdAndIsDefaultTrueAndDeleteAtIsNull(userId)
                     .ifPresent(oldDefault -> {
                         oldDefault.setIsDefault(false);
                         resumeRepository.save(oldDefault);
@@ -103,7 +106,7 @@ public class ResumeService {
     // get
     @Transactional(readOnly = true)
     public List<ResumeResponse> getMyResumes(Long userId) {
-        return resumeRepository.findAllByJobSeeker_User_Id(userId)
+        return resumeRepository.findAllByJobSeeker_User_IdAndDeleteAtIsNull(userId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -115,7 +118,7 @@ public class ResumeService {
     )
     {
         return resumeRepository
-                .findAllByJobSeeker_IdAndJobSeeker_User_Id(
+                .findAllByJobSeeker_IdAndJobSeeker_User_IdAndDeleteAtIsNull(
                         jobSeekerId,
                         userId
                 )
@@ -126,9 +129,7 @@ public class ResumeService {
     // set
     @Transactional
     public void setDefaultResume(Long resumeId, Long userId) {
-        // 404
-        Resume targetResume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+        Resume targetResume = requireActiveResume(resumeId);
 
         // 403
         if (!targetResume.getJobSeeker().getUser().getId().equals(userId)) {
@@ -139,7 +140,7 @@ public class ResumeService {
             return;
         }
 
-        resumeRepository.findByJobSeeker_User_IdAndIsDefaultTrue(userId)
+        resumeRepository.findByJobSeeker_User_IdAndIsDefaultTrueAndDeleteAtIsNull(userId)
                 .ifPresent(oldDefault -> {
                     oldDefault.setIsDefault(false);
                     resumeRepository.save(oldDefault);
@@ -163,7 +164,7 @@ public class ResumeService {
     {
         if (name == null || name.isEmpty() || name.isBlank()) 
             return; 
-        Resume resume = resumeRepository.findById(resumeId).orElseThrow(() -> new NotFoundException("Resume not found")); 
+        Resume resume = requireActiveResume(resumeId);
         if (resume.getJobSeeker().getUser().getId() != userId) 
             throw new BadRequestException("Resume doesn't belong to this user"); 
         resume.setFileName(name);
@@ -171,8 +172,7 @@ public class ResumeService {
     }
     @Transactional
     public void deleteResume(Long resumeId, Long userId) {
-        Resume targetResume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Resume not found"));
+        Resume targetResume = requireActiveResume(resumeId);
         if (!targetResume.getJobSeeker().getUser().getId().equals(userId)) {
             throw new ForbiddenException("You do not have permission to delete this resume");
         }

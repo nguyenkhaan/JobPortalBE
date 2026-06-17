@@ -3,6 +3,8 @@ package Cloudian.JobPortal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -51,7 +53,8 @@ public class JobApplication {
     @ManyToOne
     @JoinColumn(nullable = false , name = "job_post_id")
     private JobPost jobPost;   //Check
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(nullable = false , name = "resume_id")
-    Resume resume; //Check
+    private Resume resume; //Check
 }

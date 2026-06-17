@@ -9,10 +9,15 @@ import java.util.Optional;
 
 @Repository
 public interface ResumeRepository extends JpaRepository<Resume, Long> {
-    List<Resume> findAllByJobSeeker_User_Id(Long userId);
-    Optional<Resume> findByIdAndJobSeeker_User_Id(Long resumeId, Long userId);
-    Optional<Resume> findByJobSeeker_User_IdAndIsDefaultTrue(Long userId);
+    List<Resume> findAllByJobSeeker_User_IdAndDeleteAtIsNull(Long userId);
+    Optional<Resume> findByIdAndDeleteAtIsNull(Long resumeId);
+    Optional<Resume> findByIdAndJobSeeker_User_IdAndDeleteAtIsNull(Long resumeId, Long userId);
+    Optional<Resume> findByJobSeeker_User_IdAndIsDefaultTrueAndDeleteAtIsNull(Long userId);
     List<Resume> findAllByJobSeeker_IdAndJobSeeker_User_Id(
+            Long jobSeekerId,
+            Long userId
+    );
+    List<Resume> findAllByJobSeeker_IdAndJobSeeker_User_IdAndDeleteAtIsNull(
             Long jobSeekerId,
             Long userId
     );

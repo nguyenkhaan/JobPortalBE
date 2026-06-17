@@ -4,6 +4,7 @@ on:
     branches:
       - ci/production
       - master
+      - ci/production-v2
 jobs:
   docker:
     runs-on: ubuntu-latest

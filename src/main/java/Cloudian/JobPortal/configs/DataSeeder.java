@@ -203,6 +203,7 @@ public class DataSeeder implements ApplicationRunner {
                     .companyName(companies[i])
                     .companyWebsite(websites[i])
                     .address(addresses[i])
+                    .logo("default.png")
                     .email(owner.getEmail())
                     .description("Sample employer profile for " + companies[i])
                     .approvalStatus(ApprovalStatus.APPROVED)
@@ -240,6 +241,7 @@ public class DataSeeder implements ApplicationRunner {
                     .user(users.get(i))
                     .approve(approved[i])
                     .fullName(names[i])
+                    .avatar("default.png")
                     .phone(phones[i])
                     .address(addresses[i])
                     .build());
